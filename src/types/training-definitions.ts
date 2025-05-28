@@ -20,7 +20,16 @@ export interface TrainingDefinitionVersion {
 }
 
 export interface TrainingDefinitionWithLatestVersion extends TrainingDefinition {
-  latest_version: TrainingDefinitionVersion | null;
+  latest_version: {
+    id: string;
+    version_number: string;
+    status: 'draft' | 'published' | 'archived';
+    created_at: string;
+    published_at: string | null;
+    training_definition_id: string;
+    version_notes: string | null;
+    steps_json: StepBlock[];
+  } | null;
 }
 
 export interface StepBlock {

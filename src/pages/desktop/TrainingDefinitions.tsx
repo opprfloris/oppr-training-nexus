@@ -1,19 +1,22 @@
 
 import React, { useState, useEffect } from 'react';
-import { PlusIcon, MagnifyingGlassIcon, FunnelIcon } from "@heroicons/react/24/outline";
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { PlusCircleIcon } from "@heroicons/react/24/outline";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { TrainingDefinitionWithLatestVersion } from '@/types/training-definitions';
 import TrainingDefinitionsTable from '@/components/desktop/training-definitions/TrainingDefinitionsTable';
-import { TrainingDefinition, TrainingDefinitionWithLatestVersion } from '@/types/training-definitions';
+import { useNavigate } from 'react-router-dom';
 
 const TrainingDefinitions = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
   const [definitions, setDefinitions] = useState<TrainingDefinitionWithLatestVersion[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchDefinitions();
@@ -22,22 +25,25 @@ const TrainingDefinitions = () => {
   const fetchDefinitions = async () => {
     try {
       setLoading(true);
-      
+
       let query = supabase
         .from('training_definitions')
         .select(`
           *,
-          training_definition_versions (
+          training_definition_versions!inner (
             id,
             version_number,
             status,
             created_at,
-            published_at
+            published_at,
+            training_definition_id,
+            version_notes,
+            steps_json
           )
         `)
-        .order('updated_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
-      // Add search filter
+      // Apply search filter
       if (searchTerm) {
         query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
       }
@@ -46,29 +52,29 @@ const TrainingDefinitions = () => {
 
       if (error) throw error;
 
-      // Process the data to get latest versions and apply status filter
-      const processedDefinitions = data?.map(def => {
-        const versions = def.training_definition_versions || [];
-        const latestVersion = versions.reduce((latest, current) => {
-          if (!latest) return current;
-          return new Date(current.created_at) > new Date(latest.created_at) ? current : latest;
-        }, null);
+      // Transform the data to match our interface
+      const transformedData = data?.map(def => {
+        // Get the latest version for each definition
+        const latestVersion = def.training_definition_versions
+          .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 
         return {
           ...def,
-          latest_version: latestVersion
+          latest_version: latestVersion || null
         };
       }).filter(def => {
+        // Apply status filter
         if (statusFilter === 'all') return true;
         return def.latest_version?.status === statusFilter;
       }) || [];
 
-      setDefinitions(processedDefinitions);
+      setDefinitions(transformedData);
+
     } catch (error) {
       console.error('Error fetching training definitions:', error);
       toast({
         title: "Error",
-        description: "Failed to load training definitions",
+        description: "Failed to fetch training definitions",
         variant: "destructive"
       });
     } finally {
@@ -81,57 +87,53 @@ const TrainingDefinitions = () => {
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Training Definitions</h1>
-          <p className="text-gray-600">Manage your reusable training content and procedures</p>
-        </div>
-        <button 
-          onClick={handleCreateNew}
-          className="oppr-button-primary flex items-center space-x-2"
-        >
-          <PlusIcon className="w-5 h-5" />
-          <span>New Definition</span>
-        </button>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Training Definitions</h1>
+        <p className="text-gray-600 mt-1">
+          Create and manage reusable training content templates
+        </p>
       </div>
 
       {/* Controls Bar */}
-      <div className="flex items-center justify-between space-x-4 mb-6">
-        <div className="flex items-center space-x-4">
-          {/* Search */}
-          <div className="relative max-w-md">
-            <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="search"
-              placeholder="Search by Title or Description..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-oppr-blue focus:border-transparent"
-            />
-          </div>
-        </div>
+      <div className="flex items-center justify-between">
+        <Button 
+          onClick={handleCreateNew}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          <PlusCircleIcon className="w-5 h-5 mr-2" />
+          New Definition
+        </Button>
 
-        {/* Status Filter */}
-        <div className="flex items-center space-x-2">
-          <label htmlFor="status-filter" className="text-sm font-medium text-gray-700">
-            Status:
-          </label>
-          <select
-            id="status-filter"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-oppr-blue focus:border-transparent"
-          >
-            <option value="all">All</option>
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-            <option value="archived">Archived</option>
-          </select>
+        <div className="flex items-center space-x-4">
+          {/* Status Filter */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium text-gray-700">Status:</span>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="published">Published</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Search */}
+          <Input
+            placeholder="Search by title or description..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-80"
+          />
         </div>
       </div>
 
-      {/* Training Definitions Table */}
+      {/* Table */}
       <TrainingDefinitionsTable 
         definitions={definitions}
         loading={loading}
