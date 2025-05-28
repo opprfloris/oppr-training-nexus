@@ -1,7 +1,6 @@
-
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 const DesktopSettings = () => {
-  const { user, profile, signOut, updateProfile } = useAuth();
+  const { user, profile, signOut, updateProfile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -27,6 +26,17 @@ const DesktopSettings = () => {
     newPassword: '',
     confirmPassword: ''
   });
+
+  // Update form data when profile loads
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        firstName: profile.first_name || '',
+        lastName: profile.last_name || '',
+        department: profile.department || '',
+      });
+    }
+  }, [profile]);
 
   const handleLogout = async () => {
     await signOut();
@@ -54,17 +64,25 @@ const DesktopSettings = () => {
       // Upload new avatar if provided
       if (avatarFile && user?.id) {
         const fileExt = avatarFile.name.split('.').pop();
-        const fileName = `${user.id}.${fileExt}`;
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+        
+        console.log('Uploading avatar:', fileName);
         
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('avatars')
           .upload(fileName, avatarFile, { upsert: true });
 
-        if (!uploadError) {
+        if (uploadError) {
+          console.error('Avatar upload error:', uploadError);
+          toast({
+            title: "Warning",
+            description: "Avatar upload failed, but profile will be updated without it",
+            variant: "destructive",
+          });
+        } else {
           const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
           avatarUrl = data.publicUrl;
-        } else {
-          console.error('Avatar upload error:', uploadError);
+          console.log('Avatar uploaded successfully:', avatarUrl);
         }
       }
 
@@ -77,6 +95,9 @@ const DesktopSettings = () => {
 
       if (error) throw error;
 
+      // Refresh the profile to get the latest data
+      await refreshProfile();
+
       toast({
         title: "Success",
         description: "Profile updated successfully",
@@ -86,6 +107,7 @@ const DesktopSettings = () => {
       setAvatarPreview(null);
 
     } catch (error: any) {
+      console.error('Profile update error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to update profile",
@@ -148,17 +170,6 @@ const DesktopSettings = () => {
     }
   };
 
-  // Update form data when profile loads
-  useState(() => {
-    if (profile) {
-      setFormData({
-        firstName: profile.first_name || '',
-        lastName: profile.last_name || '',
-        department: profile.department || '',
-      });
-    }
-  });
-
   return (
     <div>
       <div className="mb-8">
@@ -174,11 +185,21 @@ const DesktopSettings = () => {
             <div className="space-y-4">
               <div className="flex items-center space-x-4 mb-6">
                 <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center overflow-hidden">
-                  {avatarPreview || profile?.avatar_url ? (
+                  {avatarPreview ? (
                     <img 
-                      src={avatarPreview || profile?.avatar_url || ''} 
-                      alt="Profile" 
+                      src={avatarPreview} 
+                      alt="Profile Preview" 
                       className="w-full h-full object-cover" 
+                    />
+                  ) : profile?.avatar_url ? (
+                    <img 
+                      src={profile.avatar_url} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.error('Avatar failed to load:', profile.avatar_url);
+                        e.currentTarget.style.display = 'none';
+                      }}
                     />
                   ) : (
                     <span className="text-2xl text-gray-600">👤</span>

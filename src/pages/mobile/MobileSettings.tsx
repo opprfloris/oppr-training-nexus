@@ -38,7 +38,11 @@ const MobileSettings = () => {
                   <img 
                     src={profile.avatar_url} 
                     alt="Profile" 
-                    className="w-full h-full object-cover" 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.error('Avatar failed to load:', profile.avatar_url);
+                      e.currentTarget.style.display = 'none';
+                    }}
                   />
                 ) : (
                   <span className="text-xl text-gray-600">👤</span>
