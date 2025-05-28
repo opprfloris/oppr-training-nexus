@@ -22,4 +22,20 @@ export const cleanupAuthState = () => {
       }
     });
   }
+  
+  // Clear any other potential auth-related items
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('userSession');
+  sessionStorage.removeItem('authToken');
+  sessionStorage.removeItem('userSession');
+  
+  console.log('Auth state cleanup complete');
+};
+
+export const forceAuthReset = () => {
+  cleanupAuthState();
+  
+  // Force page reload to ensure completely clean state
+  console.log('Forcing page reload for clean auth state');
+  window.location.href = '/desktop/login';
 };

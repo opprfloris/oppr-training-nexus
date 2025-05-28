@@ -5,11 +5,11 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const MobileSettings = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
 
   const handleLogout = async () => {
     await signOut();
-    navigate('/mobile/login');
+    // The signOut function will handle the redirect
   };
 
   return (
@@ -33,16 +33,30 @@ const MobileSettings = () => {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">User Profile Information</h3>
           <div className="space-y-4">
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center">
-                <span className="text-xl text-gray-600">👤</span>
+              <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center overflow-hidden">
+                {profile?.avatar_url ? (
+                  <img 
+                    src={profile.avatar_url} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover" 
+                  />
+                ) : (
+                  <span className="text-xl text-gray-600">👤</span>
+                )}
               </div>
               <div>
                 <p className="font-medium text-gray-900">
-                  {user?.email?.includes('operator') ? 'John Operator' : 'Training Manager'}
+                  {profile?.first_name && profile?.last_name 
+                    ? `${profile.first_name} ${profile.last_name}`
+                    : profile?.role || 'User'
+                  }
                 </p>
-                <p className="text-gray-600">{user?.email}</p>
+                <p className="text-gray-600">{profile?.email || user?.email}</p>
                 <p className="text-sm text-gray-500">
-                  Department: {user?.email?.includes('operator') ? 'Manufacturing' : 'Management'}
+                  Department: {profile?.department || 'Not assigned'}
+                </p>
+                <p className="text-sm text-gray-500">
+                  Role: {profile?.role || 'Not assigned'}
                 </p>
               </div>
             </div>

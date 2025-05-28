@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -92,28 +93,37 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
     }
 
     setLoading(true);
+    console.log('Starting user creation process...');
 
     try {
       let avatarUrl = null;
 
       // Upload avatar if provided
       if (avatarFile) {
+        console.log('Uploading avatar...');
         const fileExt = avatarFile.name.split('.').pop();
-        const fileName = `temp-${Date.now()}.${fileExt}`;
+        const fileName = `${Date.now()}-${formData.email.replace('@', '-')}.${fileExt}`;
         
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('avatars')
           .upload(fileName, avatarFile);
 
-        if (!uploadError) {
+        if (!uploadError && uploadData) {
           const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
           avatarUrl = data.publicUrl;
+          console.log('Avatar uploaded successfully:', avatarUrl);
         } else {
           console.error('Avatar upload error:', uploadError);
+          toast({
+            title: "Warning",
+            description: "Failed to upload avatar, but continuing with user creation",
+            variant: "destructive",
+          });
         }
       }
 
-      // Create user via Edge Function
+      // Create user via Edge Function (this is the correct approach)
+      console.log('Calling create-user Edge Function...');
       const { data, error } = await supabase.functions.invoke('create-user', {
         body: {
           firstName: formData.firstName,
@@ -126,11 +136,19 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
         }
       });
 
-      if (error) throw error;
+      console.log('Edge Function response:', { data, error });
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to create user');
+      if (error) {
+        console.error('Edge Function error:', error);
+        throw new Error(error.message || 'Edge Function call failed');
       }
+
+      if (!data || !data.success) {
+        console.error('Edge Function returned unsuccessful result:', data);
+        throw new Error(data?.error || 'Failed to create user');
+      }
+
+      console.log('User created successfully:', data.user);
 
       toast({
         title: "Success",
@@ -157,7 +175,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
       console.error('Error creating user:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create user",
+        description: error.message || "Failed to create user. Please check the console for details.",
         variant: "destructive",
       });
     } finally {

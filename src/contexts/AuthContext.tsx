@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { cleanupAuthState } from '@/utils/authCleanup';
+import { cleanupAuthState, forceAuthReset } from '@/utils/authCleanup';
 
 interface Profile {
   id: string;
@@ -45,6 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log('Fetching profile for user:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -56,6 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return null;
       }
 
+      console.log('Profile fetched successfully:', data);
       return data;
     } catch (error) {
       console.error('Error in fetchProfile:', error);
@@ -71,20 +73,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    console.log('Setting up auth state listener...');
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
+        
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Defer profile fetching to prevent deadlocks
-        if (session?.user) {
+        if (event === 'SIGNED_OUT') {
+          console.log('User signed out, clearing profile');
+          setProfile(null);
+          setLoading(false);
+        } else if (session?.user) {
+          console.log('User signed in, fetching profile...');
+          // Use setTimeout to prevent potential deadlocks
           setTimeout(async () => {
-            const profileData = await fetchProfile(session.user.id);
-            setProfile(profileData);
-            setLoading(false);
-          }, 0);
+            try {
+              const profileData = await fetchProfile(session.user.id);
+              setProfile(profileData);
+            } catch (error) {
+              console.error('Error fetching profile after sign in:', error);
+            } finally {
+              setLoading(false);
+            }
+          }, 100);
         } else {
           setProfile(null);
           setLoading(false);
@@ -93,57 +108,96 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('Error getting session:', error);
+        setLoading(false);
+        return;
+      }
+
+      console.log('Initial session check:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
         setTimeout(async () => {
-          const profileData = await fetchProfile(session.user.id);
-          setProfile(profileData);
-          setLoading(false);
-        }, 0);
+          try {
+            const profileData = await fetchProfile(session.user.id);
+            setProfile(profileData);
+          } catch (error) {
+            console.error('Error fetching profile on init:', error);
+          } finally {
+            setLoading(false);
+          }
+        }, 100);
       } else {
         setLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('Cleaning up auth listener');
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
-      // Clean up existing state
+      console.log('Starting sign in process for:', email);
+      
+      // Clean up existing state first
       cleanupAuthState();
       
-      // Attempt global sign out
+      // Attempt global sign out to clear any existing sessions
       try {
         await supabase.auth.signOut({ scope: 'global' });
+        console.log('Global signout completed');
       } catch (err) {
-        console.log('Global signout failed, continuing...', err);
+        console.log('Global signout failed (continuing):', err);
       }
 
-      const { error } = await supabase.auth.signInWithPassword({
+      // Small delay to ensure cleanup
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
+      if (error) {
+        console.error('Sign in error:', error);
+      } else {
+        console.log('Sign in successful:', data.user?.email);
+      }
+      
       return { error };
     } catch (error) {
+      console.error('Sign in exception:', error);
       return { error };
     }
   };
 
   const signOut = async () => {
     try {
+      console.log('Starting sign out process');
+      
+      // Clean up auth state
       cleanupAuthState();
-      await supabase.auth.signOut({ scope: 'global' });
-      // Force page reload for clean state
-      window.location.href = '/desktop/login';
+      
+      // Attempt Supabase signout
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+        console.log('Supabase signout completed');
+      } catch (error) {
+        console.error('Supabase sign out error:', error);
+      }
+      
+      // Force complete reset
+      forceAuthReset();
     } catch (error) {
       console.error('Sign out error:', error);
-      // Force reload even if signOut fails
-      window.location.href = '/desktop/login';
+      // Force reset even if signOut fails
+      forceAuthReset();
     }
   };
 
@@ -153,6 +207,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
+      console.log('Updating profile:', updates);
+      
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -166,8 +222,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Refresh profile data
       await refreshProfile();
       
+      console.log('Profile updated successfully');
       return { error: null };
     } catch (error: any) {
+      console.error('Profile update error:', error);
       return { error };
     }
   };
