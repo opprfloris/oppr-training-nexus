@@ -1,3 +1,4 @@
+
 import React, { useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,8 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Plus, X } from 'lucide-react';
 import { StepBlock, InformationBlockConfig, GotoBlockConfig, QuestionBlockConfig } from '@/types/training-definitions';
-import AIAssistantPanel from './AIAssistantPanel';
 import ImageUploadComponent from './ImageUploadComponent';
+import MagicWandButton from './MagicWandButton';
 
 interface BlockConfigurationProps {
   block: StepBlock | null;
@@ -31,14 +32,19 @@ const BlockConfiguration: React.FC<BlockConfigurationProps> = ({ block, onUpdate
 
   const renderInformationConfig = () => (
     <div className="space-y-4">
-      <div>
+      <div className="relative">
         <Label htmlFor="content">Content</Label>
+        <MagicWandButton 
+          blockType="information" 
+          onUseSuggestion={(suggestion) => onUpdateConfig(block.id, suggestion)}
+        />
         <Textarea
           id="content"
           value={(block.config as InformationBlockConfig).content}
           onChange={(e) => updateConfig({ content: e.target.value })}
           placeholder="Enter the information content..."
           rows={6}
+          className="mt-1"
         />
       </div>
       
@@ -49,45 +55,45 @@ const BlockConfiguration: React.FC<BlockConfigurationProps> = ({ block, onUpdate
           onChange={(url) => updateConfig({ image_url: url })}
         />
       </div>
-
-      <AIAssistantPanel
-        blockType="information"
-        onUseSuggestion={(suggestion) => onUpdateConfig(block.id, suggestion)}
-      />
     </div>
   );
 
   const renderGotoConfig = () => (
     <div className="space-y-4">
-      <div>
+      <div className="relative">
         <Label htmlFor="instructions">Instructions</Label>
+        <MagicWandButton 
+          blockType="goto" 
+          onUseSuggestion={(suggestion) => onUpdateConfig(block.id, suggestion)}
+        />
         <Textarea
           id="instructions"
           value={(block.config as GotoBlockConfig).instructions}
           onChange={(e) => updateConfig({ instructions: e.target.value })}
           placeholder="Enter navigation instructions..."
           rows={4}
+          className="mt-1"
         />
       </div>
-
-      <AIAssistantPanel
-        blockType="goto"
-        onUseSuggestion={(suggestion) => onUpdateConfig(block.id, suggestion)}
-      />
     </div>
   );
 
   const renderQuestionConfig = () => (
     <div className="space-y-4">
       {/* Question Text */}
-      <div>
+      <div className="relative">
         <Label htmlFor="question_text">Question</Label>
+        <MagicWandButton 
+          blockType="question" 
+          onUseSuggestion={(suggestion) => onUpdateConfig(block.id, suggestion)}
+        />
         <Textarea
           id="question_text"
           value={(block.config as QuestionBlockConfig).question_text}
           onChange={(e) => updateConfig({ question_text: e.target.value })}
           placeholder="Enter your question..."
           rows={3}
+          className="mt-1"
         />
       </div>
 
@@ -215,16 +221,11 @@ const BlockConfiguration: React.FC<BlockConfigurationProps> = ({ block, onUpdate
           <Label htmlFor="mandatory">Mandatory</Label>
         </div>
       </div>
-
-      <AIAssistantPanel
-        blockType="question"
-        onUseSuggestion={(suggestion) => onUpdateConfig(block.id, suggestion)}
-      />
     </div>
   );
 
   return (
-    <div className="oppr-card p-6">
+    <div className="oppr-card p-6 h-full overflow-auto">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Block Configuration</h3>
       {block.type === 'information' && renderInformationConfig()}
       {block.type === 'goto' && renderGotoConfig()}

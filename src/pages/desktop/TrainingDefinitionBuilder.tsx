@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { StepBlock } from '@/types/training-definitions';
 import { useTrainingDefinition } from '@/hooks/useTrainingDefinition';
@@ -101,15 +100,15 @@ const TrainingDefinitionBuilder = () => {
         onPublishSuccess={handlePublishSuccess}
       />
 
-      {/* Three-Panel Layout */}
+      {/* Three-Panel Layout - Adjusted widths */}
       <div className="flex-1 flex space-x-6 min-h-0">
         {/* Left Panel - Block Palette */}
         <div className="w-64 flex-shrink-0">
           <BlockPalette onAddBlock={addBlock} />
         </div>
 
-        {/* Center Panel - Flow Canvas */}
-        <div className="flex-1 min-w-0">
+        {/* Center Panel - Flow Canvas (reduced width) */}
+        <div className="w-96 flex-shrink-0">
           <FlowCanvas
             steps={steps}
             selectedBlockId={selectedBlockId}
@@ -119,8 +118,8 @@ const TrainingDefinitionBuilder = () => {
           />
         </div>
 
-        {/* Right Panel - Block Configuration */}
-        <div className="w-80 flex-shrink-0">
+        {/* Right Panel - Block Configuration (increased width) */}
+        <div className="flex-1 min-w-0">
           <BlockConfiguration
             block={selectedBlock}
             onUpdateConfig={updateBlockConfig}

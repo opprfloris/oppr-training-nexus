@@ -32,6 +32,11 @@ const PublishVersionModal: React.FC<PublishVersionModalProps> = ({
   const { toast } = useToast();
 
   const getNextVersion = (current: string, type: 'minor' | 'major'): string => {
+    // If current version is 0.1 (initial draft), first publish should be 1.0
+    if (current === '0.1') {
+      return '1.0';
+    }
+    
     const [major, minor] = current.split('.').map(Number);
     if (type === 'major') {
       return `${major + 1}.0`;
@@ -56,6 +61,23 @@ const PublishVersionModal: React.FC<PublishVersionModalProps> = ({
     try {
       setPublishing(true);
 
+      // Check if there's a draft version to publish
+      const { data: draftVersion, error: fetchError } = await supabase
+        .from('training_definition_versions')
+        .select('*')
+        .eq('training_definition_id', definitionId)
+        .eq('status', 'draft')
+        .single();
+
+      if (fetchError) {
+        toast({
+          title: "Error",
+          description: "No draft version found to publish. Please save your changes first.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Check if version already exists
       const { data: existingVersion } = await supabase
         .from('training_definition_versions')
@@ -72,16 +94,6 @@ const PublishVersionModal: React.FC<PublishVersionModalProps> = ({
         });
         return;
       }
-
-      // Get the current draft version data
-      const { data: draftVersion, error: fetchError } = await supabase
-        .from('training_definition_versions')
-        .select('*')
-        .eq('training_definition_id', definitionId)
-        .eq('status', 'draft')
-        .single();
-
-      if (fetchError) throw fetchError;
 
       // Update the draft version to published
       const { error: publishError } = await supabase

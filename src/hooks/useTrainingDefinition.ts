@@ -115,7 +115,7 @@ export const useTrainingDefinition = () => {
       setSaving(true);
 
       if (isNewDefinition) {
-        // Create new training definition and first version
+        // Create new training definition with version 0.1 (draft)
         const { data: newDef, error: defError } = await supabase
           .from('training_definitions')
           .insert({
@@ -132,7 +132,7 @@ export const useTrainingDefinition = () => {
           .from('training_definition_versions')
           .insert({
             training_definition_id: newDef.id,
-            version_number: '1.0',
+            version_number: '0.1',
             status: 'draft' as const,
             steps_json: steps as any
           })
@@ -151,7 +151,7 @@ export const useTrainingDefinition = () => {
 
         toast({
           title: "Success",
-          description: "Training definition created and saved as draft",
+          description: "Training definition created and saved as draft (v0.1)",
         });
 
         // Navigate to the editor with the new ID
