@@ -5,6 +5,25 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { TrainingDefinition, TrainingDefinitionVersion, StepBlock } from '@/types/training-definitions';
 
+// Type guard to safely convert Json to StepBlock[]
+const isStepBlockArray = (value: any): value is StepBlock[] => {
+  return Array.isArray(value) && value.every((item: any) => 
+    item && 
+    typeof item === 'object' && 
+    typeof item.id === 'string' &&
+    typeof item.type === 'string' &&
+    typeof item.order === 'number' &&
+    item.config !== undefined
+  );
+};
+
+const safeConvertToStepBlocks = (value: any): StepBlock[] => {
+  if (isStepBlockArray(value)) {
+    return value;
+  }
+  return [];
+};
+
 export const useTrainingDefinition = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -60,12 +79,13 @@ export const useTrainingDefinition = () => {
       if (versionError) throw versionError;
 
       if (versionData) {
+        const safeStepsJson = safeConvertToStepBlocks(versionData.steps_json);
         const typedVersion: TrainingDefinitionVersion = {
           ...versionData,
-          steps_json: Array.isArray(versionData.steps_json) ? versionData.steps_json as StepBlock[] : []
+          steps_json: safeStepsJson
         };
         setVersion(typedVersion);
-        setSteps(typedVersion.steps_json);
+        setSteps(safeStepsJson);
       }
 
     } catch (error) {

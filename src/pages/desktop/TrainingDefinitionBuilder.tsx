@@ -61,6 +61,11 @@ const TrainingDefinitionBuilder = () => {
     setSteps(reorderedSteps);
   };
 
+  const handlePublishSuccess = () => {
+    // Refetch the definition to get updated version info
+    window.location.reload();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -90,7 +95,10 @@ const TrainingDefinitionBuilder = () => {
         saving={saving}
         onSaveDraft={handleSaveDraft}
         title={title}
-        stepsCount={steps.length}
+        steps={steps}
+        definitionId={definition?.id}
+        currentVersion={version?.version_number}
+        onPublishSuccess={handlePublishSuccess}
       />
 
       {/* Three-Panel Layout */}

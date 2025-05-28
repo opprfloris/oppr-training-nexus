@@ -10,6 +10,25 @@ import { TrainingDefinitionWithLatestVersion, StepBlock } from '@/types/training
 import TrainingDefinitionsTable from '@/components/desktop/training-definitions/TrainingDefinitionsTable';
 import { useNavigate } from 'react-router-dom';
 
+// Type guard to safely convert Json to StepBlock[]
+const isStepBlockArray = (value: any): value is StepBlock[] => {
+  return Array.isArray(value) && value.every((item: any) => 
+    item && 
+    typeof item === 'object' && 
+    typeof item.id === 'string' &&
+    typeof item.type === 'string' &&
+    typeof item.order === 'number' &&
+    item.config !== undefined
+  );
+};
+
+const safeConvertToStepBlocks = (value: any): StepBlock[] => {
+  if (isStepBlockArray(value)) {
+    return value;
+  }
+  return [];
+};
+
 const TrainingDefinitions = () => {
   const [definitions, setDefinitions] = useState<TrainingDefinitionWithLatestVersion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,9 +79,7 @@ const TrainingDefinitions = () => {
 
         if (latestVersion) {
           // Safely convert steps_json to StepBlock[]
-          const steps_json = Array.isArray(latestVersion.steps_json) 
-            ? latestVersion.steps_json as StepBlock[]
-            : [];
+          const steps_json = safeConvertToStepBlocks(latestVersion.steps_json);
 
           return {
             ...def,

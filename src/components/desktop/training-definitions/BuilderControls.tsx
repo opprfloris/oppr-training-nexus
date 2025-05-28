@@ -1,64 +1,97 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { EyeIcon } from "@heroicons/react/24/outline";
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import { StepBlock } from '@/types/training-definitions';
+import PublishVersionModal from './PublishVersionModal';
+import PreviewModal from './PreviewModal';
 
 interface BuilderControlsProps {
   saving: boolean;
   onSaveDraft: () => void;
   title: string;
-  stepsCount: number;
+  steps: StepBlock[];
+  definitionId?: string;
+  currentVersion?: string;
+  onPublishSuccess?: () => void;
 }
 
 const BuilderControls: React.FC<BuilderControlsProps> = ({
   saving,
   onSaveDraft,
   title,
-  stepsCount
+  steps,
+  definitionId,
+  currentVersion,
+  onPublishSuccess
 }) => {
-  const { toast } = useToast();
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+
+  const canPublish = title.trim() && steps.length > 0 && definitionId && currentVersion;
 
   const handlePreview = () => {
-    toast({
-      title: "Coming Soon",
-      description: "Preview functionality will be implemented next",
-    });
+    setShowPreviewModal(true);
   };
 
   const handlePublish = () => {
-    toast({
-      title: "Coming Soon",
-      description: "Publish functionality will be implemented next",
-    });
+    if (canPublish) {
+      setShowPublishModal(true);
+    }
+  };
+
+  const handlePublishSuccess = () => {
+    if (onPublishSuccess) {
+      onPublishSuccess();
+    }
   };
 
   return (
-    <div className="flex items-center justify-between mb-6">
-      <div className="flex items-center space-x-3">
+    <>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <Button
+            variant="outline"
+            onClick={onSaveDraft}
+            disabled={saving}
+          >
+            {saving ? 'Saving...' : 'Save Draft'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handlePreview}
+          >
+            <EyeIcon className="w-4 h-4 mr-2" />
+            Preview
+          </Button>
+        </div>
         <Button
-          variant="outline"
-          onClick={onSaveDraft}
-          disabled={saving}
+          onClick={handlePublish}
+          className="oppr-button-primary"
+          disabled={!canPublish}
+          title={!canPublish ? 'Add a title and at least one step to publish' : 'Publish this version'}
         >
-          {saving ? 'Saving...' : 'Save Draft'}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={handlePreview}
-        >
-          <EyeIcon className="w-4 h-4 mr-2" />
-          Preview
+          Publish Version
         </Button>
       </div>
-      <Button
-        onClick={handlePublish}
-        className="oppr-button-primary"
-        disabled={!title.trim() || stepsCount === 0}
-      >
-        Publish Version
-      </Button>
-    </div>
+
+      {definitionId && currentVersion && (
+        <PublishVersionModal
+          isOpen={showPublishModal}
+          onClose={() => setShowPublishModal(false)}
+          definitionId={definitionId}
+          currentVersion={currentVersion}
+          onPublishSuccess={handlePublishSuccess}
+        />
+      )}
+
+      <PreviewModal
+        isOpen={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
+        steps={steps}
+        title={title}
+      />
+    </>
   );
 };
 
