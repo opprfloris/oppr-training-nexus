@@ -1,5 +1,16 @@
 
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+
 const DesktopSettings = () => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/desktop/login');
+  };
+
   return (
     <div>
       <div className="mb-8">
@@ -17,8 +28,10 @@ const DesktopSettings = () => {
                 <span className="text-2xl text-gray-600">👤</span>
               </div>
               <div>
-                <p className="text-lg font-medium text-gray-900">Manager Name</p>
-                <p className="text-gray-600">manager@company.com</p>
+                <p className="text-lg font-medium text-gray-900">
+                  {user?.email?.includes('manager') ? 'Training Manager' : 'User'}
+                </p>
+                <p className="text-gray-600">{user?.email}</p>
                 <button className="text-sm text-oppr-blue hover:underline">Change Photo</button>
               </div>
             </div>
@@ -26,15 +39,31 @@ const DesktopSettings = () => {
             <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-                <input type="text" className="oppr-input" placeholder="First name" />
+                <input 
+                  type="text" 
+                  className="oppr-input" 
+                  placeholder="First name" 
+                  defaultValue={user?.email?.includes('manager') ? 'Training' : 'User'}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                <input type="text" className="oppr-input" placeholder="Last name" />
+                <input 
+                  type="text" 
+                  className="oppr-input" 
+                  placeholder="Last name" 
+                  defaultValue={user?.email?.includes('manager') ? 'Manager' : 'Name'}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                <input type="email" className="oppr-input bg-gray-100" placeholder="Email" readOnly />
+                <input 
+                  type="email" 
+                  className="oppr-input bg-gray-100" 
+                  placeholder="Email" 
+                  value={user?.email || ''} 
+                  readOnly 
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
@@ -79,7 +108,7 @@ const DesktopSettings = () => {
 
       <div className="mt-8">
         <button 
-          onClick={() => window.location.href = '/desktop/login'}
+          onClick={handleLogout}
           className="text-red-600 hover:text-red-800 font-medium flex items-center"
         >
           Logout

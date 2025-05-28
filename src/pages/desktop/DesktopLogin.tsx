@@ -2,20 +2,50 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const DesktopLogin = () => {
   const navigate = useNavigate();
+  const { signIn } = useAuth();
+  const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     rememberMe: false
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Placeholder authentication logic
-    navigate('/desktop/dashboard');
+    setLoading(true);
+
+    try {
+      const { error } = await signIn(formData.email, formData.password);
+      
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Logged in successfully!",
+        });
+        navigate('/desktop/dashboard');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -26,7 +56,7 @@ const DesktopLogin = () => {
             <div className="w-8 h-8 bg-white rounded-sm"></div>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Oppr Training</h1>
-          <h2 className="text-xl text-gray-700 mb-1">Manager Portal</h2>
+          <h2 className="text-xl text-gray-700 mb-1">Desktop Experience - Manager Portal</h2>
           <p className="text-gray-600">Access your training management dashboard</p>
         </div>
 
@@ -82,10 +112,27 @@ const DesktopLogin = () => {
               </label>
             </div>
 
-            <button type="submit" className="w-full oppr-button-primary">
-              Sign In to Manager Portal
+            <button 
+              type="submit" 
+              className="w-full oppr-button-primary"
+              disabled={loading}
+            >
+              {loading ? "Signing In..." : "Sign In to Manager Portal"}
             </button>
           </form>
+        </div>
+
+        {/* Test Credentials */}
+        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h3 className="text-sm font-medium text-blue-900 mb-2">Test Credentials:</h3>
+          <div className="text-xs text-blue-800 space-y-1">
+            <div>
+              <strong>Operator:</strong> operator@oppr.ai / operator123
+            </div>
+            <div>
+              <strong>Manager:</strong> manager@oppr.ai / manager123
+            </div>
+          </div>
         </div>
 
         <div className="text-center mt-6">
