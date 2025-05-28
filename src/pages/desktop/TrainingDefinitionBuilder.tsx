@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { StepBlock } from '@/types/training-definitions';
 import { useTrainingDefinition } from '@/hooks/useTrainingDefinition';
@@ -8,6 +9,7 @@ import BlockConfiguration from '@/components/desktop/training-definitions/BlockC
 import BuilderBreadcrumbs from '@/components/desktop/training-definitions/BuilderBreadcrumbs';
 import BuilderHeader from '@/components/desktop/training-definitions/BuilderHeader';
 import BuilderControls from '@/components/desktop/training-definitions/BuilderControls';
+import FlowCanvasAIAssistant from '@/components/desktop/training-definitions/FlowCanvasAIAssistant';
 
 const TrainingDefinitionBuilder = () => {
   const {
@@ -60,6 +62,11 @@ const TrainingDefinitionBuilder = () => {
     setSteps(reorderedSteps);
   };
 
+  const handleApplyAIFlow = (aiGeneratedBlocks: StepBlock[]) => {
+    setSteps(aiGeneratedBlocks);
+    setSelectedBlockId(null);
+  };
+
   const handlePublishSuccess = () => {
     // Refetch the definition to get updated version info
     window.location.reload();
@@ -100,15 +107,18 @@ const TrainingDefinitionBuilder = () => {
         onPublishSuccess={handlePublishSuccess}
       />
 
-      {/* Three-Panel Layout - Adjusted widths */}
+      {/* Three-Panel Layout */}
       <div className="flex-1 flex space-x-6 min-h-0">
         {/* Left Panel - Block Palette */}
         <div className="w-64 flex-shrink-0">
           <BlockPalette onAddBlock={addBlock} />
+          <div className="mt-4">
+            <FlowCanvasAIAssistant onApplyFlow={handleApplyAIFlow} />
+          </div>
         </div>
 
-        {/* Center Panel - Flow Canvas (reduced width) */}
-        <div className="w-96 flex-shrink-0">
+        {/* Center Panel - Flow Canvas (narrower) */}
+        <div className="w-80 flex-shrink-0">
           <FlowCanvas
             steps={steps}
             selectedBlockId={selectedBlockId}
@@ -118,7 +128,7 @@ const TrainingDefinitionBuilder = () => {
           />
         </div>
 
-        {/* Right Panel - Block Configuration (increased width) */}
+        {/* Right Panel - Block Configuration (wider) */}
         <div className="flex-1 min-w-0">
           <BlockConfiguration
             block={selectedBlock}
