@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -95,51 +94,42 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
     setLoading(true);
 
     try {
-      // Create user in Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: formData.password,
-        user_metadata: {
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          role: formData.role
-        }
-      });
-
-      if (authError) throw authError;
-
       let avatarUrl = null;
 
       // Upload avatar if provided
-      if (avatarFile && authData.user) {
+      if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop();
-        const fileName = `${authData.user.id}.${fileExt}`;
+        const fileName = `temp-${Date.now()}.${fileExt}`;
         
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('avatars')
           .upload(fileName, avatarFile);
 
-        if (uploadError) {
-          console.error('Avatar upload error:', uploadError);
-        } else {
+        if (!uploadError) {
           const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
           avatarUrl = data.publicUrl;
+        } else {
+          console.error('Avatar upload error:', uploadError);
         }
       }
 
-      // Update profile with additional data
-      if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            department: formData.department,
-            avatar_url: avatarUrl
-          })
-          .eq('id', authData.user.id);
+      // Create user via Edge Function
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          department: formData.department,
+          role: formData.role,
+          password: formData.password,
+          avatarUrl: avatarUrl
+        }
+      });
 
-        if (profileError) throw profileError;
+      if (error) throw error;
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to create user');
       }
 
       toast({
