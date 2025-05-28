@@ -10,6 +10,7 @@ import BuilderBreadcrumbs from '@/components/desktop/training-definitions/Builde
 import BuilderHeader from '@/components/desktop/training-definitions/BuilderHeader';
 import BuilderControls from '@/components/desktop/training-definitions/BuilderControls';
 import FlowCanvasAIAssistant from '@/components/desktop/training-definitions/FlowCanvasAIAssistant';
+import FlowValidationPanel from '@/components/desktop/training-definitions/FlowValidationPanel';
 
 const TrainingDefinitionBuilder = () => {
   const {
@@ -28,6 +29,7 @@ const TrainingDefinitionBuilder = () => {
   } = useTrainingDefinition();
 
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [showValidation, setShowValidation] = useState(false);
 
   const addBlock = (blockType: 'information' | 'goto' | 'question') => {
     const newBlock = createNewBlock(blockType, steps.length);
@@ -136,6 +138,14 @@ const TrainingDefinitionBuilder = () => {
           />
         </div>
       </div>
+
+      {/* Flow Validation Panel */}
+      <FlowValidationPanel
+        steps={steps}
+        title={title}
+        isVisible={showValidation}
+        onToggle={() => setShowValidation(!showValidation)}
+      />
     </div>
   );
 };

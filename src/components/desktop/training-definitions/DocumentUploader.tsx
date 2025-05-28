@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, FileText, X, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import SmartContentAnalyzer from './SmartContentAnalyzer';
 
 interface DocumentUploaderProps {
   onDocumentProcessed: (file: File, content: string, extractedImages?: string[]) => void;
@@ -255,6 +255,14 @@ Adherence to these procedures ensures safe, efficient, and high-quality operatio
         )}
       </div>
       
+      {/* Smart Content Analysis */}
+      {uploadedDocument && (
+        <SmartContentAnalyzer 
+          content={uploadedDocument.content} 
+          fileName={uploadedDocument.file.name}
+        />
+      )}
+      
       {isProcessing && (
         <div className="text-center">
           <div className="inline-flex items-center space-x-2">
@@ -276,6 +284,7 @@ Adherence to these procedures ensures safe, efficient, and high-quality operatio
               <li>Image extraction for visual training materials</li>
               <li>Key topic identification for targeted questions</li>
               <li>Citation-ready content snippets for hints and references</li>
+              <li>Smart content complexity analysis and recommendations</li>
             </ul>
           </div>
         </div>
