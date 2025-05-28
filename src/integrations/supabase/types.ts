@@ -45,6 +45,74 @@ export type Database = {
         }
         Relationships: []
       }
+      training_definition_versions: {
+        Row: {
+          created_at: string | null
+          id: string
+          published_at: string | null
+          status: Database["public"]["Enums"]["training_definition_status"]
+          steps_json: Json
+          training_definition_id: string
+          version_notes: string | null
+          version_number: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          published_at?: string | null
+          status?: Database["public"]["Enums"]["training_definition_status"]
+          steps_json?: Json
+          training_definition_id: string
+          version_notes?: string | null
+          version_number: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          published_at?: string | null
+          status?: Database["public"]["Enums"]["training_definition_status"]
+          steps_json?: Json
+          training_definition_id?: string
+          version_notes?: string | null
+          version_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_definition_versions_training_definition_id_fkey"
+            columns: ["training_definition_id"]
+            isOneToOne: false
+            referencedRelation: "training_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_definitions: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          description: string | null
+          id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          id?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -53,7 +121,12 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      question_type:
+        | "text_input"
+        | "numerical_input"
+        | "multiple_choice"
+        | "voice_input"
+      training_definition_status: "draft" | "published" | "archived"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -168,6 +241,14 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      question_type: [
+        "text_input",
+        "numerical_input",
+        "multiple_choice",
+        "voice_input",
+      ],
+      training_definition_status: ["draft", "published", "archived"],
+    },
   },
 } as const

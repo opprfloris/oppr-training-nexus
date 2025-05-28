@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -56,6 +55,7 @@ const App = () => (
               <Route index element={<DesktopDashboard />} />
               <Route path="dashboard" element={<DesktopDashboard />} />
               <Route path="training-definitions" element={<TrainingDefinitions />} />
+              <Route path="training-definitions/builder/:id" element={<TrainingDefinitionBuilder />} />
               <Route path="training-projects" element={<TrainingProjects />} />
               <Route path="floor-plans" element={<FloorPlans />} />
               <Route path="machine-registry" element={<MachineRegistry />} />
