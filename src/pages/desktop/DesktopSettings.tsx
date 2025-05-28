@@ -196,6 +196,9 @@ const DesktopSettings = () => {
                       src={profile.avatar_url} 
                       alt="Profile" 
                       className="w-full h-full object-cover"
+                      onLoad={() => {
+                        console.log('Avatar loaded successfully:', profile.avatar_url);
+                      }}
                       onError={(e) => {
                         console.error('Avatar failed to load:', profile.avatar_url);
                         e.currentTarget.style.display = 'none';

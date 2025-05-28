@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   PlusIcon, 
@@ -136,8 +135,18 @@ const UserManagement = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
-  const getInitials = (firstName: string | null, lastName: string | null) => {
-    return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
+  const getInitials = (firstName: string | null, lastName: string | null, email: string) => {
+    if (firstName && lastName) {
+      return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+    }
+    if (firstName) {
+      return firstName.charAt(0).toUpperCase();
+    }
+    if (lastName) {
+      return lastName.charAt(0).toUpperCase();
+    }
+    // Fallback to email initials
+    return email.charAt(0).toUpperCase();
   };
 
   if (loading) {
@@ -252,9 +261,15 @@ const UserManagement = () => {
                 <TableRow key={user.id} className="hover:bg-gray-50">
                   <TableCell>
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.avatar_url || undefined} />
+                      <AvatarImage 
+                        src={user.avatar_url || undefined} 
+                        alt={`${user.first_name} ${user.last_name}`}
+                        onError={(e) => {
+                          console.error('Avatar failed to load:', user.avatar_url);
+                        }}
+                      />
                       <AvatarFallback className="bg-gray-300 text-gray-700 text-sm">
-                        {getInitials(user.first_name, user.last_name)}
+                        {getInitials(user.first_name, user.last_name, user.email)}
                       </AvatarFallback>
                     </Avatar>
                   </TableCell>
