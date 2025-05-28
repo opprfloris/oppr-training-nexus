@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { TrainingDefinitionWithLatestVersion } from '@/types/training-definitions';
+import { TrainingDefinitionWithLatestVersion, StepBlock } from '@/types/training-definitions';
 import TrainingDefinitionsTable from '@/components/desktop/training-definitions/TrainingDefinitionsTable';
 import { useNavigate } from 'react-router-dom';
 
@@ -53,14 +53,29 @@ const TrainingDefinitions = () => {
       if (error) throw error;
 
       // Transform the data to match our interface
-      const transformedData = data?.map(def => {
+      const transformedData: TrainingDefinitionWithLatestVersion[] = data?.map(def => {
         // Get the latest version for each definition
         const latestVersion = def.training_definition_versions
           .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 
+        if (latestVersion) {
+          // Safely convert steps_json to StepBlock[]
+          const steps_json = Array.isArray(latestVersion.steps_json) 
+            ? latestVersion.steps_json as StepBlock[]
+            : [];
+
+          return {
+            ...def,
+            latest_version: {
+              ...latestVersion,
+              steps_json
+            }
+          };
+        }
+
         return {
           ...def,
-          latest_version: latestVersion || null
+          latest_version: null
         };
       }).filter(def => {
         // Apply status filter

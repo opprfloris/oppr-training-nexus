@@ -1,21 +1,21 @@
 
-import { StepBlock } from '@/types/training-definitions';
+import { StepBlock, InformationBlockConfig, GotoBlockConfig, QuestionBlockConfig } from '@/types/training-definitions';
 
-export const getDefaultBlockConfig = (blockType: string) => {
+export const getDefaultBlockConfig = (blockType: string): InformationBlockConfig | GotoBlockConfig | QuestionBlockConfig => {
   switch (blockType) {
     case 'information':
-      return { content: '' };
+      return { content: '' } as InformationBlockConfig;
     case 'goto':
-      return { instructions: '' };
+      return { instructions: '' } as GotoBlockConfig;
     case 'question':
       return {
         question_text: '',
         question_type: 'text_input' as const,
         points: 1,
         mandatory: true
-      };
+      } as QuestionBlockConfig;
     default:
-      return {};
+      return { content: '' } as InformationBlockConfig;
   }
 };
 
