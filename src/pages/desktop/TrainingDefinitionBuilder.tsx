@@ -272,13 +272,13 @@ const TrainingDefinitionBuilder = () => {
             <ArrowLeftIcon className="w-4 h-4" />
             <span>Training Definitions</span>
           </button>
-          <span>></span>
+          <span>{'>'}</span>
           <span className="text-gray-900">
             {isNewDefinition ? 'New Training Definition' : definition?.title}
           </span>
           {!isNewDefinition && version && (
             <>
-              <span>></span>
+              <span>{'>'}</span>
               <span className="text-gray-900">
                 {version.status === 'draft' ? 'Edit Draft' : `Version ${version.version_number}`}
               </span>

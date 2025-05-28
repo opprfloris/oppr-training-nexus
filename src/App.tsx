@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,6 +20,7 @@ import MobileSettings from "./pages/mobile/MobileSettings";
 import DesktopLayout from "./components/desktop/DesktopLayout";
 import DesktopDashboard from "./pages/desktop/DesktopDashboard";
 import TrainingDefinitions from "./pages/desktop/TrainingDefinitions";
+import TrainingDefinitionBuilder from "./pages/desktop/TrainingDefinitionBuilder";
 import TrainingProjects from "./pages/desktop/TrainingProjects";
 import FloorPlans from "./pages/desktop/FloorPlans";
 import MachineRegistry from "./pages/desktop/MachineRegistry";
