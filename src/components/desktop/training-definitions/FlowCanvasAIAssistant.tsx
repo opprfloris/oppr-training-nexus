@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -43,6 +44,7 @@ const FlowCanvasAIAssistant: React.FC<FlowCanvasAIAssistantProps> = ({ onApplyFl
   const [extractedImages, setExtractedImages] = useState<string[]>([]);
   const [generatedFlow, setGeneratedFlow] = useState<StepBlock[] | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
 
@@ -583,18 +585,18 @@ Adherence to these procedures ensures safe, efficient, and high-quality operatio
         {!showPreview ? (
           <div className="space-y-6">
             {/* Container 1: Document Overview */}
-            <div className="border border-gray-200 rounded-lg p-6 bg-white">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <div className="border border-blue-200 rounded-lg p-6 bg-blue-50">
+              <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center">
                 <FileText className="w-5 h-5 mr-2 text-blue-600" />
                 Document Overview
               </h3>
               
               <div className="space-y-4">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <div className="border-2 border-dashed border-blue-300 rounded-lg p-6 text-center bg-white">
                   {!uploadedDocument ? (
                     <div>
-                      <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                      <p className="text-sm text-gray-600 mb-3">
+                      <Upload className="w-8 h-8 mx-auto text-blue-400 mb-2" />
+                      <p className="text-sm text-blue-600 mb-3">
                         Upload a PDF document to generate content-specific questions and training materials
                       </p>
                       <input
@@ -609,6 +611,7 @@ Adherence to these procedures ensures safe, efficient, and high-quality operatio
                         variant="outline"
                         onClick={() => document.getElementById('pdf-upload')?.click()}
                         disabled={isProcessing}
+                        className="border-blue-300 text-blue-600 hover:bg-blue-50"
                       >
                         <Upload className="w-4 h-4 mr-2" />
                         {isProcessing ? 'Processing Document...' : 'Choose PDF File'}
@@ -616,12 +619,12 @@ Adherence to these procedures ensures safe, efficient, and high-quality operatio
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between bg-gray-50 p-3 rounded">
+                      <div className="flex items-center justify-between bg-blue-50 p-3 rounded border border-blue-200">
                         <div className="flex items-center space-x-3">
                           <FileText className="w-5 h-5 text-blue-600" />
                           <div className="text-left">
-                            <p className="text-sm font-medium">{uploadedDocument.name}</p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-sm font-medium text-blue-900">{uploadedDocument.name}</p>
+                            <p className="text-xs text-blue-600">
                               {(uploadedDocument.size / 1024 / 1024).toFixed(2)} MB
                             </p>
                           </div>
@@ -631,6 +634,7 @@ Adherence to these procedures ensures safe, efficient, and high-quality operatio
                           size="sm"
                           onClick={removeFile}
                           disabled={isProcessing}
+                          className="text-blue-600 hover:bg-blue-100"
                         >
                           <X className="w-4 h-4" />
                         </Button>
@@ -650,7 +654,7 @@ Adherence to these procedures ensures safe, efficient, and high-quality operatio
                   <div className="text-center">
                     <div className="inline-flex items-center space-x-2">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-blue-600">
                         Processing PDF... Extracting content, images, and analyzing topics
                       </span>
                     </div>
@@ -658,7 +662,7 @@ Adherence to these procedures ensures safe, efficient, and high-quality operatio
                 )}
 
                 {!uploadedDocument && (
-                  <div className="flex items-start space-x-2 text-xs text-gray-500">
+                  <div className="flex items-start space-x-2 text-xs text-blue-600">
                     <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="font-medium">Enhanced PDF Processing Features:</p>
@@ -675,9 +679,9 @@ Adherence to these procedures ensures safe, efficient, and high-quality operatio
 
             {/* Container 2: Smart Content Analysis */}
             {uploadedDocument && (
-              <div className="border border-gray-200 rounded-lg p-6 bg-white">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <Brain className="w-5 h-5 mr-2 text-purple-600" />
+              <div className="border border-green-200 rounded-lg p-6 bg-green-50">
+                <h3 className="text-lg font-semibold text-green-900 mb-4 flex items-center">
+                  <Brain className="w-5 h-5 mr-2 text-green-600" />
                   Smart Content Analysis
                 </h3>
                 
@@ -686,15 +690,15 @@ Adherence to these procedures ensures safe, efficient, and high-quality operatio
             )}
 
             {/* Container 3: Training Configuration */}
-            <div className="border border-gray-200 rounded-lg p-6 bg-white">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <Settings className="w-5 h-5 mr-2 text-green-600" />
+            <div className="border border-purple-200 rounded-lg p-6 bg-purple-50">
+              <h3 className="text-lg font-semibold text-purple-900 mb-4 flex items-center">
+                <Settings className="w-5 h-5 mr-2 text-purple-600" />
                 Training Configuration
               </h3>
               
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="objective" className="text-sm font-medium text-gray-700 mb-2 block">
+                  <Label htmlFor="objective" className="text-sm font-medium text-purple-700 mb-2 block">
                     Learning Objectives
                   </Label>
                   <Textarea
@@ -703,13 +707,13 @@ Adherence to these procedures ensures safe, efficient, and high-quality operatio
                     onChange={(e) => setConfig(prev => ({ ...prev, objective: e.target.value }))}
                     placeholder="Describe the comprehensive learning objectives for this training program..."
                     rows={3}
-                    className="w-full"
+                    className="w-full border-purple-200 focus:border-purple-400"
                   />
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="questionCount" className="text-sm font-medium">Questions</Label>
+                    <Label htmlFor="questionCount" className="text-sm font-medium text-purple-700">Questions</Label>
                     <Input
                       id="questionCount"
                       type="number"
@@ -717,13 +721,14 @@ Adherence to these procedures ensures safe, efficient, and high-quality operatio
                       max="25"
                       value={config.questionCount}
                       onChange={(e) => setConfig(prev => ({ ...prev, questionCount: parseInt(e.target.value) || 8 }))}
+                      className="border-purple-200 focus:border-purple-400"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="difficulty" className="text-sm font-medium">Difficulty</Label>
+                    <Label htmlFor="difficulty" className="text-sm font-medium text-purple-700">Difficulty</Label>
                     <Select value={config.difficulty} onValueChange={(value: any) => setConfig(prev => ({ ...prev, difficulty: value }))}>
-                      <SelectTrigger>
+                      <SelectTrigger className="border-purple-200 focus:border-purple-400">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -740,13 +745,14 @@ Adherence to these procedures ensures safe, efficient, and high-quality operatio
                       id="includeGoto"
                       checked={config.includeGoto}
                       onChange={(e) => setConfig(prev => ({ ...prev, includeGoto: e.target.checked }))}
+                      className="text-purple-600"
                     />
-                    <Label htmlFor="includeGoto" className="text-sm">Practical Component</Label>
+                    <Label htmlFor="includeGoto" className="text-sm text-purple-700">Practical Component</Label>
                   </div>
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium">Question Types</Label>
+                  <Label className="text-sm font-medium text-purple-700">Question Types</Label>
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     {[
                       { value: 'multiple_choice', label: 'Multiple Choice' },
@@ -765,8 +771,9 @@ Adherence to these procedures ensures safe, efficient, and high-quality operatio
                               setConfig(prev => ({ ...prev, questionTypes: prev.questionTypes.filter(t => t !== type.value) }));
                             }
                           }}
+                          className="text-purple-600"
                         />
-                        <span className="text-sm">{type.label}</span>
+                        <span className="text-sm text-purple-700">{type.label}</span>
                       </label>
                     ))}
                   </div>
@@ -779,6 +786,7 @@ Adherence to these procedures ensures safe, efficient, and high-quality operatio
               <Button 
                 onClick={generateFlow}
                 disabled={isGenerating || !config.objective.trim() || config.questionTypes.length === 0}
+                className="bg-blue-600 hover:bg-blue-700"
               >
                 {isGenerating ? 'Generating Advanced Training Flow...' : 'Generate Training Flow'}
               </Button>
