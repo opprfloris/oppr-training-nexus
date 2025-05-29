@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -205,6 +204,12 @@ const TrainingDefinitionBuilderMinimal = () => {
     loadDefinition();
   };
 
+  const handleCreateNewVersion = (sourceVersionId: string) => {
+    // Reload the definition to reflect the new version
+    loadDefinition();
+    setShowVersionHistory(false);
+  };
+
   console.log('Current loading state:', loading);
 
   if (loading) {
@@ -324,7 +329,8 @@ const TrainingDefinitionBuilderMinimal = () => {
           isOpen={showVersionHistory}
           onClose={() => setShowVersionHistory(false)}
           definitionId={definition.id}
-          currentVersionId={version?.id}
+          definitionTitle={definition.title}
+          onCreateNewVersion={handleCreateNewVersion}
         />
       )}
 
