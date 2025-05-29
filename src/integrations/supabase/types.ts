@@ -62,6 +62,56 @@ export type Database = {
           },
         ]
       }
+      machine_qr_entities: {
+        Row: {
+          brand: string | null
+          created_at: string
+          created_by: string
+          id: string
+          location_description: string | null
+          machine_id: string
+          machine_type: string | null
+          qr_identifier: string
+          qr_name: string
+          updated_at: string
+          usage_count: number
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          location_description?: string | null
+          machine_id: string
+          machine_type?: string | null
+          qr_identifier: string
+          qr_name: string
+          updated_at?: string
+          usage_count?: number
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          location_description?: string | null
+          machine_id?: string
+          machine_type?: string | null
+          qr_identifier?: string
+          qr_name?: string
+          updated_at?: string
+          usage_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "machine_qr_entities_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -171,7 +221,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_qr_identifier: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       question_type:
