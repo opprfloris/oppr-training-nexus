@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, CheckBadgeIcon, PlayIcon } from "@heroicons/react/24/outline";
@@ -8,8 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { TrainingProject, TrainingProjectMarker, mapDatabaseToTrainingProject } from '@/types/training-projects';
-import FloorPlanSelector from '@/components/desktop/training-projects/FloorPlanSelector';
-import MarkerManagement from '@/components/desktop/training-projects/MarkerManagement';
+import { FloorPlanMarkerTab } from '@/components/desktop/training-projects/FloorPlanMarkerTab';
+import { ContentAssemblyTab } from '@/components/desktop/training-projects/ContentAssemblyTab';
+import { UserAccessTab } from '@/components/desktop/training-projects/UserAccessTab';
+import { ParametersActivationTab } from '@/components/desktop/training-projects/ParametersActivationTab';
 
 const TrainingProjectEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -111,22 +112,6 @@ const TrainingProjectEditor = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const colors = {
-      draft: 'text-amber-600 border-amber-200 bg-amber-50',
-      scheduled: 'text-blue-600 border-blue-200 bg-blue-50',
-      active: 'text-green-600 border-green-200 bg-green-50',
-      stopped: 'text-red-600 border-red-200 bg-red-50',
-      archived: 'text-gray-600 border-gray-200 bg-gray-50',
-    };
-
-    return (
-      <Badge variant="outline" className={colors[status as keyof typeof colors] || ''}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    );
-  };
-
   const handleFloorPlanSelect = async (floorPlanId: string) => {
     if (!project) return;
 
@@ -158,6 +143,46 @@ const TrainingProjectEditor = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleProjectUpdate = async (updates: Partial<TrainingProject>) => {
+    if (!project) return;
+
+    try {
+      setSaving(true);
+      const { error } = await supabase
+        .from('training_projects')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', project.id);
+
+      if (error) throw error;
+
+      setProject({ ...project, ...updates });
+    } catch (error) {
+      console.error('Error updating project:', error);
+      throw error;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const colors = {
+      draft: 'text-amber-600 border-amber-200 bg-amber-50',
+      scheduled: 'text-blue-600 border-blue-200 bg-blue-50',
+      active: 'text-green-600 border-green-200 bg-green-50',
+      stopped: 'text-red-600 border-red-200 bg-red-50',
+      archived: 'text-gray-600 border-gray-200 bg-gray-50',
+    };
+
+    return (
+      <Badge variant="outline" className={colors[status as keyof typeof colors] || ''}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </Badge>
+    );
   };
 
   if (loading) {
@@ -328,64 +353,36 @@ const TrainingProjectEditor = () => {
           </TabsContent>
 
           <TabsContent value="floor-plan" className="mt-0 p-8">
-            <div className="space-y-8">
-              <h3 className="text-lg font-medium">Floor Plan & Markers</h3>
-              
-              <FloorPlanSelector
-                selectedFloorPlanId={project.floor_plan_image_id}
-                onFloorPlanSelect={handleFloorPlanSelect}
-                projectId={project.id}
-                markers={markers}
-                onMarkersChange={loadMarkers}
-              />
-
-              {project.floor_plan_image_id && (
-                <div className="border-t pt-8">
-                  <MarkerManagement
-                    projectId={project.id}
-                    floorPlanId={project.floor_plan_image_id}
-                    markers={markers}
-                    onMarkersChange={loadMarkers}
-                  />
-                </div>
-              )}
-            </div>
+            <FloorPlanMarkerTab
+              project={project}
+              markers={markers}
+              onFloorPlanSelect={handleFloorPlanSelect}
+              onMarkersChange={loadMarkers}
+              saving={saving}
+            />
           </TabsContent>
 
           <TabsContent value="content" className="mt-0 p-8">
-            <div className="space-y-8">
-              <h3 className="text-lg font-medium">Content Assembly</h3>
-              <div className="text-center py-16 bg-gray-50 rounded-lg">
-                <p className="text-gray-600 text-lg mb-2">Content assembly interface will be implemented here</p>
-                <p className="text-sm text-gray-500">
-                  This will include marker sequencing and training definition assignment
-                </p>
-              </div>
-            </div>
+            <ContentAssemblyTab
+              project={project}
+              markers={markers}
+              onContentChange={() => {}} // This would reload content if needed
+            />
           </TabsContent>
 
           <TabsContent value="users" className="mt-0 p-8">
-            <div className="space-y-8">
-              <h3 className="text-lg font-medium">User Access</h3>
-              <div className="text-center py-16 bg-gray-50 rounded-lg">
-                <p className="text-gray-600 text-lg mb-2">User assignment interface will be implemented here</p>
-                <p className="text-sm text-gray-500">
-                  This will include operator and collaborator assignment
-                </p>
-              </div>
-            </div>
+            <UserAccessTab
+              project={project}
+              onAccessChange={() => {}} // This would reload access data if needed
+            />
           </TabsContent>
 
           <TabsContent value="parameters" className="mt-0 p-8">
-            <div className="space-y-8">
-              <h3 className="text-lg font-medium">Parameters & Activation</h3>
-              <div className="text-center py-16 bg-gray-50 rounded-lg">
-                <p className="text-gray-600 text-lg mb-2">Parameters and activation controls will be implemented here</p>
-                <p className="text-sm text-gray-500">
-                  This will include activation period, success criteria, and readiness checks
-                </p>
-              </div>
-            </div>
+            <ParametersActivationTab
+              project={project}
+              onProjectUpdate={handleProjectUpdate}
+              saving={saving}
+            />
           </TabsContent>
 
           <TabsContent value="statistics" className="mt-0 p-8">
