@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { PencilIcon, ArchiveBoxIcon, ClockIcon, EyeIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { Button } from '@/components/ui/button';
@@ -76,7 +75,8 @@ const TrainingDefinitionsTable: React.FC<TrainingDefinitionsTableProps> = ({
   const [showPreview, setShowPreview] = useState(false);
   const [selectedDefinitionId, setSelectedDefinitionId] = useState<string>('');
   const [selectedDefinitionTitle, setSelectedDefinitionTitle] = useState<string>('');
-  const [selectedDefinition, setSelectedDefinition] = useState<TrainingDefinitionWithLatestVersion | null>(null);
+  const [selectedPreviewSteps, setSelectedPreviewSteps] = useState<any[]>([]);
+  const [selectedPreviewTitle, setSelectedPreviewTitle] = useState<string>('');
   const [archiving, setArchiving] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
@@ -91,7 +91,9 @@ const TrainingDefinitionsTable: React.FC<TrainingDefinitionsTableProps> = ({
   };
 
   const handlePreview = (definition: TrainingDefinitionWithLatestVersion) => {
-    setSelectedDefinition(definition);
+    const steps = definition.latest_version?.steps_json || [];
+    setSelectedPreviewSteps(steps);
+    setSelectedPreviewTitle(definition.title);
     setShowPreview(true);
   };
 
@@ -370,7 +372,8 @@ const TrainingDefinitionsTable: React.FC<TrainingDefinitionsTableProps> = ({
       <PreviewModal
         isOpen={showPreview}
         onClose={() => setShowPreview(false)}
-        definition={selectedDefinition}
+        steps={selectedPreviewSteps}
+        title={selectedPreviewTitle}
       />
     </div>
   );
