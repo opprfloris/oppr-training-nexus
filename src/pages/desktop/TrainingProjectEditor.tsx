@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, CheckBadgeIcon, PlayIcon } from "@heroicons/react/24/outline";
@@ -6,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { TrainingProject, mapDatabaseToTrainingProject } from '@/types/training-projects';
+import { TrainingProject, TrainingProjectMarker, mapDatabaseToTrainingProject } from '@/types/training-projects';
 import FloorPlanSelector from '@/components/desktop/training-projects/FloorPlanSelector';
 import MarkerManagement from '@/components/desktop/training-projects/MarkerManagement';
 

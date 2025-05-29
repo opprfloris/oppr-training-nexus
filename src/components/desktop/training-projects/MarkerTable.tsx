@@ -46,31 +46,52 @@ const MarkerTable: React.FC<MarkerTableProps> = ({ markers, onMarkersChange }) =
   const moveMarker = async (markerId: string, direction: 'up' | 'down') => {
     try {
       setSaving(true);
-      const marker = markers.find(m => m.id === markerId);
-      if (!marker) return;
-
-      const currentOrder = marker.sequence_order || marker.pin_number;
-      const newOrder = direction === 'up' ? currentOrder - 1 : currentOrder + 1;
-
-      // Find the marker to swap with
-      const swapMarker = markers.find(m => 
-        (m.sequence_order || m.pin_number) === newOrder
+      const sortedMarkers = [...markers].sort((a, b) => 
+        (a.sequence_order || a.pin_number) - (b.sequence_order || b.pin_number)
       );
 
-      if (!swapMarker) return;
+      const currentIndex = sortedMarkers.findIndex(m => m.id === markerId);
+      if (currentIndex === -1) return;
 
-      // Update both markers
-      const { error: error1 } = await supabase
-        .from('training_project_markers')
-        .update({ sequence_order: newOrder })
-        .eq('id', markerId);
+      const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+      if (newIndex < 0 || newIndex >= sortedMarkers.length) return;
 
-      const { error: error2 } = await supabase
-        .from('training_project_markers')
-        .update({ sequence_order: currentOrder })
-        .eq('id', swapMarker.id);
+      // Swap sequence orders
+      const currentMarker = sortedMarkers[currentIndex];
+      const swapMarker = sortedMarkers[newIndex];
 
-      if (error1 || error2) throw error1 || error2;
+      const currentOrder = currentMarker.sequence_order || currentMarker.pin_number;
+      const swapOrder = swapMarker.sequence_order || swapMarker.pin_number;
+
+      console.log('Moving marker:', {
+        currentId: currentMarker.id,
+        currentOrder,
+        swapId: swapMarker.id,
+        swapOrder,
+        direction
+      });
+
+      // Update both markers in parallel
+      const updates = await Promise.all([
+        supabase
+          .from('training_project_markers')
+          .update({ sequence_order: swapOrder })
+          .eq('id', currentMarker.id),
+        supabase
+          .from('training_project_markers')
+          .update({ sequence_order: currentOrder })
+          .eq('id', swapMarker.id)
+      ]);
+
+      const errors = updates.filter(update => update.error);
+      if (errors.length > 0) {
+        throw errors[0].error;
+      }
+
+      toast({
+        title: "Success",
+        description: "Marker order updated successfully"
+      });
 
       onMarkersChange();
     } catch (error) {

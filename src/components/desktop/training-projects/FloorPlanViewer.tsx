@@ -37,12 +37,13 @@ const FloorPlanViewer: React.FC<FloorPlanViewerProps> = ({
   const { toast } = useToast();
 
   const handleImageClick = (event: React.MouseEvent<HTMLImageElement>) => {
-    if (!imageRef.current) return;
+    if (!imageRef.current || saving) return;
 
     const rect = imageRef.current.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
 
+    console.log('Image clicked at:', { x, y });
     setPendingMarkerPosition({ x, y });
     setShowMachineModal(true);
   };
@@ -53,6 +54,13 @@ const FloorPlanViewer: React.FC<FloorPlanViewerProps> = ({
     try {
       setSaving(true);
       const newPinNumber = markers.length + 1;
+
+      console.log('Adding marker:', {
+        projectId,
+        machineId: machine.id,
+        pinNumber: newPinNumber,
+        position: pendingMarkerPosition
+      });
 
       const { error } = await supabase
         .from('training_project_markers')
@@ -74,6 +82,7 @@ const FloorPlanViewer: React.FC<FloorPlanViewerProps> = ({
 
       onMarkersChange();
       setPendingMarkerPosition(null);
+      setShowMachineModal(false);
     } catch (error) {
       console.error('Error adding marker:', error);
       toast({
@@ -87,21 +96,19 @@ const FloorPlanViewer: React.FC<FloorPlanViewerProps> = ({
   };
 
   const handleMarkerDrag = async (markerId: string, event: React.MouseEvent<HTMLDivElement>) => {
-    if (!imageRef.current) return;
+    if (!imageRef.current || saving) return;
 
-    const startX = event.clientX;
-    const startY = event.clientY;
+    event.preventDefault();
     const rect = imageRef.current.getBoundingClientRect();
 
     const handleMouseMove = (e: MouseEvent) => {
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+      const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
 
-      // Update marker position visually (you might want to add state for this)
       const markerElement = document.getElementById(`marker-${markerId}`);
       if (markerElement) {
-        markerElement.style.left = `${Math.max(0, Math.min(100, x))}%`;
-        markerElement.style.top = `${Math.max(0, Math.min(100, y))}%`;
+        markerElement.style.left = `${x}%`;
+        markerElement.style.top = `${y}%`;
       }
     };
 
@@ -110,6 +117,7 @@ const FloorPlanViewer: React.FC<FloorPlanViewerProps> = ({
       const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
 
       try {
+        setSaving(true);
         const { error } = await supabase
           .from('training_project_markers')
           .update({ x_position: x, y_position: y })
@@ -124,6 +132,8 @@ const FloorPlanViewer: React.FC<FloorPlanViewerProps> = ({
           description: "Failed to update marker position",
           variant: "destructive"
         });
+      } finally {
+        setSaving(false);
       }
 
       document.removeEventListener('mousemove', handleMouseMove);
@@ -134,17 +144,22 @@ const FloorPlanViewer: React.FC<FloorPlanViewerProps> = ({
     document.addEventListener('mouseup', handleMouseUp);
   };
 
+  // Construct the correct image URL - check if floorPlanId already includes the path prefix
+  const imageUrl = floorPlanId.startsWith('floor-plan-images/') 
+    ? getImageUrl(floorPlanId)
+    : getImageUrl(`floor-plan-images/${floorPlanId}`);
+
   return (
     <>
       <div className="relative bg-gray-100 rounded-lg overflow-hidden border">
         <img
           ref={imageRef}
-          src={getImageUrl(`floor-plan-images/${floorPlanId}`)}
+          src={imageUrl}
           alt="Floor Plan"
           className="w-full h-auto cursor-crosshair"
           onClick={handleImageClick}
           onError={(e) => {
-            console.error('Error loading floor plan image');
+            console.error('Error loading floor plan image:', e);
             e.currentTarget.src = '/placeholder.svg';
           }}
         />
@@ -154,16 +169,16 @@ const FloorPlanViewer: React.FC<FloorPlanViewerProps> = ({
           <div
             key={marker.id}
             id={`marker-${marker.id}`}
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-move hover:scale-110 transition-transform"
+            className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-move hover:scale-110 transition-transform z-10"
             style={{
               left: `${marker.x_position}%`,
               top: `${marker.y_position}%`
             }}
             onMouseDown={(e) => handleMarkerDrag(marker.id, e)}
-            title={`Marker ${marker.pin_number}`}
+            title={`Marker ${marker.pin_number}: ${marker.machine_qr_entity?.qr_name || 'Unknown'}`}
           >
             <div className="w-8 h-8 bg-oppr-blue text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg border-2 border-white">
-              {marker.pin_number}
+              {marker.sequence_order || marker.pin_number}
             </div>
           </div>
         ))}
@@ -171,7 +186,7 @@ const FloorPlanViewer: React.FC<FloorPlanViewerProps> = ({
         {/* Pending marker (while placing) */}
         {pendingMarkerPosition && (
           <div
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 animate-pulse"
+            className="absolute transform -translate-x-1/2 -translate-y-1/2 animate-pulse z-20"
             style={{
               left: `${pendingMarkerPosition.x}%`,
               top: `${pendingMarkerPosition.y}%`
@@ -179,6 +194,14 @@ const FloorPlanViewer: React.FC<FloorPlanViewerProps> = ({
           >
             <div className="w-8 h-8 bg-yellow-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg border-2 border-white">
               ?
+            </div>
+          </div>
+        )}
+
+        {saving && (
+          <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
+            <div className="bg-white px-4 py-2 rounded-lg shadow-lg">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mx-auto"></div>
             </div>
           </div>
         )}
