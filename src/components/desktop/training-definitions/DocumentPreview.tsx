@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { FileText, X } from 'lucide-react';
+import { FileText, X, CheckCircle } from 'lucide-react';
 
 interface ProcessedDocument {
   file: File;
@@ -44,18 +44,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ document, onRemove, i
       </div>
       
       <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-        <div className="flex items-start space-x-2">
-          <div className="text-green-600 mt-0.5">
-            <FileText className="w-4 h-4" />
-          </div>
-          <div className="text-sm">
-            <p className="font-medium text-green-800">Document Successfully Processed</p>
-            <div className="mt-2 space-y-1 text-green-700">
-              <p>• Extracted {document.extractedImages.length} images</p>
-              <p>• Identified {document.metadata.keyTopics.length} key topics</p>
-              <p>• Ready for AI-powered question generation</p>
-            </div>
-          </div>
+        <div className="flex items-center space-x-2">
+          <CheckCircle className="w-4 h-4 text-green-600" />
+          <span className="text-sm font-medium text-green-800">Document Successfully Processed</span>
         </div>
       </div>
     </div>

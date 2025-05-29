@@ -28,7 +28,7 @@ const AITrainingFlowModal: React.FC<AITrainingFlowModalProps> = ({ onApplyFlow, 
         <DialogHeader>
           <DialogTitle className="flex items-center">
             <Brain className="w-5 h-5 mr-2 text-purple-600" />
-            Advanced AI Training Flow Generator
+            AI Training Flow Generator
           </DialogTitle>
         </DialogHeader>
         
