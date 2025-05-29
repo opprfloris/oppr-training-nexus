@@ -30,6 +30,16 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const { toast } = useToast();
 
+  // Function to sanitize file names for Supabase Storage
+  const sanitizeFileName = (fileName: string): string => {
+    return fileName
+      .replace(/[^\w\s.-]/g, '') // Remove special characters except word chars, spaces, dots, hyphens
+      .replace(/\s+/g, '_') // Replace spaces with underscores
+      .replace(/_{2,}/g, '_') // Replace multiple underscores with single
+      .replace(/^_+|_+$/g, '') // Remove leading/trailing underscores
+      .toLowerCase(); // Convert to lowercase
+  };
+
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const newUploadingFiles = acceptedFiles.map(file => ({
       file,
@@ -52,6 +62,11 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
               : f
           )
         );
+        toast({
+          title: "Upload Failed",
+          description: `Failed to upload ${uploadingFile.file.name}. Please try again.`,
+          variant: "destructive",
+        });
       }
     }
   }, [currentFolderId]);
@@ -65,9 +80,13 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
       throw new Error('User not authenticated');
     }
 
-    // Upload to Supabase Storage
-    const fileName = `${user.id}/${Date.now()}-${file.name}`;
+    // Sanitize the file name and create the storage path
+    const sanitizedFileName = sanitizeFileName(file.name);
+    const fileName = `${user.id}/${Date.now()}-${sanitizedFileName}`;
     
+    console.log('Uploading file with sanitized name:', fileName);
+
+    // Upload to Supabase Storage
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('documents')
       .upload(fileName, file, {
@@ -75,7 +94,10 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         upsert: false
       });
 
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+      console.error('Storage upload error:', uploadError);
+      throw uploadError;
+    }
 
     // Update progress
     setUploadingFiles(prev => 
@@ -91,7 +113,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
       .from('documents')
       .insert({
         folder_id: currentFolderId,
-        original_name: file.name,
+        original_name: file.name, // Keep original name for display
         display_name: file.name,
         file_path: uploadData.path,
         file_size: file.size,
@@ -100,7 +122,10 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         created_by: user.id
       });
 
-    if (dbError) throw dbError;
+    if (dbError) {
+      console.error('Database insert error:', dbError);
+      throw dbError;
+    }
 
     // Mark as completed
     setUploadingFiles(prev => 
@@ -173,7 +198,8 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
                 <div className="flex items-center gap-2 mt-1">
                   <Progress value={uploadingFile.progress} className="flex-1" />
                   <span className="text-xs text-gray-500">
-                    {uploadingFile.status === 'completed' ? 'Complete' : `${uploadingFile.progress}%`}
+                    {uploadingFile.status === 'completed' ? 'Complete' : 
+                     uploadingFile.status === 'error' ? 'Error' : `${uploadingFile.progress}%`}
                   </span>
                 </div>
               </div>
