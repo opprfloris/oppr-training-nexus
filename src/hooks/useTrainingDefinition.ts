@@ -154,8 +154,8 @@ export const useTrainingDefinition = () => {
           description: "Training definition created and saved as draft (v0.1)",
         });
 
-        // Navigate to the editor with the new ID
-        navigate(`/desktop/training-definitions/builder/${newDef.id}`, { replace: true });
+        // Navigate to the editor with the new ID - FIXED PATH
+        navigate(`/desktop/training-definitions/${newDef.id}`, { replace: true });
       } else {
         // Update existing definition
         if (definition) {
