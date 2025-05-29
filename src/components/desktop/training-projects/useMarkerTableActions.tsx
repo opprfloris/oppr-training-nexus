@@ -1,20 +1,18 @@
 
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { TrashIcon } from '@heroicons/react/24/outline';
 import { TrainingProjectMarker } from '@/types/training-projects';
 
-interface MarkerTableActionsProps {
+interface UseMarkerTableActionsProps {
   markers: TrainingProjectMarker[];
   onMarkersChange: () => void;
 }
 
-const MarkerTableActions: React.FC<MarkerTableActionsProps> = ({ 
+export const useMarkerTableActions = ({ 
   markers, 
   onMarkersChange 
-}) => {
+}: UseMarkerTableActionsProps) => {
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
@@ -118,5 +116,3 @@ const MarkerTableActions: React.FC<MarkerTableActionsProps> = ({
     saving
   };
 };
-
-export default MarkerTableActions;

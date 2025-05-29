@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { TrainingProjectMarker } from '@/types/training-projects';
-import MarkerTableActions from './MarkerTableActions';
+import { useMarkerTableActions } from './useMarkerTableActions';
 import MarkerTableRow from './MarkerTableRow';
 
 interface MarkerTableProps {
@@ -10,7 +10,7 @@ interface MarkerTableProps {
 }
 
 const MarkerTable: React.FC<MarkerTableProps> = ({ markers, onMarkersChange }) => {
-  const { deleteMarker, moveMarker, saving } = MarkerTableActions({ 
+  const { deleteMarker, moveMarker, saving } = useMarkerTableActions({ 
     markers, 
     onMarkersChange 
   });
