@@ -2,10 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PlusIcon, DocumentTextIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, DocumentTextIcon, ArrowRightIcon, LinkIcon, PencilIcon, UnlinkIcon, CopyIcon } from '@heroicons/react/24/outline';
 import { TrainingProject, TrainingProjectMarker, TrainingProjectContent } from '@/types/training-projects';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import MarkerSequenceEditor from './MarkerSequenceEditor';
+import TrainingDefinitionSelector from './TrainingDefinitionSelector';
 
 interface ContentAssemblyTabProps {
   project: TrainingProject;
@@ -20,6 +22,8 @@ export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
 }) => {
   const [content, setContent] = useState<TrainingProjectContent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
+  const [showTDSelector, setShowTDSelector] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -60,6 +64,65 @@ export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
     (a.sequence_order || a.pin_number) - (b.sequence_order || b.pin_number)
   );
 
+  const selectedMarker = selectedMarkerId ? markers.find(m => m.id === selectedMarkerId) : null;
+  const selectedMarkerContent = selectedMarkerId ? 
+    content.find(c => c.marker_id === selectedMarkerId) : null;
+
+  const handleMarkerSelect = (markerId: string) => {
+    setSelectedMarkerId(markerId);
+  };
+
+  const handleLinkExistingTD = () => {
+    setShowTDSelector(true);
+  };
+
+  const handleCreateNewTD = () => {
+    // Navigate to TD builder with context
+    window.open(`/desktop/training-definitions/new?project=${project.id}&marker=${selectedMarkerId}`, '_blank');
+  };
+
+  const handleCopyTDAsDraft = () => {
+    // Similar to link existing but with copy flag
+    setShowTDSelector(true);
+  };
+
+  const handleEditDraftTD = () => {
+    if (selectedMarkerContent?.training_definition_version) {
+      const tdId = selectedMarkerContent.training_definition_version.training_definition?.id;
+      if (tdId) {
+        window.open(`/desktop/training-definitions/${tdId}`, '_blank');
+      }
+    }
+  };
+
+  const handleUnlinkTD = async () => {
+    if (!selectedMarkerId) return;
+
+    try {
+      const { error } = await supabase
+        .from('training_project_content')
+        .delete()
+        .eq('marker_id', selectedMarkerId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Training definition unlinked successfully"
+      });
+
+      loadContent();
+      onContentChange();
+    } catch (error) {
+      console.error('Error unlinking TD:', error);
+      toast({
+        title: "Error",
+        description: "Failed to unlink training definition",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -90,66 +153,182 @@ export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
       <div>
         <h3 className="text-lg font-medium mb-2">Training Content Assembly</h3>
         <p className="text-gray-600">
-          Assign training definitions to each marker in your project. Define the sequence and content for each training station.
+          Define the sequence of markers and assign training definitions to create your complete training flow.
         </p>
       </div>
 
-      <div className="space-y-4">
-        {sortedMarkers.map((marker, index) => {
-          const markerContent = content.filter(c => c.marker_id === marker.id);
-          
-          return (
-            <div key={marker.id} className="border rounded-lg p-6 bg-white">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-4">
-                  <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-medium">
-                    {marker.sequence_order || marker.pin_number}
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900">
-                      {marker.machine_qr_entity?.qr_name || `Marker ${marker.pin_number}`}
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      {marker.machine_qr_entity?.machine_id} • {marker.machine_qr_entity?.machine_type}
-                    </p>
-                  </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Sub-Section 1: Define Marker Sequence */}
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-base font-medium text-gray-900 mb-2">Marker Sequence</h4>
+            <p className="text-sm text-gray-600 mb-4">
+              Define the order in which trainees will visit each marker.
+            </p>
+          </div>
+
+          <MarkerSequenceEditor
+            markers={sortedMarkers}
+            content={content}
+            selectedMarkerId={selectedMarkerId}
+            onMarkerSelect={handleMarkerSelect}
+            onSequenceChange={onContentChange}
+          />
+        </div>
+
+        {/* Sub-Section 2: Assign/Create Training Definition */}
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-base font-medium text-gray-900 mb-2">Training Definition Assignment</h4>
+            {selectedMarker ? (
+              <p className="text-sm text-gray-600 mb-4">
+                Selected Marker: Pin #{selectedMarker.sequence_order || selectedMarker.pin_number} - {selectedMarker.machine_qr_entity?.machine_id}
+              </p>
+            ) : (
+              <p className="text-sm text-gray-600 mb-4">
+                Select a marker from the sequence to assign training content.
+              </p>
+            )}
+          </div>
+
+          {selectedMarker ? (
+            <div className="space-y-4">
+              {/* Current Association Display */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">Current Association:</span>
                 </div>
-                <Button variant="outline" size="sm">
-                  <PlusIcon className="w-4 h-4 mr-2" />
-                  Assign Training
-                </Button>
+                {selectedMarkerContent ? (
+                  <div className="flex items-center space-x-3">
+                    <DocumentTextIcon className="w-5 h-5 text-gray-400" />
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">
+                        {selectedMarkerContent.training_definition_version?.training_definition?.title || 'Untitled Training'}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Version {selectedMarkerContent.training_definition_version?.version_number} • 
+                        <Badge 
+                          variant={selectedMarkerContent.training_definition_version?.status === 'published' ? 'default' : 'secondary'} 
+                          className="ml-2"
+                        >
+                          {selectedMarkerContent.training_definition_version?.status}
+                        </Badge>
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-gray-500 italic">No training definition assigned</p>
+                )}
               </div>
 
-              {markerContent.length > 0 ? (
-                <div className="space-y-3">
-                  {markerContent.map((contentItem) => (
-                    <div key={contentItem.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-md">
-                      <DocumentTextIcon className="w-5 h-5 text-gray-400" />
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">
-                          {contentItem.training_definition_version?.training_definition?.title || 'Untitled Training'}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Version {contentItem.training_definition_version?.version_number} • 
-                          <Badge variant="outline" className="ml-2">
-                            {contentItem.training_definition_version?.status}
-                          </Badge>
-                        </p>
-                      </div>
-                      <ArrowRightIcon className="w-4 h-4 text-gray-400" />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 bg-gray-50 rounded-md border-2 border-dashed border-gray-200">
-                  <DocumentTextIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-600 text-sm">No training content assigned</p>
-                </div>
-              )}
+              {/* Action Buttons */}
+              <div className="space-y-3">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={handleLinkExistingTD}
+                >
+                  <LinkIcon className="w-4 h-4 mr-2" />
+                  Link Existing Published TD...
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={handleCreateNewTD}
+                >
+                  <PlusIcon className="w-4 h-4 mr-2" />
+                  Create New Draft TD for this Marker...
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={handleCopyTDAsDraft}
+                >
+                  <CopyIcon className="w-4 h-4 mr-2" />
+                  Copy Published TD as New Draft...
+                </Button>
+
+                {selectedMarkerContent?.training_definition_version?.status === 'draft' && (
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={handleEditDraftTD}
+                  >
+                    <PencilIcon className="w-4 h-4 mr-2" />
+                    Edit Associated Draft TD
+                  </Button>
+                )}
+
+                {selectedMarkerContent && (
+                  <Button 
+                    variant="destructive" 
+                    className="w-full justify-start"
+                    onClick={handleUnlinkTD}
+                  >
+                    <UnlinkIcon className="w-4 h-4 mr-2" />
+                    Unlink TD
+                  </Button>
+                )}
+              </div>
             </div>
-          );
-        })}
+          ) : (
+            <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+              <DocumentTextIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-600 text-sm">Select a marker to assign training content</p>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Visual Flow Overview */}
+      {sortedMarkers.length > 0 && (
+        <div className="border-t pt-6">
+          <h4 className="text-base font-medium text-gray-900 mb-4">Training Flow Overview</h4>
+          <div className="flex items-center space-x-2 overflow-x-auto pb-4">
+            {sortedMarkers.map((marker, index) => {
+              const markerContent = content.find(c => c.marker_id === marker.id);
+              return (
+                <React.Fragment key={marker.id}>
+                  <div className="flex-shrink-0 text-center">
+                    <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-medium mb-2">
+                      {marker.sequence_order || marker.pin_number}
+                    </div>
+                    <div className="text-xs text-gray-600 max-w-20 truncate">
+                      {marker.machine_qr_entity?.machine_id}
+                    </div>
+                    {markerContent ? (
+                      <Badge 
+                        variant={markerContent.training_definition_version?.status === 'published' ? 'default' : 'secondary'} 
+                        className="text-xs mt-1"
+                      >
+                        {markerContent.training_definition_version?.status === 'published' ? 'Published' : 'Draft'}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs mt-1">No TD</Badge>
+                    )}
+                  </div>
+                  {index < sortedMarkers.length - 1 && (
+                    <ArrowRightIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <TrainingDefinitionSelector
+        isOpen={showTDSelector}
+        onClose={() => setShowTDSelector(false)}
+        onSelect={(tdVersion) => {
+          // Handle TD selection logic here
+          setShowTDSelector(false);
+        }}
+        projectId={project.id}
+        markerId={selectedMarkerId}
+      />
     </div>
   );
 };
