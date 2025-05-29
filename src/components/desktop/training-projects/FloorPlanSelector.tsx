@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useFloorPlans } from '@/hooks/useFloorPlans';
 import { ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import FloorPlanSelectionModal from './FloorPlanSelectionModal';
+import FloorPlanChangeConfirmationModal from './FloorPlanChangeConfirmationModal';
 import FloorPlanViewer from './FloorPlanViewer';
 
 interface FloorPlan {
@@ -34,6 +35,8 @@ const FloorPlanSelector: React.FC<FloorPlanSelectorProps> = ({
 }) => {
   const [selectedFloorPlan, setSelectedFloorPlan] = useState<FloorPlan | null>(null);
   const [showSelectionModal, setShowSelectionModal] = useState(false);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [pendingFloorPlanId, setPendingFloorPlanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { getImageUrl } = useFloorPlans();
   const { toast } = useToast();
@@ -70,8 +73,63 @@ const FloorPlanSelector: React.FC<FloorPlanSelectorProps> = ({
   };
 
   const handleFloorPlanSelect = (floorPlanId: string) => {
-    onFloorPlanSelect(floorPlanId);
-    setShowSelectionModal(false);
+    // If there are existing markers and we're changing floor plans, show confirmation
+    if (markers.length > 0 && selectedFloorPlanId && selectedFloorPlanId !== floorPlanId) {
+      setPendingFloorPlanId(floorPlanId);
+      setShowConfirmationModal(true);
+      setShowSelectionModal(false);
+    } else {
+      // No existing markers or first time selecting, proceed directly
+      proceedWithFloorPlanSelection(floorPlanId);
+      setShowSelectionModal(false);
+    }
+  };
+
+  const proceedWithFloorPlanSelection = async (floorPlanId: string) => {
+    try {
+      // If there are existing markers, delete them first
+      if (markers.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('training_project_markers')
+          .delete()
+          .eq('training_project_id', projectId);
+
+        if (deleteError) throw deleteError;
+      }
+
+      // Update the floor plan
+      onFloorPlanSelect(floorPlanId);
+      
+      // Refresh markers (should be empty now if there were any)
+      onMarkersChange();
+      
+      toast({
+        title: "Success",
+        description: markers.length > 0 
+          ? "Floor plan changed and existing markers removed"
+          : "Floor plan selected successfully"
+      });
+    } catch (error) {
+      console.error('Error changing floor plan:', error);
+      toast({
+        title: "Error",
+        description: "Failed to change floor plan",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleConfirmFloorPlanChange = () => {
+    if (pendingFloorPlanId) {
+      proceedWithFloorPlanSelection(pendingFloorPlanId);
+      setPendingFloorPlanId(null);
+    }
+    setShowConfirmationModal(false);
+  };
+
+  const handleCancelFloorPlanChange = () => {
+    setPendingFloorPlanId(null);
+    setShowConfirmationModal(false);
   };
 
   if (loading) {
@@ -131,10 +189,6 @@ const FloorPlanSelector: React.FC<FloorPlanSelectorProps> = ({
               markers={markers}
               onMarkersChange={onMarkersChange}
             />
-            
-            <p className="text-xs text-gray-500 mt-2">
-              Click anywhere on the floor plan to add a new marker
-            </p>
           </div>
         </div>
       ) : null}
@@ -144,6 +198,13 @@ const FloorPlanSelector: React.FC<FloorPlanSelectorProps> = ({
         onClose={() => setShowSelectionModal(false)}
         onFloorPlanSelect={handleFloorPlanSelect}
         selectedFloorPlanId={selectedFloorPlanId}
+      />
+
+      <FloorPlanChangeConfirmationModal
+        isOpen={showConfirmationModal}
+        onClose={handleCancelFloorPlanChange}
+        onConfirm={handleConfirmFloorPlanChange}
+        markerCount={markers.length}
       />
     </div>
   );
