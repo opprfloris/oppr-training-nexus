@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { TrainingProject, TrainingProjectMarker, TrainingProjectContent } from '@/types/training-projects';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,6 +42,7 @@ export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
             id,
             version_number,
             status,
+            training_definition_id,
             training_definition:training_definitions(id, title)
           )
         `)
@@ -86,8 +88,8 @@ export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
   };
 
   const handleEditDraftTD = () => {
-    if (selectedMarkerContent?.training_definition_version?.training_definition) {
-      const tdId = selectedMarkerContent.training_definition_version.training_definition.id;
+    if (selectedMarkerContent?.training_definition_version) {
+      const tdId = selectedMarkerContent.training_definition_version.training_definition_id;
       if (tdId) {
         window.open(`/desktop/training-definitions/${tdId}`, '_blank');
       }
