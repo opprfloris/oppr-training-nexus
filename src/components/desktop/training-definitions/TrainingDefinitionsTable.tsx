@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { PencilIcon, ArchiveBoxIcon, ClockIcon, EyeIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { Button } from '@/components/ui/button';
@@ -160,7 +161,11 @@ const TrainingDefinitionsTable: React.FC<TrainingDefinitionsTableProps> = ({
   };
 
   const handleDelete = async (definition: TrainingDefinitionWithLatestVersion) => {
-    if (!confirm(`Are you sure you want to permanently delete "${definition.title}"? This action cannot be undone.`)) {
+    const confirmMessage = definition.latest_version?.status === 'draft' 
+      ? `Are you sure you want to delete the draft "${definition.title}"? This action cannot be undone.`
+      : `Are you sure you want to permanently delete "${definition.title}"? This action cannot be undone.`;
+
+    if (!confirm(confirmMessage)) {
       return;
     }
 
@@ -183,9 +188,13 @@ const TrainingDefinitionsTable: React.FC<TrainingDefinitionsTableProps> = ({
 
       if (defError) throw defError;
 
+      const successMessage = definition.latest_version?.status === 'draft'
+        ? `Draft "${definition.title}" has been deleted`
+        : `${definition.title} has been permanently deleted`;
+
       toast({
         title: "Success",
-        description: `${definition.title} has been permanently deleted`,
+        description: successMessage,
       });
 
       onRefresh();
@@ -343,6 +352,19 @@ const TrainingDefinitionsTable: React.FC<TrainingDefinitionsTableProps> = ({
                             title="Archive definition"
                           >
                             <ArchiveBoxIcon className="w-4 h-4" />
+                          </Button>
+                        )}
+
+                        {definition.latest_version?.status === 'draft' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(definition)}
+                            disabled={deleting === definition.id}
+                            title="Delete draft"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <TrashIcon className="w-4 h-4" />
                           </Button>
                         )}
                       </>
