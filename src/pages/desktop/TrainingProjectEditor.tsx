@@ -1,154 +1,90 @@
-
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ProjectHeader } from '@/components/desktop/training-projects/ProjectHeader';
+import { useParams } from 'react-router-dom';
+import { Card } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { ProjectBreadcrumb } from '@/components/desktop/training-projects/ProjectBreadcrumb';
+import { ProjectHeader } from '@/components/desktop/training-projects/ProjectHeader';
+import { ProjectOverviewTab } from '@/components/desktop/training-projects/ProjectOverviewTab';
 import { FloorPlanMarkerTab } from '@/components/desktop/training-projects/FloorPlanMarkerTab';
 import { ContentAssemblyTab } from '@/components/desktop/training-projects/ContentAssemblyTab';
 import { UserAccessTab } from '@/components/desktop/training-projects/UserAccessTab';
 import { ParametersActivationTab } from '@/components/desktop/training-projects/ParametersActivationTab';
-import { ProjectOverviewTab } from '@/components/desktop/training-projects/ProjectOverviewTab';
 import { StatisticsTab } from '@/components/desktop/training-projects/StatisticsTab';
-import { useToast } from '@/hooks/use-toast';
-import { 
-  TrainingProject, 
-  TrainingProjectMarker, 
-  TrainingProjectContent, 
-  TrainingProjectOperatorAssignment, 
-  TrainingProjectCollaborator,
-  mapDatabaseToTrainingProject 
-} from '@/types/training-projects';
+import { supabase } from '@/integrations/supabase/client';
+import type { TrainingProject } from '@/types/training-projects';
+import type { FloorPlanMarker } from '@/types/floor-plan-marker';
 
 const TrainingProjectEditor = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  
   const [project, setProject] = useState<TrainingProject | null>(null);
-  const [markers, setMarkers] = useState<TrainingProjectMarker[]>([]);
-  const [content, setContent] = useState<TrainingProjectContent[]>([]);
-  const [operators, setOperators] = useState<TrainingProjectOperatorAssignment[]>([]);
-  const [collaborators, setCollaborators] = useState<TrainingProjectCollaborator[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [markers, setMarkers] = useState<FloorPlanMarker[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (id) {
-      fetchProjectData();
+      fetchProject(id);
+      fetchMarkers(id);
     }
   }, [id]);
 
-  const fetchProjectData = async () => {
-    if (!id) return;
-
+  const fetchProject = async (projectId: string) => {
     setLoading(true);
     try {
-      // Fetch project data
-      const { data: projectData, error: projectError } = await supabase
+      const { data, error } = await supabase
         .from('training_projects')
         .select('*')
-        .eq('id', id)
+        .eq('id', projectId)
         .single();
 
-      if (projectError) throw projectError;
-      if (projectData) {
-        setProject(mapDatabaseToTrainingProject(projectData));
+      if (error) {
+        console.error('Error fetching project:', error);
       }
 
-      // Fetch markers with machine data
-      const { data: markersData, error: markersError } = await supabase
-        .from('training_project_markers')
-        .select(`
-          *,
-          machine_qr_entity:machine_qr_entities(*)
-        `)
-        .eq('training_project_id', id)
-        .order('sequence_order', { ascending: true });
-
-      if (markersError) throw markersError;
-      setMarkers(markersData || []);
-
-      // Fetch content with training definition data
-      const { data: contentData, error: contentError } = await supabase
-        .from('training_project_content')
-        .select(`
-          *,
-          training_definition_version:training_definition_versions(
-            id,
-            version_number,
-            status,
-            training_definition:training_definitions(title)
-          )
-        `)
-        .eq('training_project_id', id)
-        .order('sequence_order', { ascending: true });
-
-      if (contentError) throw contentError;
-      setContent(contentData || []);
-
-      // Fetch operators with profile data - fix the ambiguous relationship
-      const { data: operatorsData, error: operatorsError } = await supabase
-        .from('training_project_operator_assignments')
-        .select(`
-          *,
-          operator:profiles!training_project_operator_assignments_operator_id_fkey(
-            first_name,
-            last_name,
-            email,
-            department
-          )
-        `)
-        .eq('training_project_id', id);
-
-      if (operatorsError) throw operatorsError;
-      setOperators(operatorsData || []);
-
-      // Fetch collaborators with profile data - fix the ambiguous relationship
-      const { data: collaboratorsData, error: collaboratorsError } = await supabase
-        .from('training_project_collaborators')
-        .select(`
-          *,
-          collaborator:profiles!training_project_collaborators_collaborator_id_fkey(
-            first_name,
-            last_name,
-            email,
-            department
-          )
-        `)
-        .eq('training_project_id', id);
-
-      if (collaboratorsError) throw collaboratorsError;
-      setCollaborators(collaboratorsData || []);
-
-    } catch (error) {
-      console.error('Error fetching project data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load project data. Please try again.",
-        variant: "destructive",
-      });
-      navigate('/desktop/training-projects');
+      setProject(data || null);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleProjectUpdate = async (updates: Partial<TrainingProject>) => {
-    if (!project) return;
-    
-    const updatedProject = { ...project, ...updates };
+  const fetchMarkers = async (projectId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('floor_plan_markers')
+        .select('*')
+        .eq('project_id', projectId);
+
+      if (error) {
+        console.error('Error fetching markers:', error);
+      }
+
+      setMarkers(data || []);
+    } catch (error) {
+      console.error('Error fetching floor plan markers:', error);
+    }
+  };
+
+  const handleSave = async (updatedProject: TrainingProject) => {
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('training_projects')
+        .update(updatedProject)
+        .eq('id', updatedProject.id);
+
+      if (error) {
+        console.error('Error updating project:', error);
+      } else {
+        setProject(updatedProject);
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleProjectUpdate = (updatedProject: TrainingProject) => {
     setProject(updatedProject);
-  };
-
-  const handleMarkersUpdate = (updatedMarkers: TrainingProjectMarker[]) => {
-    setMarkers(updatedMarkers);
-  };
-
-  const handleContentUpdate = (updatedContent: TrainingProjectContent[]) => {
-    setContent(updatedContent);
   };
 
   if (loading) {
@@ -161,89 +97,71 @@ const TrainingProjectEditor = () => {
 
   if (!project) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Project Not Found</h3>
-          <p className="text-gray-500">The requested project could not be found.</p>
-        </div>
+      <div className="text-center py-12">
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Project not found</h2>
+        <p className="text-gray-600">The training project you're looking for doesn't exist.</p>
       </div>
     );
   }
 
   return (
     <div className="h-full flex flex-col">
-      <ProjectBreadcrumb project={project} />
+      <ProjectBreadcrumb projectId={project.id} />
       
-      <div className="flex-1 flex flex-col min-h-0">
-        <div className="flex-shrink-0">
-          <ProjectHeader project={project} />
-        </div>
+      <div className="flex-1 overflow-hidden">
+        <ProjectHeader 
+          project={project}
+          saving={saving}
+          onSave={handleSave}
+        />
+        
+        <div className="p-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+            <TabsList className="grid w-full grid-cols-6">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="floor-plan">Floor Plan</TabsTrigger>
+              <TabsTrigger value="content">Content</TabsTrigger>
+              <TabsTrigger value="users">Users</TabsTrigger>
+              <TabsTrigger value="parameters">Parameters</TabsTrigger>
+              <TabsTrigger value="statistics">Statistics</TabsTrigger>
+            </TabsList>
 
-        <div className="flex-1 overflow-hidden">
-          <Card className="h-full">
-            <CardContent className="p-0 h-full">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-                <div className="flex-shrink-0 px-6 pt-4">
-                  <TabsList className="grid w-full grid-cols-6">
-                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="floor-plan">Floor Plan & Markers</TabsTrigger>
-                    <TabsTrigger value="content">Content Assembly</TabsTrigger>
-                    <TabsTrigger value="user-access">User Access</TabsTrigger>
-                    <TabsTrigger value="parameters">Parameters & Activation</TabsTrigger>
-                    <TabsTrigger value="statistics">Statistics</TabsTrigger>
-                  </TabsList>
-                </div>
+            <TabsContent value="overview" className="mt-6">
+              <ProjectOverviewTab project={project} />
+            </TabsContent>
 
-                <div className="flex-1 overflow-auto px-6 pb-6">
-                  <TabsContent value="overview" className="mt-4 h-full">
-                    <ProjectOverviewTab 
-                      project={project}
-                      markers={markers}
-                      contents={content}
-                      operators={operators}
-                      collaborators={collaborators}
-                    />
-                  </TabsContent>
+            <TabsContent value="floor-plan" className="mt-6">
+              <FloorPlanMarkerTab 
+                project={project}
+                markers={markers}
+              />
+            </TabsContent>
 
-                  <TabsContent value="floor-plan" className="mt-4 h-full">
-                    <FloorPlanMarkerTab
-                      project={project}
-                      markers={markers}
-                      onMarkersUpdate={handleMarkersUpdate}
-                    />
-                  </TabsContent>
+            <TabsContent value="content" className="mt-6">
+              <ContentAssemblyTab 
+                project={project}
+                markers={markers}
+              />
+            </TabsContent>
 
-                  <TabsContent value="content" className="mt-4 h-full">
-                    <ContentAssemblyTab
-                      project={project}
-                      markers={markers}
-                      content={content}
-                      onContentUpdate={handleContentUpdate}
-                    />
-                  </TabsContent>
+            <TabsContent value="users" className="mt-6">
+              <UserAccessTab 
+                project={project}
+              />
+            </TabsContent>
 
-                  <TabsContent value="user-access" className="mt-4 h-full">
-                    <UserAccessTab
-                      project={project}
-                      operators={operators}
-                      collaborators={collaborators}
-                    />
-                  </TabsContent>
+            <TabsContent value="parameters" className="mt-6">
+              <ParametersActivationTab 
+                project={project}
+                saving={saving}
+                onProjectUpdate={handleProjectUpdate}
+              />
+            </TabsContent>
 
-                  <TabsContent value="parameters" className="mt-4 h-full">
-                    <ParametersActivationTab
-                      project={project}
-                      onProjectUpdate={handleProjectUpdate}
-                    />
-                  </TabsContent>
-
-                  <TabsContent value="statistics" className="mt-4 h-full">
-                    <StatisticsTab projectId={project.id} />
-                  </TabsContent>
-                </div>
-              </Tabs>
-            </CardContent>
-          </Card>
+            <TabsContent value="statistics" className="mt-6">
+              <StatisticsTab project={project} />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
