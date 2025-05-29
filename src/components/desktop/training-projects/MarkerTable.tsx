@@ -1,10 +1,8 @@
 
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { TrashIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import React from 'react';
 import { TrainingProjectMarker } from '@/types/training-projects';
+import MarkerTableActions from './MarkerTableActions';
+import MarkerTableRow from './MarkerTableRow';
 
 interface MarkerTableProps {
   markers: TrainingProjectMarker[];
@@ -12,102 +10,10 @@ interface MarkerTableProps {
 }
 
 const MarkerTable: React.FC<MarkerTableProps> = ({ markers, onMarkersChange }) => {
-  const [saving, setSaving] = useState(false);
-  const { toast } = useToast();
-
-  const deleteMarker = async (markerId: string) => {
-    try {
-      setSaving(true);
-      const { error } = await supabase
-        .from('training_project_markers')
-        .delete()
-        .eq('id', markerId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Marker deleted successfully"
-      });
-      
-      onMarkersChange();
-    } catch (error) {
-      console.error('Error deleting marker:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete marker",
-        variant: "destructive"
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const moveMarker = async (markerId: string, direction: 'up' | 'down') => {
-    try {
-      setSaving(true);
-      
-      // Sort markers by sequence_order (or pin_number as fallback)
-      const sortedMarkers = [...markers].sort((a, b) => 
-        (a.sequence_order || a.pin_number) - (b.sequence_order || b.pin_number)
-      );
-
-      const currentIndex = sortedMarkers.findIndex(m => m.id === markerId);
-      if (currentIndex === -1) return;
-
-      const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-      if (newIndex < 0 || newIndex >= sortedMarkers.length) return;
-
-      const currentMarker = sortedMarkers[currentIndex];
-      const swapMarker = sortedMarkers[newIndex];
-
-      // Use sequence_order if available, otherwise pin_number
-      const currentOrder = currentMarker.sequence_order || currentMarker.pin_number;
-      const swapOrder = swapMarker.sequence_order || swapMarker.pin_number;
-
-      console.log('Swapping markers:', {
-        current: { id: currentMarker.id, order: currentOrder },
-        swap: { id: swapMarker.id, order: swapOrder }
-      });
-
-      // Update both markers with swapped sequence orders
-      const { error: error1 } = await supabase
-        .from('training_project_markers')
-        .update({ 
-          sequence_order: swapOrder,
-          pin_number: swapOrder // Also update pin_number to keep them in sync
-        })
-        .eq('id', currentMarker.id);
-
-      if (error1) throw error1;
-
-      const { error: error2 } = await supabase
-        .from('training_project_markers')
-        .update({ 
-          sequence_order: currentOrder,
-          pin_number: currentOrder // Also update pin_number to keep them in sync
-        })
-        .eq('id', swapMarker.id);
-
-      if (error2) throw error2;
-
-      toast({
-        title: "Success",
-        description: "Marker order updated successfully"
-      });
-
-      onMarkersChange();
-    } catch (error) {
-      console.error('Error moving marker:', error);
-      toast({
-        title: "Error",
-        description: "Failed to reorder marker",
-        variant: "destructive"
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
+  const { deleteMarker, moveMarker, saving } = MarkerTableActions({ 
+    markers, 
+    onMarkersChange 
+  });
 
   const sortedMarkers = [...markers].sort((a, b) => 
     (a.sequence_order || a.pin_number) - (b.sequence_order || b.pin_number)
@@ -154,64 +60,16 @@ const MarkerTable: React.FC<MarkerTableProps> = ({ markers, onMarkersChange }) =
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {sortedMarkers.map((marker, index) => (
-            <tr key={marker.id} className="hover:bg-gray-50">
-              <td className="px-4 py-3">
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 bg-oppr-blue text-white rounded-full flex items-center justify-center text-xs font-bold">
-                    {marker.sequence_order || marker.pin_number}
-                  </div>
-                  <div className="flex flex-col">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => moveMarker(marker.id, 'up')}
-                      disabled={saving || index === 0}
-                      className="h-5 w-5 p-0"
-                    >
-                      <ChevronUpIcon className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => moveMarker(marker.id, 'down')}
-                      disabled={saving || index === sortedMarkers.length - 1}
-                      className="h-5 w-5 p-0"
-                    >
-                      <ChevronDownIcon className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </div>
-              </td>
-              <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                {marker.machine_qr_entity?.qr_name || '-'}
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-500">
-                {marker.machine_qr_entity?.qr_identifier || '-'}
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-500">
-                {marker.machine_qr_entity?.machine_id || '-'}
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-500">
-                {marker.machine_qr_entity?.machine_type || '-'}
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-500">
-                {marker.machine_qr_entity?.brand || '-'}
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-500">
-                {marker.x_position.toFixed(1)}%, {marker.y_position.toFixed(1)}%
-              </td>
-              <td className="px-4 py-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => deleteMarker(marker.id)}
-                  disabled={saving}
-                  className="text-red-600 hover:text-red-700"
-                >
-                  <TrashIcon className="w-4 h-4" />
-                </Button>
-              </td>
-            </tr>
+            <MarkerTableRow
+              key={marker.id}
+              marker={marker}
+              index={index}
+              totalMarkers={sortedMarkers.length}
+              onMoveUp={moveMarker}
+              onMoveDown={moveMarker}
+              onDelete={deleteMarker}
+              disabled={saving}
+            />
           ))}
         </tbody>
       </table>
