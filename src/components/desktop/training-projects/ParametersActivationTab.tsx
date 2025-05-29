@@ -1,15 +1,22 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckBadgeIcon, PlayIcon, StopIcon, CalendarIcon } from '@heroicons/react/24/outline';
 import { TrainingProject } from '@/types/training-projects';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ParametersActivationTabProps {
   project: TrainingProject;
   onProjectUpdate: (updates: Partial<TrainingProject>) => Promise<void>;
   saving: boolean;
+}
+
+interface ReadinessCheck {
+  name: string;
+  completed: boolean;
+  description: string;
 }
 
 export const ParametersActivationTab: React.FC<ParametersActivationTabProps> = ({
@@ -18,7 +25,15 @@ export const ParametersActivationTab: React.FC<ParametersActivationTabProps> = (
   saving
 }) => {
   const [localProject, setLocalProject] = useState(project);
+  const [readinessChecks, setReadinessChecks] = useState<ReadinessCheck[]>([]);
+  const [activating, setActivating] = useState(false);
+  const [stopping, setStopping] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setLocalProject(project);
+    checkProjectReadiness();
+  }, [project]);
 
   const handleInputChange = (field: keyof TrainingProject, value: any) => {
     setLocalProject(prev => ({ ...prev, [field]: value }));
@@ -47,34 +62,139 @@ export const ParametersActivationTab: React.FC<ParametersActivationTabProps> = (
     }
   };
 
-  const getReadinessChecks = () => {
-    const checks = [
-      {
-        name: "Floor Plan & Markers",
-        completed: !!project.floor_plan_image_id,
-        description: "Floor plan selected with training markers placed"
-      },
-      {
-        name: "Training Content",
-        completed: false, // This would need to check actual content
-        description: "All markers have assigned training definitions"
-      },
-      {
-        name: "Learner Assignment",
-        completed: false, // This would need to check operator assignments
-        description: "At least one operator assigned to the project"
-      },
-      {
-        name: "Pass/Fail Threshold",
-        completed: project.pass_fail_threshold >= 50,
-        description: "Minimum pass threshold set (≥50%)"
-      }
-    ];
+  const checkProjectReadiness = async () => {
+    try {
+      // Check floor plan and markers
+      const hasFloorPlan = !!project.floor_plan_image_id;
+      
+      const { data: markers, error: markersError } = await supabase
+        .from('training_project_markers')
+        .select('id')
+        .eq('training_project_id', project.id);
 
-    return checks;
+      if (markersError) throw markersError;
+      const hasMarkers = markers && markers.length > 0;
+
+      // Check training content
+      const { data: content, error: contentError } = await supabase
+        .from('training_project_content')
+        .select(`
+          id,
+          training_definition_version:training_definition_versions(
+            id,
+            status
+          )
+        `)
+        .eq('training_project_id', project.id);
+
+      if (contentError) throw contentError;
+      
+      const hasContent = content && content.length > 0;
+      const allContentPublished = content?.every(c => 
+        c.training_definition_version?.status === 'published'
+      ) ?? false;
+
+      // Check operator assignments
+      const { data: operators, error: operatorsError } = await supabase
+        .from('training_project_operator_assignments')
+        .select('id')
+        .eq('training_project_id', project.id);
+
+      if (operatorsError) throw operatorsError;
+      const hasOperators = operators && operators.length > 0;
+
+      const checks: ReadinessCheck[] = [
+        {
+          name: "Floor Plan & Markers",
+          completed: hasFloorPlan && hasMarkers,
+          description: "Floor plan selected with training markers placed"
+        },
+        {
+          name: "Training Content",
+          completed: hasContent && allContentPublished,
+          description: "All markers have assigned published training definitions"
+        },
+        {
+          name: "Learner Assignment",
+          completed: hasOperators,
+          description: "At least one operator assigned to the project"
+        },
+        {
+          name: "Pass/Fail Threshold",
+          completed: project.pass_fail_threshold >= 50,
+          description: "Minimum pass threshold set (≥50%)"
+        }
+      ];
+
+      setReadinessChecks(checks);
+    } catch (error) {
+      console.error('Error checking project readiness:', error);
+    }
   };
 
-  const readinessChecks = getReadinessChecks();
+  const handleActivateProject = async () => {
+    if (!allChecksCompleted) {
+      toast({
+        title: "Cannot Activate",
+        description: "Please complete all readiness checks before activating the project",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setActivating(true);
+      await onProjectUpdate({ status: 'active' });
+      
+      toast({
+        title: "Success",
+        description: "Training project has been activated successfully"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to activate project",
+        variant: "destructive"
+      });
+    } finally {
+      setActivating(false);
+    }
+  };
+
+  const handleStopProject = async () => {
+    try {
+      setStopping(true);
+      await onProjectUpdate({ status: 'stopped' });
+      
+      toast({
+        title: "Success",
+        description: "Training project has been stopped"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to stop project",
+        variant: "destructive"
+      });
+    } finally {
+      setStopping(false);
+    }
+  };
+
+  const handleRunFullCheck = async () => {
+    toast({
+      title: "Running Check",
+      description: "Performing full readiness check..."
+    });
+    
+    await checkProjectReadiness();
+    
+    toast({
+      title: "Check Complete",
+      description: "Readiness check completed successfully"
+    });
+  };
+
   const allChecksCompleted = readinessChecks.every(check => check.completed);
 
   return (
@@ -169,7 +289,13 @@ export const ParametersActivationTab: React.FC<ParametersActivationTabProps> = (
 
       {/* Readiness Check */}
       <div className="space-y-6">
-        <h4 className="font-medium text-gray-900">Project Readiness Check</h4>
+        <div className="flex justify-between items-center">
+          <h4 className="font-medium text-gray-900">Project Readiness Check</h4>
+          <Button variant="outline" onClick={handleRunFullCheck}>
+            <CheckBadgeIcon className="w-4 h-4 mr-2" />
+            Refresh Check
+          </Button>
+        </div>
         
         <div className="space-y-3">
           {readinessChecks.map((check, index) => (
@@ -216,22 +342,27 @@ export const ParametersActivationTab: React.FC<ParametersActivationTabProps> = (
           <div className="flex space-x-3">
             {project.status === 'draft' && (
               <Button 
-                disabled={!allChecksCompleted}
+                disabled={!allChecksCompleted || activating}
+                onClick={handleActivateProject}
                 className="bg-green-600 hover:bg-green-700"
               >
                 <PlayIcon className="w-4 h-4 mr-2" />
-                Activate Project
+                {activating ? 'Activating...' : 'Activate Project'}
               </Button>
             )}
             
             {project.status === 'active' && (
-              <Button variant="destructive">
+              <Button 
+                variant="destructive" 
+                onClick={handleStopProject}
+                disabled={stopping}
+              >
                 <StopIcon className="w-4 h-4 mr-2" />
-                Stop Project
+                {stopping ? 'Stopping...' : 'Stop Project'}
               </Button>
             )}
 
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleRunFullCheck}>
               <CheckBadgeIcon className="w-4 h-4 mr-2" />
               Run Full Readiness Check
             </Button>

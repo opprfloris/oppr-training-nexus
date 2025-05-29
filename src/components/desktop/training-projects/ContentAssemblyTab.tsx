@@ -1,15 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
-import { TrainingProject, TrainingProjectMarker, TrainingProjectContent } from '@/types/training-projects';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import MarkerSequenceEditor from './MarkerSequenceEditor';
-import TrainingDefinitionSelector from './TrainingDefinitionSelector';
-import { CurrentAssociationDisplay } from './CurrentAssociationDisplay';
-import { TrainingDefinitionActions } from './TrainingDefinitionActions';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChevronUpIcon, ChevronDownIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { TrainingProject, TrainingProjectMarker } from '@/types/training-projects';
+import { TrainingDefinitionSelector } from './TrainingDefinitionSelector';
 import { TrainingFlowOverview } from './TrainingFlowOverview';
-import { EmptyMarkersState } from './EmptyMarkersState';
-import { MarkerSelectionPrompt } from './MarkerSelectionPrompt';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ContentAssemblyTabProps {
   project: TrainingProject;
@@ -17,23 +16,39 @@ interface ContentAssemblyTabProps {
   onContentChange: () => void;
 }
 
+interface MarkerContent {
+  id: string;
+  marker_id: string;
+  training_definition_version_id: string | null;
+  sequence_order: number;
+  training_definition_version?: {
+    id: string;
+    version_number: string;
+    status: 'draft' | 'published' | 'archived';
+    training_definition: {
+      title: string;
+    };
+  };
+}
+
 export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
   project,
   markers,
   onContentChange
 }) => {
-  const [content, setContent] = useState<TrainingProjectContent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [markerContents, setMarkerContents] = useState<MarkerContent[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showDefinitionSelector, setShowDefinitionSelector] = useState(false);
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
-  const [showTDSelector, setShowTDSelector] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    loadContent();
-  }, [project.id]);
+    loadMarkerContents();
+  }, [project.id, markers]);
 
-  const loadContent = async () => {
+  const loadMarkerContents = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('training_project_content')
         .select(`
@@ -42,20 +57,19 @@ export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
             id,
             version_number,
             status,
-            training_definition_id,
-            training_definition:training_definitions(id, title)
+            training_definition:training_definitions(title)
           )
         `)
         .eq('training_project_id', project.id)
-        .order('sequence_order', { ascending: true });
+        .order('sequence_order');
 
       if (error) throw error;
-      setContent(data || []);
+      setMarkerContents(data || []);
     } catch (error) {
-      console.error('Error loading content:', error);
+      console.error('Error loading marker contents:', error);
       toast({
         title: "Error",
-        description: "Failed to load project content",
+        description: "Failed to load training content assignments",
         variant: "destructive"
       });
     } finally {
@@ -63,65 +77,71 @@ export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
     }
   };
 
-  const sortedMarkers = [...markers].sort((a, b) => 
-    (a.sequence_order || a.pin_number) - (b.sequence_order || b.pin_number)
-  );
-
-  const selectedMarker = selectedMarkerId ? markers.find(m => m.id === selectedMarkerId) : null;
-  const selectedMarkerContent = selectedMarkerId ? 
-    content.find(c => c.marker_id === selectedMarkerId) : null;
-
-  const handleMarkerSelect = (markerId: string) => {
-    setSelectedMarkerId(markerId);
-  };
-
-  const handleLinkExistingTD = () => {
-    setShowTDSelector(true);
-  };
-
-  const handleCreateNewTD = () => {
-    window.open(`/desktop/training-definitions/new?project=${project.id}&marker=${selectedMarkerId}`, '_blank');
-  };
-
-  const handleCopyTDAsDraft = () => {
-    setShowTDSelector(true);
-  };
-
-  const handleEditDraftTD = () => {
-    if (selectedMarkerContent?.training_definition_version) {
-      const tdId = selectedMarkerContent.training_definition_version.training_definition_id;
-      if (tdId) {
-        window.open(`/desktop/training-definitions/${tdId}`, '_blank');
-      }
-    }
-  };
-
-  const handleUnlinkTD = async () => {
-    if (!selectedMarkerId) return;
-
+  const handleAssignContent = async (markerId: string, trainingDefinitionVersionId: string) => {
     try {
+      const nextSequenceOrder = Math.max(...markerContents.map(c => c.sequence_order), 0) + 1;
+      
       const { error } = await supabase
         .from('training_project_content')
-        .delete()
-        .eq('marker_id', selectedMarkerId);
+        .insert({
+          training_project_id: project.id,
+          marker_id: markerId,
+          training_definition_version_id: trainingDefinitionVersionId,
+          sequence_order: nextSequenceOrder
+        });
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Training definition unlinked successfully"
+        description: "Training content assigned successfully"
       });
 
-      loadContent();
+      loadMarkerContents();
       onContentChange();
     } catch (error) {
-      console.error('Error unlinking TD:', error);
+      console.error('Error assigning content:', error);
       toast({
         title: "Error",
-        description: "Failed to unlink training definition",
+        description: "Failed to assign training content",
         variant: "destructive"
       });
     }
+  };
+
+  const handleRemoveContent = async (contentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('training_project_content')
+        .delete()
+        .eq('id', contentId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Training content removed successfully"
+      });
+
+      loadMarkerContents();
+      onContentChange();
+    } catch (error) {
+      console.error('Error removing content:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove training content",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getMarkerName = (markerId: string) => {
+    const marker = markers.find(m => m.id === markerId);
+    return marker ? `Pin ${marker.pin_number} - ${marker.machine_qr_entity?.qr_name || 'Unknown'}` : 'Unknown Marker';
+  };
+
+  const getTrainingDefinitionId = (content: MarkerContent) => {
+    return content.training_definition_version?.training_definition?.title || 'No Definition';
   };
 
   if (loading) {
@@ -132,85 +152,137 @@ export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
     );
   }
 
-  if (markers.length === 0) {
-    return <EmptyMarkersState />;
-  }
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h3 className="text-lg font-medium mb-2">Training Content Assembly</h3>
+        <h3 className="text-lg font-medium mb-2">Content Assembly</h3>
         <p className="text-gray-600">
-          Define the sequence of markers and assign training definitions to create your complete training flow.
+          Assign training definitions to markers and configure the learning sequence.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Sub-Section 1: Define Marker Sequence */}
-        <div className="space-y-4">
-          <div>
-            <h4 className="text-base font-medium text-gray-900 mb-2">Marker Sequence</h4>
-            <p className="text-sm text-gray-600 mb-4">
-              Define the order in which trainees will visit each marker.
-            </p>
-          </div>
+      {/* Training Flow Overview */}
+      <TrainingFlowOverview 
+        projectId={project.id}
+        markers={markers}
+        markerContents={markerContents}
+      />
 
-          <MarkerSequenceEditor
-            markers={sortedMarkers}
-            content={content}
-            selectedMarkerId={selectedMarkerId}
-            onMarkerSelect={handleMarkerSelect}
-            onSequenceChange={onContentChange}
-          />
+      {/* Marker Content Assignment */}
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h4 className="font-medium text-gray-900">Training Content by Marker</h4>
+          <Button
+            onClick={() => setShowDefinitionSelector(true)}
+            className="bg-[#3a7ca5] hover:bg-[#2f6690]"
+          >
+            <PlusIcon className="w-4 h-4 mr-2" />
+            Assign Content
+          </Button>
         </div>
 
-        {/* Sub-Section 2: Assign/Create Training Definition */}
         <div className="space-y-4">
-          <div>
-            <h4 className="text-base font-medium text-gray-900 mb-2">Training Definition Assignment</h4>
-            {selectedMarker ? (
-              <p className="text-sm text-gray-600 mb-4">
-                Selected Marker: Pin #{selectedMarker.sequence_order || selectedMarker.pin_number} - {selectedMarker.machine_qr_entity?.machine_id}
-              </p>
-            ) : (
-              <p className="text-sm text-gray-600 mb-4">
-                Select a marker from the sequence to assign training content.
-              </p>
-            )}
-          </div>
-
-          {selectedMarker ? (
-            <div className="space-y-4">
-              <CurrentAssociationDisplay selectedMarkerContent={selectedMarkerContent} />
-              
-              <TrainingDefinitionActions
-                selectedMarkerContent={selectedMarkerContent}
-                onLinkExistingTD={handleLinkExistingTD}
-                onCreateNewTD={handleCreateNewTD}
-                onCopyTDAsDraft={handleCopyTDAsDraft}
-                onEditDraftTD={handleEditDraftTD}
-                onUnlinkTD={handleUnlinkTD}
-              />
+          {markers.length === 0 ? (
+            <div className="text-center py-8 text-gray-600">
+              <p>No markers found. Please add markers in the Floor Plan & Markers tab first.</p>
             </div>
           ) : (
-            <MarkerSelectionPrompt />
+            markers.map(marker => {
+              const assignedContents = markerContents.filter(c => c.marker_id === marker.id);
+              
+              return (
+                <Card key={marker.id} className="border">
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-base">
+                        Pin {marker.pin_number} - {marker.machine_qr_entity?.qr_name}
+                      </CardTitle>
+                      <Badge variant="outline">
+                        {assignedContents.length} Definition(s)
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {assignedContents.length === 0 ? (
+                      <div className="text-center py-4 text-gray-500">
+                        <p>No training content assigned</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedMarkerId(marker.id);
+                            setShowDefinitionSelector(true);
+                          }}
+                          className="mt-2"
+                        >
+                          <PlusIcon className="w-4 h-4 mr-1" />
+                          Assign Content
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {assignedContents.map(content => (
+                          <div key={content.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div>
+                              <p className="font-medium">
+                                {content.training_definition_version?.training_definition?.title || 'Unknown Definition'}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                Version {content.training_definition_version?.version_number} • 
+                                Status: {content.training_definition_version?.status}
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveContent(content.id)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedMarkerId(marker.id);
+                            setShowDefinitionSelector(true);
+                          }}
+                          className="w-full mt-2"
+                        >
+                          <PlusIcon className="w-4 h-4 mr-1" />
+                          Add More Content
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })
           )}
         </div>
       </div>
 
-      <TrainingFlowOverview sortedMarkers={sortedMarkers} content={content} />
-
-      <TrainingDefinitionSelector
-        isOpen={showTDSelector}
-        onClose={() => setShowTDSelector(false)}
-        onSelect={(tdVersion) => {
-          setShowTDSelector(false);
-          loadContent();
-          onContentChange();
-        }}
-        projectId={project.id}
-        markerId={selectedMarkerId}
-      />
+      {/* Training Definition Selector Modal */}
+      {showDefinitionSelector && (
+        <TrainingDefinitionSelector
+          isOpen={showDefinitionSelector}
+          onClose={() => {
+            setShowDefinitionSelector(false);
+            setSelectedMarkerId(null);
+          }}
+          onSelect={(versionId) => {
+            if (selectedMarkerId) {
+              handleAssignContent(selectedMarkerId, versionId);
+            }
+            setShowDefinitionSelector(false);
+            setSelectedMarkerId(null);
+          }}
+          projectId={project.id}
+          selectedMarkerId={selectedMarkerId}
+        />
+      )}
     </div>
   );
 };
