@@ -61,22 +61,29 @@ Generate a well-structured training sequence with clear learning progression.`;
     {
       "id": "unique-id",
       "type": "information",
-      "title": "Step Title",
-      "content": "Detailed content"
+      "order": 1,
+      "config": {
+        "content": "Detailed information content"
+      }
     },
     {
       "id": "unique-id", 
       "type": "question",
-      "title": "Question Title",
-      "question": "Question text?",
-      "options": ["Option A", "Option B", "Option C"],
-      "correctAnswer": 0,
-      "explanation": "Why this is correct"
+      "order": 2,
+      "config": {
+        "question_text": "Question text?",
+        "question_type": "multiple_choice",
+        "options": ["Option A", "Option B", "Option C"],
+        "correct_option": 0,
+        "hint": "Why this is correct",
+        "points": 10,
+        "mandatory": true
+      }
     }
   ]
 }
 
-Always return valid JSON. Mix information and question blocks appropriately.`;
+Always return valid JSON. Mix information and question blocks appropriately. Use the exact structure shown above.`;
 
     const userPrompt = `${generationPrompt}
 
@@ -160,23 +167,30 @@ const generateFallbackFlow = (request: AIFlowGenerationRequest): StepBlock[] => 
       blocks.push({
         id: `question-${i + 1}`,
         type: 'question',
-        title: `${topic} Knowledge Check`,
-        question: `What is an important consideration regarding ${topic.toLowerCase()}?`,
-        options: [
-          'Always follow proper procedures',
-          'Speed is more important than safety',
-          'Documentation is optional',
-          'Training is not necessary'
-        ],
-        correctAnswer: 0,
-        explanation: `Following proper procedures is essential for ${topic.toLowerCase()} to ensure safety and quality.`
+        order: i + 1,
+        config: {
+          question_text: `What is an important consideration regarding ${topic.toLowerCase()}?`,
+          question_type: 'multiple_choice',
+          options: [
+            'Always follow proper procedures',
+            'Speed is more important than safety',
+            'Documentation is optional',
+            'Training is not necessary'
+          ],
+          correct_option: 0,
+          hint: `Following proper procedures is essential for ${topic.toLowerCase()} to ensure safety and quality.`,
+          points: 10,
+          mandatory: true
+        }
       });
     } else {
       blocks.push({
         id: `info-${i + 1}`,
         type: 'information',
-        title: `${topic} Overview`,
-        content: `This section covers important aspects of ${topic.toLowerCase()} related to the training content. Key points include proper procedures, safety considerations, and best practices that should be followed.`
+        order: i + 1,
+        config: {
+          content: `This section covers important aspects of ${topic.toLowerCase()} related to the training content. Key points include proper procedures, safety considerations, and best practices that should be followed.`
+        }
       });
     }
   }

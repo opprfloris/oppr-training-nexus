@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Brain } from 'lucide-react';
 import DocumentUploader from './DocumentUploader';
@@ -7,7 +7,6 @@ import AIFlowPreview from './AIFlowPreview';
 import AISettingsModal from './AISettingsModal';
 import AIStatusDisplay from './AIStatusDisplay';
 import DocumentAnalysisDisplay from './DocumentAnalysisDisplay';
-import { useAIFlowGeneration as useAIFlowGenerationHook } from '@/hooks/useAIFlowGeneration';
 import { useAIFlowGeneration } from '@/hooks/useAIFlowGeneration';
 import { StepBlock } from '@/types/training-definitions';
 
@@ -16,33 +15,38 @@ interface FlowCanvasAIAssistantProps {
 }
 
 const FlowCanvasAIAssistant: React.FC<FlowCanvasAIAssistantProps> = ({ onApplyFlow }) => {
-  const {
-    documentContent,
-    analysisResults,
-    generatedFlow,
-    showPreview,
-    isProcessing,
-    handleDocumentProcessed,
-    generateTrainingFlow,
-    handleApplyFlow: handleInternalApplyFlow,
-    handleBackToAssistant
-  } = useAIFlowGeneration();
+  // Local state for document management
+  const [documentContent, setDocumentContent] = useState<string>('');
+  const [analysisResults, setAnalysisResults] = useState<any>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
-  // Add the new flow generation hook
-  const { generateFlow, isGenerating, error: generationError } = useAIFlowGenerationHook();
+  // AI flow generation hook
+  const { generatedFlow, isGenerating, error: generationError, generateFlow } = useAIFlowGeneration();
 
-  const handleApplyFlow = (blocks: StepBlock[]) => {
-    onApplyFlow(blocks);
-    handleInternalApplyFlow(blocks);
+  const handleDocumentProcessed = (content: string, results: any) => {
+    console.log('Document processed:', { contentLength: content.length, results });
+    setDocumentContent(content);
+    setAnalysisResults(results);
+    setShowPreview(false);
   };
 
   const handleGenerateFlow = async (config: { selectedTopics: string[]; stepCount: number; content: string; fileName: string }) => {
     console.log('Generating flow with config:', config);
     try {
       await generateFlow(config);
+      setShowPreview(true);
     } catch (error) {
       console.error('Failed to generate flow:', error);
     }
+  };
+
+  const handleApplyFlow = (blocks: StepBlock[]) => {
+    onApplyFlow(blocks);
+    setShowPreview(false);
+  };
+
+  const handleBackToAssistant = () => {
+    setShowPreview(false);
   };
 
   return (
@@ -95,7 +99,7 @@ const FlowCanvasAIAssistant: React.FC<FlowCanvasAIAssistantProps> = ({ onApplyFl
         )}
 
         {/* AI Flow Preview */}
-        {showPreview && (
+        {showPreview && generatedFlow && (
           <div className="mt-4">
             <AIFlowPreview
               blocks={generatedFlow}
