@@ -62,35 +62,48 @@ export const useMarkerTableActions = ({
       const currentMarker = sortedMarkers[currentIndex];
       const swapMarker = sortedMarkers[newIndex];
 
-      // Use sequence_order if available, otherwise pin_number
-      const currentOrder = currentMarker.sequence_order || currentMarker.pin_number;
-      const swapOrder = swapMarker.sequence_order || swapMarker.pin_number;
-
       console.log('Swapping markers:', {
-        current: { id: currentMarker.id, order: currentOrder },
-        swap: { id: swapMarker.id, order: swapOrder }
+        current: { id: currentMarker.id, order: currentMarker.sequence_order || currentMarker.pin_number },
+        swap: { id: swapMarker.id, order: swapMarker.sequence_order || swapMarker.pin_number }
       });
 
-      // Update both markers with swapped sequence orders
-      const { error: error1 } = await supabase
+      // Use a temporary high value to avoid constraint violations
+      const tempValue = 9999 + Date.now();
+      
+      // Step 1: Set current marker to temporary value
+      const { error: tempError } = await supabase
         .from('training_project_markers')
         .update({ 
-          sequence_order: swapOrder,
-          pin_number: swapOrder // Also update pin_number to keep them in sync
+          sequence_order: tempValue,
+          pin_number: tempValue
         })
         .eq('id', currentMarker.id);
 
-      if (error1) throw error1;
+      if (tempError) throw tempError;
 
-      const { error: error2 } = await supabase
+      // Step 2: Move swap marker to current marker's position
+      const currentOrder = currentMarker.sequence_order || currentMarker.pin_number;
+      const { error: swapError } = await supabase
         .from('training_project_markers')
         .update({ 
           sequence_order: currentOrder,
-          pin_number: currentOrder // Also update pin_number to keep them in sync
+          pin_number: currentOrder
         })
         .eq('id', swapMarker.id);
 
-      if (error2) throw error2;
+      if (swapError) throw swapError;
+
+      // Step 3: Move current marker to swap marker's final position
+      const swapOrder = swapMarker.sequence_order || swapMarker.pin_number;
+      const { error: finalError } = await supabase
+        .from('training_project_markers')
+        .update({ 
+          sequence_order: swapOrder,
+          pin_number: swapOrder
+        })
+        .eq('id', currentMarker.id);
+
+      if (finalError) throw finalError;
 
       toast({
         title: "Success",
