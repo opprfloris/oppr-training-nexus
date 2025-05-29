@@ -7,9 +7,10 @@ import { fetchDefinitionAndVersion } from '@/services/trainingDefinitionService'
 import { saveDraft } from '@/services/trainingDefinitionSaveService';
 import BuilderHeader from '@/components/desktop/training-definitions/BuilderHeader';
 import BuilderControls from '@/components/desktop/training-definitions/BuilderControls';
+import BlockPalette from '@/components/desktop/training-definitions/BlockPalette';
+import FlowCanvas from '@/components/desktop/training-definitions/FlowCanvas';
+import BlockConfiguration from '@/components/desktop/training-definitions/BlockConfiguration';
 import { createNewBlock } from '@/utils/blockUtils';
-import { Button } from '@/components/ui/button';
-import { PlusIcon } from '@heroicons/react/24/outline';
 
 const TrainingDefinitionBuilderMinimal = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,13 +24,14 @@ const TrainingDefinitionBuilderMinimal = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [steps, setSteps] = useState<StepBlock[]>([]);
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
   console.log('TrainingDefinitionBuilderMinimal render - id:', id, 'pathname:', location.pathname);
   
   // Determine if this is a new definition
-  const isNewDefinition = id === 'new' || location.pathname.includes('/new');
+  const isNewDefinition = id === 'new' || location.pathname.includes('/new') || !id;
 
   // Load existing definition if editing
   useEffect(() => {
@@ -148,10 +150,15 @@ const TrainingDefinitionBuilderMinimal = () => {
     const newOrder = steps.length;
     const newBlock = createNewBlock(blockType, newOrder);
     setSteps([...steps, newBlock]);
+    setSelectedBlockId(newBlock.id);
   };
 
-  const updateStep = (stepId: string, updatedStep: StepBlock) => {
-    setSteps(steps.map(step => step.id === stepId ? updatedStep : step));
+  const updateStep = (stepId: string, updatedConfig: any) => {
+    setSteps(steps.map(step => 
+      step.id === stepId 
+        ? { ...step, config: updatedConfig }
+        : step
+    ));
   };
 
   const deleteStep = (stepId: string) => {
@@ -162,17 +169,17 @@ const TrainingDefinitionBuilderMinimal = () => {
       order: index
     }));
     setSteps(reorderedSteps);
+    
+    // Clear selection if deleted step was selected
+    if (selectedBlockId === stepId) {
+      setSelectedBlockId(null);
+    }
   };
 
-  const moveStep = (stepId: string, direction: 'up' | 'down') => {
-    const stepIndex = steps.findIndex(step => step.id === stepId);
-    if (stepIndex === -1) return;
-
-    const newIndex = direction === 'up' ? stepIndex - 1 : stepIndex + 1;
-    if (newIndex < 0 || newIndex >= steps.length) return;
-
+  const reorderSteps = (startIndex: number, endIndex: number) => {
     const newSteps = [...steps];
-    [newSteps[stepIndex], newSteps[newIndex]] = [newSteps[newIndex], newSteps[stepIndex]];
+    const [movedStep] = newSteps.splice(startIndex, 1);
+    newSteps.splice(endIndex, 0, movedStep);
     
     // Update order numbers
     newSteps.forEach((step, index) => {
@@ -180,6 +187,13 @@ const TrainingDefinitionBuilderMinimal = () => {
     });
 
     setSteps(newSteps);
+  };
+
+  const applyAIFlow = (blocks: StepBlock[]) => {
+    setSteps(blocks);
+    if (blocks.length > 0) {
+      setSelectedBlockId(blocks[0].id);
+    }
   };
 
   console.log('Current loading state:', loading);
@@ -194,6 +208,8 @@ const TrainingDefinitionBuilderMinimal = () => {
     );
   }
 
+  const selectedBlock = selectedBlockId ? steps.find(step => step.id === selectedBlockId) : null;
+
   return (
     <div className="h-full flex flex-col p-6">
       <div className="mb-6">
@@ -201,7 +217,7 @@ const TrainingDefinitionBuilderMinimal = () => {
           {isNewDefinition ? 'Create New Training Definition' : `Edit Training Definition`}
         </h1>
         <p className="text-gray-600 mt-2">
-          Phase 4: Step blocks functionality - {isNewDefinition ? 'New Definition' : 'Existing Definition'}
+          Phase 5A: Advanced step configuration with visual flow canvas
         </p>
         {version && (
           <p className="text-sm text-gray-500 mt-1">
@@ -210,7 +226,7 @@ const TrainingDefinitionBuilderMinimal = () => {
         )}
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border p-6">
+      <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
         <BuilderHeader
           title={title}
           setTitle={setTitle}
@@ -227,98 +243,35 @@ const TrainingDefinitionBuilderMinimal = () => {
           currentVersion={version?.version_number}
           onPublishSuccess={loadDefinition}
         />
+      </div>
 
-        {/* Step Blocks Section */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-gray-900">Training Steps</h3>
-            <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => addStep('information')}
-              >
-                <PlusIcon className="w-4 h-4 mr-1" />
-                Information
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => addStep('goto')}
-              >
-                <PlusIcon className="w-4 h-4 mr-1" />
-                Go To
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => addStep('question')}
-              >
-                <PlusIcon className="w-4 h-4 mr-1" />
-                Question
-              </Button>
-            </div>
-          </div>
+      {/* Main Builder Layout */}
+      <div className="flex-1 grid grid-cols-12 gap-6">
+        {/* Left Panel - Block Palette */}
+        <div className="col-span-3">
+          <BlockPalette 
+            onAddBlock={addStep}
+            onApplyAIFlow={applyAIFlow}
+          />
+        </div>
 
-          {steps.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <p className="mb-4">No steps added yet. Add your first step to get started.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {steps.map((step, index) => (
-                <div key={step.id} className="border rounded-lg p-4 bg-gray-50">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-gray-600">Step {index + 1}</span>
-                      <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
-                        {step.type}
-                      </span>
-                    </div>
-                    <div className="flex space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => moveStep(step.id, 'up')}
-                        disabled={index === 0}
-                      >
-                        ↑
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => moveStep(step.id, 'down')}
-                        disabled={index === steps.length - 1}
-                      >
-                        ↓
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteStep(step.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {/* Basic step content display */}
-                  <div className="text-sm text-gray-700">
-                    {step.type === 'information' && (
-                      <p>Content: {(step.config as any).content || 'No content set'}</p>
-                    )}
-                    {step.type === 'goto' && (
-                      <p>Instructions: {(step.config as any).instructions || 'No instructions set'}</p>
-                    )}
-                    {step.type === 'question' && (
-                      <p>Question: {(step.config as any).question_text || 'No question set'}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+        {/* Center Panel - Flow Canvas */}
+        <div className="col-span-5">
+          <FlowCanvas
+            steps={steps}
+            selectedBlockId={selectedBlockId}
+            onSelectBlock={setSelectedBlockId}
+            onDeleteBlock={deleteStep}
+            onReorderBlocks={reorderSteps}
+          />
+        </div>
+
+        {/* Right Panel - Block Configuration */}
+        <div className="col-span-4">
+          <BlockConfiguration
+            block={selectedBlock || null}
+            onUpdateConfig={updateStep}
+          />
         </div>
       </div>
 
@@ -333,7 +286,8 @@ const TrainingDefinitionBuilderMinimal = () => {
         <p className="text-sm text-gray-600">Definition ID: {definition?.id || 'None'}</p>
         <p className="text-sm text-gray-600">Version: {version?.version_number || 'None'}</p>
         <p className="text-sm text-gray-600">Steps Count: {steps.length}</p>
-        <p className="text-sm text-gray-600">Status: Phase 4 complete - Step blocks integrated</p>
+        <p className="text-sm text-gray-600">Selected Block: {selectedBlockId || 'None'}</p>
+        <p className="text-sm text-gray-600">Status: Phase 5A complete - Advanced step configuration</p>
       </div>
     </div>
   );
