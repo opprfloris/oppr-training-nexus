@@ -133,7 +133,7 @@ const TrainingDefinitions = () => {
   };
 
   const handleCreateNew = () => {
-    navigate('/desktop/training-definitions/builder/new');
+    navigate('/desktop/training-definitions/new');
   };
 
   const activeDefinitions = definitions.filter(def => 
