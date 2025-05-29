@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { PencilSquareIcon, EyeIcon, TrashIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { FloorPlanImage } from '@/types/floor-plans';
 
 interface FloorPlanCardProps {
@@ -43,20 +44,22 @@ export const FloorPlanCard: React.FC<FloorPlanCardProps> = ({
   return (
     <Card className="group hover:shadow-md transition-shadow duration-200">
       <CardContent className="p-4">
-        {/* Thumbnail Image */}
-        <div className="aspect-[4/3] bg-gray-100 rounded-lg mb-3 overflow-hidden cursor-pointer" onClick={onPreview}>
-          {!imageError ? (
-            <img
-              src={imageUrl}
-              alt={floorPlan.name}
-              className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
-              onError={() => setImageError(true)}
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400">
-              <span className="text-2xl">🏗️</span>
-            </div>
-          )}
+        {/* Thumbnail Image with proper aspect ratio */}
+        <div className="mb-3 cursor-pointer" onClick={onPreview}>
+          <AspectRatio ratio={4/3} className="bg-gray-100 rounded-lg overflow-hidden">
+            {!imageError ? (
+              <img
+                src={imageUrl}
+                alt={floorPlan.name}
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-400">
+                <span className="text-2xl">🏗️</span>
+              </div>
+            )}
+          </AspectRatio>
         </div>
 
         {/* Floor Plan Name */}
