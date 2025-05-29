@@ -6,6 +6,7 @@ import {
   QuestionMarkCircleIcon 
 } from "@heroicons/react/24/outline";
 import { Button } from '@/components/ui/button';
+import { Brain } from 'lucide-react';
 import AITrainingFlowModal from './AITrainingFlowModal';
 import { StepBlock } from '@/types/training-definitions';
 
@@ -38,15 +39,24 @@ const BlockPalette: React.FC<BlockPaletteProps> = ({ onAddBlock, onApplyAIFlow }
 
   return (
     <div className="oppr-card p-4">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Block Palette</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">Block Palette</h3>
+        <AITrainingFlowModal 
+          onApplyFlow={onApplyAIFlow}
+          trigger={
+            <Button
+              variant="outline"
+              size="sm"
+              className="p-2 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200 hover:from-purple-100 hover:to-blue-100"
+              title="AI Training Flow Generator"
+            >
+              <Brain className="w-4 h-4 text-purple-600" />
+            </Button>
+          }
+        />
+      </div>
+      
       <div className="space-y-3">
-        {/* AI Training Flow Generator Button */}
-        <AITrainingFlowModal onApplyFlow={onApplyAIFlow} />
-        
-        {/* Separator */}
-        <div className="border-t border-gray-200 my-4"></div>
-        
-        {/* Regular Block Buttons */}
         {blocks.map((block) => {
           const Icon = block.icon;
           return (

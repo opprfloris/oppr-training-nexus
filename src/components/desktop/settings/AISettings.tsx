@@ -1,88 +1,29 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Brain, Key, Settings, TestTube, CheckCircle, XCircle, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-interface AIConfig {
-  apiKey: string;
-  model: string;
-  temperature: number;
-  maxTokens: number;
-  timeout: number;
-}
+import { useAISettings } from '@/contexts/AISettingsContext';
 
 const AISettings: React.FC = () => {
-  const [config, setConfig] = useState<AIConfig>({
-    apiKey: '',
-    model: 'gpt-4o-mini',
-    temperature: 0.7,
-    maxTokens: 4000,
-    timeout: 30
-  });
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [isTesting, setIsTesting] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'none' | 'success' | 'error'>('none');
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const { config, updateConfig, connectionStatus, setConnectionStatus, testConnection } = useAISettings();
+  const [showApiKey, setShowApiKey] = React.useState(false);
+  const [isTesting, setIsTesting] = React.useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    // Load saved config from localStorage
-    const savedConfig = localStorage.getItem('ai-settings');
-    if (savedConfig) {
-      try {
-        const parsedConfig = JSON.parse(savedConfig);
-        setConfig(parsedConfig);
-      } catch (error) {
-        console.error('Failed to parse saved AI config:', error);
-      }
-    }
-  }, []);
-
-  const handleConfigChange = (key: keyof AIConfig, value: any) => {
-    setConfig(prev => ({ ...prev, [key]: value }));
-    setHasUnsavedChanges(true);
-    setConnectionStatus('none');
+  const handleConfigChange = (key: keyof typeof config, value: any) => {
+    updateConfig(key, value);
+    setHasUnsavedChanges(false); // Context handles saving automatically
   };
 
-  const saveConfiguration = () => {
-    try {
-      localStorage.setItem('ai-settings', JSON.stringify(config));
-      setHasUnsavedChanges(false);
-      toast({
-        title: "Configuration Saved",
-        description: "AI settings have been saved successfully."
-      });
-    } catch (error) {
-      toast({
-        title: "Save Failed",
-        description: "Failed to save AI configuration.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const resetToDefaults = () => {
-    const defaultConfig: AIConfig = {
-      apiKey: '',
-      model: 'gpt-4o-mini',
-      temperature: 0.7,
-      maxTokens: 4000,
-      timeout: 30
-    };
-    setConfig(defaultConfig);
-    setHasUnsavedChanges(true);
-    setConnectionStatus('none');
-  };
-
-  const testConnection = async () => {
+  const handleTestConnection = async () => {
     if (!config.apiKey.trim()) {
       toast({
         title: "API Key Required",
@@ -94,17 +35,12 @@ const AISettings: React.FC = () => {
 
     setIsTesting(true);
     try {
-      // Simulate API test - replace with actual OpenAI API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // For now, we'll simulate a successful connection
-      setConnectionStatus('success');
+      await testConnection();
       toast({
         title: "Connection Successful",
         description: "Successfully connected to OpenAI API."
       });
     } catch (error) {
-      setConnectionStatus('error');
       toast({
         title: "Connection Failed",
         description: "Failed to connect to OpenAI API. Please check your API key.",
@@ -113,6 +49,15 @@ const AISettings: React.FC = () => {
     } finally {
       setIsTesting(false);
     }
+  };
+
+  const resetToDefaults = () => {
+    updateConfig('apiKey', '');
+    updateConfig('model', 'gpt-4o-mini');
+    updateConfig('temperature', 0.7);
+    updateConfig('maxTokens', 4000);
+    updateConfig('timeout', 30);
+    setConnectionStatus('none');
   };
 
   const getModelInfo = (model: string) => {
@@ -165,7 +110,7 @@ const AISettings: React.FC = () => {
               </div>
               <Button
                 variant="outline"
-                onClick={testConnection}
+                onClick={handleTestConnection}
                 disabled={isTesting || !config.apiKey.trim()}
                 className="flex items-center space-x-2"
               >
@@ -290,15 +235,8 @@ const AISettings: React.FC = () => {
           Reset to Defaults
         </Button>
         
-        <div className="flex space-x-3">
-          {hasUnsavedChanges && (
-            <span className="text-sm text-amber-600 flex items-center">
-              Unsaved changes
-            </span>
-          )}
-          <Button onClick={saveConfiguration} disabled={!hasUnsavedChanges}>
-            Save Configuration
-          </Button>
+        <div className="text-sm text-green-600">
+          Settings are automatically saved
         </div>
       </div>
     </div>

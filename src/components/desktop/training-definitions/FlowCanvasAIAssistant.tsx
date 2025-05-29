@@ -2,17 +2,14 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sparkles, FileText, Brain } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Sparkles, Upload, FileText, Settings, Brain } from 'lucide-react';
 import { StepBlock } from '@/types/training-definitions';
 import { createNewBlock } from '@/utils/blockUtils';
 import DocumentUploader from './DocumentUploader';
 import AIFlowPreview from './AIFlowPreview';
-import AIDebugPanel from './AIDebugPanel';
+import AISettingsModal from './AISettingsModal';
+import { useAISettings } from '@/contexts/AISettingsContext';
 
 interface FlowCanvasAIAssistantProps {
   onApplyFlow: (blocks: StepBlock[]) => void;
@@ -25,14 +22,7 @@ const FlowCanvasAIAssistant: React.FC<FlowCanvasAIAssistantProps> = ({ onApplyFl
   const [showPreview, setShowPreview] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Add AI settings integration
-  const [aiSettings, setAiSettings] = useState({
-    apiKey: localStorage.getItem('openai_api_key') || '',
-    model: localStorage.getItem('ai_model') || 'gpt-4o-mini',
-    temperature: parseFloat(localStorage.getItem('ai_temperature') || '0.7'),
-    maxTokens: parseInt(localStorage.getItem('ai_max_tokens') || '2000')
-  });
-
+  const { config, connectionStatus } = useAISettings();
   const { toast } = useToast();
 
   const handleDocumentProcessed = (file: File, content: string, extractedImages?: string[]) => {
@@ -132,31 +122,31 @@ const FlowCanvasAIAssistant: React.FC<FlowCanvasAIAssistantProps> = ({ onApplyFl
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center">
-          <Brain className="w-5 h-5 mr-2 text-purple-600" />
-          Advanced AI Training Flow Generator
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg flex items-center">
+            <Brain className="w-5 h-5 mr-2 text-purple-600" />
+            Advanced AI Training Flow Generator
+          </CardTitle>
+          <AISettingsModal />
+        </div>
       </CardHeader>
       
       <CardContent className="flex-1 overflow-y-auto space-y-4">
-        {/* AI Debug Panel */}
-        <AIDebugPanel className="mb-4" />
-        
-        {/* AI Settings Status */}
+        {/* AI Configuration Status */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Settings className="w-4 h-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-800">AI Configuration</span>
+              <Brain className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-800">AI Status</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className={`w-2 h-2 rounded-full ${aiSettings.apiKey ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <div className={`w-2 h-2 rounded-full ${config.apiKey ? 'bg-green-500' : 'bg-red-500'}`}></div>
               <span className="text-xs text-blue-700">
-                {aiSettings.apiKey ? `Connected (${aiSettings.model})` : 'No API Key'}
+                {config.apiKey ? `Connected (${config.model})` : 'No API Key'}
               </span>
             </div>
           </div>
-          {!aiSettings.apiKey && (
+          {!config.apiKey && (
             <p className="text-xs text-blue-600 mt-2">
               Configure your AI settings in the Settings page to enable advanced features.
             </p>
