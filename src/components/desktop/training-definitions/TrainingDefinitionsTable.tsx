@@ -81,7 +81,7 @@ const TrainingDefinitionsTable: React.FC<TrainingDefinitionsTableProps> = ({
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const handleEdit = (definition: TrainingDefinitionWithLatestVersion) => {
-    navigate(`/desktop/training-definitions/builder/${definition.id}`);
+    navigate(`/desktop/training-definitions/${definition.id}`);
   };
 
   const handleVersionHistory = (definition: TrainingDefinitionWithLatestVersion) => {
