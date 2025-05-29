@@ -12,6 +12,8 @@ import MobileNavigation from '@/components/desktop/training-definitions/MobileNa
 import BuilderLayout from '@/components/desktop/training-definitions/BuilderLayout';
 import VersionManagement from '@/components/desktop/training-definitions/VersionManagement';
 import DebugInfo from '@/components/desktop/training-definitions/DebugInfo';
+import AdvancedValidation from '@/components/desktop/training-definitions/AdvancedValidation';
+import AutoSaveIndicator from '@/components/desktop/training-definitions/AutoSaveIndicator';
 import { useStepManagement } from '@/hooks/useStepManagement';
 
 const TrainingDefinitionBuilderMinimal = () => {
@@ -27,10 +29,12 @@ const TrainingDefinitionBuilderMinimal = () => {
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
   
   // Mobile UI state
-  const [mobileActivePanel, setMobileActivePanel] = useState<'palette' | 'canvas' | 'config'>('canvas');
+  const [mobileActivePanel, setMobileActivePanel] = useState<'palette' | 'canvas' | 'config' | 'validation'>('canvas');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   
   // Step management using custom hook
@@ -51,6 +55,11 @@ const TrainingDefinitionBuilderMinimal = () => {
   
   // Determine if this is a new definition
   const isNewDefinition = id === 'new' || location.pathname.includes('/new') || !id;
+
+  // Track changes for auto-save indication
+  useEffect(() => {
+    setHasUnsavedChanges(true);
+  }, [title, description, steps]);
 
   // Load existing definition if editing
   useEffect(() => {
@@ -92,6 +101,7 @@ const TrainingDefinitionBuilderMinimal = () => {
       setDescription(defData.description || '');
       setVersion(versionData);
       setSteps(stepsData);
+      setHasUnsavedChanges(false);
 
     } catch (error) {
       console.error('Error loading training definition:', error);
@@ -138,6 +148,7 @@ const TrainingDefinitionBuilderMinimal = () => {
 
       setDefinition(result.definition);
       setVersion(result.version);
+      setHasUnsavedChanges(false);
 
       if (result.isNew) {
         toast({
@@ -212,16 +223,43 @@ const TrainingDefinitionBuilderMinimal = () => {
           setDescription={setDescription}
         />
 
-        <BuilderControls
-          saving={saving}
-          onSaveDraft={handleSave}
-          title={title}
-          steps={steps}
-          definitionId={definition?.id}
-          currentVersion={version?.version_number}
-          onPublishSuccess={handlePublishSuccess}
-        />
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+          <BuilderControls
+            saving={saving}
+            onSaveDraft={handleSave}
+            title={title}
+            steps={steps}
+            definitionId={definition?.id}
+            currentVersion={version?.version_number}
+            onPublishSuccess={handlePublishSuccess}
+          />
+          
+          <div className="flex items-center space-x-4">
+            <AutoSaveIndicator
+              hasUnsavedChanges={hasUnsavedChanges}
+              saving={saving}
+            />
+            
+            <button
+              onClick={() => setShowValidation(!showValidation)}
+              className="text-sm text-gray-600 hover:text-gray-900"
+            >
+              {showValidation ? 'Hide' : 'Show'} Validation
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* Validation Panel (collapsible) */}
+      {showValidation && (
+        <div className="border-b border-gray-200 p-4 lg:p-6 bg-gray-50">
+          <AdvancedValidation
+            steps={steps}
+            title={title}
+            description={description}
+          />
+        </div>
+      )}
 
       {/* Mobile Panel Navigation */}
       <MobileNavigation
