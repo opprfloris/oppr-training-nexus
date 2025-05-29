@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Save, ExternalLink } from 'lucide-react';
+import { Settings, Save } from 'lucide-react';
 import { useAISettings } from '@/contexts/AISettingsContext';
 
 interface AISettingsModalProps {
@@ -46,6 +46,12 @@ Generate a well-structured training sequence with clear learning progression.`);
     console.log('Prompts saved successfully');
   };
 
+  const handleTestAnalysisPrompt = () => {
+    // Test the analysis prompt - this would trigger a re-analysis of the current document
+    console.log('Testing analysis prompt:', analysisPrompt);
+    // In a real implementation, this would trigger document re-analysis
+  };
+
   // Load saved prompts on component mount
   React.useEffect(() => {
     const savedAnalysisPrompt = localStorage.getItem('ai-analysis-prompt');
@@ -65,24 +71,17 @@ Generate a well-structured training sequence with clear learning progression.`);
       
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Settings className="w-5 h-5 mr-2" />
-              AI Configuration
-            </div>
-            <Button variant="outline" size="sm" onClick={() => window.open('/desktop/settings', '_blank')}>
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Open Settings
-            </Button>
+          <DialogTitle className="flex items-center">
+            <Settings className="w-5 h-5 mr-2" />
+            AI Configuration
           </DialogTitle>
         </DialogHeader>
         
         <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
           <Tabs defaultValue="configuration" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="configuration">Configuration</TabsTrigger>
               <TabsTrigger value="prompts">Custom Prompts</TabsTrigger>
-              <TabsTrigger value="testing">Testing</TabsTrigger>
             </TabsList>
             
             <TabsContent value="configuration" className="space-y-4 mt-4">
@@ -132,9 +131,19 @@ Generate a well-structured training sequence with clear learning progression.`);
             <TabsContent value="prompts" className="space-y-4 mt-4">
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="analysis-prompt" className="text-sm font-medium">
-                    Content Analysis Prompt
-                  </Label>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label htmlFor="analysis-prompt" className="text-sm font-medium">
+                      Content Analysis Prompt
+                    </Label>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleTestAnalysisPrompt}
+                      disabled={!config.apiKey}
+                    >
+                      Test Prompt
+                    </Button>
+                  </div>
                   <p className="text-xs text-gray-600 mb-2">
                     This prompt is used to analyze uploaded documents and generate summaries
                   </p>
@@ -169,27 +178,6 @@ Generate a well-structured training sequence with clear learning progression.`);
                   <Save className="w-4 h-4 mr-2" />
                   Save Custom Prompts
                 </Button>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="testing" className="space-y-4 mt-4">
-              <div className="bg-gray-50 border rounded-lg p-4">
-                <h4 className="text-sm font-medium mb-2">Test AI Connection</h4>
-                <p className="text-xs text-gray-600 mb-3">
-                  Verify your AI configuration is working correctly
-                </p>
-                <Button variant="outline" size="sm" disabled={!config.apiKey}>
-                  {config.apiKey ? 'Test Connection' : 'API Key Required'}
-                </Button>
-              </div>
-              
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                <h4 className="text-sm font-medium text-green-800 mb-2">Recent Activity</h4>
-                <div className="space-y-1 text-xs text-green-700">
-                  <div>• Prompts configured and saved</div>
-                  <div>• Simple analysis mode enabled</div>
-                  <div>• Ready for training generation</div>
-                </div>
               </div>
             </TabsContent>
           </Tabs>

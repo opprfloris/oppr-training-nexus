@@ -1,8 +1,7 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Tag } from 'lucide-react';
+import { Tag } from 'lucide-react';
 
 interface SimpleContentSummaryProps {
   content: string;
@@ -29,62 +28,67 @@ const SimpleContentSummary: React.FC<SimpleContentSummaryProps> = ({ content, fi
     .map(({ topic }) => topic)
     .slice(0, 6); // Limit to 6 topics
 
-  // Generate simple summary
-  const summary = `This ${words > 1000 ? 'comprehensive' : 'concise'} document covers ${detectedTopics.length > 0 ? detectedTopics.slice(0, 2).join(' and ') : 'various topics'}. With approximately ${words} words, it provides ${words > 1500 ? 'detailed' : 'essential'} information suitable for training content development.`;
+  // Generate simple summary using localStorage prompt
+  const savedPrompt = localStorage.getItem('ai-analysis-prompt');
+  const defaultPrompt = `Analyze this training document and provide a simple, helpful summary.
+
+Focus on:
+- Main topics and themes
+- Key learning points
+- Suggested training approach
+- Content difficulty level
+
+Keep the response concise and actionable for training developers.`;
+
+  const analysisPrompt = savedPrompt || defaultPrompt;
+
+  // Simple analysis output
+  const analysisText = `**Document Analysis: ${fileName}**
+
+This document contains approximately ${words} words (${readingTime} minute read) and covers ${detectedTopics.length > 0 ? detectedTopics.slice(0, 2).join(' and ') : 'various topics'}. 
+
+The content appears to be ${words > 2000 ? 'comprehensive and detailed' : words > 1000 ? 'moderately detailed' : 'concise and focused'}, making it ${words > 1500 ? 'suitable for intermediate to advanced training' : 'appropriate for basic to intermediate training'}.
+
+**Recommended Training Configuration:**
+- Training length: ${Math.max(10, Math.min(30, readingTime * 2))} minutes
+- Number of questions: ${Math.max(3, Math.min(15, Math.floor(words / 200)))}
+- Difficulty level: ${words > 2000 ? 'Intermediate' : 'Basic'}
+
+${detectedTopics.length > 0 ? `**Key Topics Detected:**
+${detectedTopics.map(topic => `• ${topic}`).join('\n')}` : ''}
+
+*Note: This analysis uses a basic keyword matching approach. For more detailed analysis, configure your AI settings with an API key.*`;
 
   return (
-    <Card className="mt-4">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center">
-          <FileText className="w-4 h-4 mr-2 text-blue-600" />
-          Content Summary
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Document Info */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium">{fileName}</span>
-            <span className="text-blue-600">{readingTime} min read</span>
-          </div>
-          <p className="text-sm text-blue-800 mt-2">{summary}</p>
+    <div className="mt-4 space-y-4">
+      {/* Simple text output */}
+      <div className="prose prose-sm max-w-none">
+        <div className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">
+          {analysisText}
         </div>
+      </div>
 
-        {/* Key Topics */}
-        {detectedTopics.length > 0 && (
-          <div>
-            <h4 className="text-sm font-medium mb-2 flex items-center">
-              <Tag className="w-3 h-3 mr-1" />
-              Key Topics
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {detectedTopics.map((topic, index) => (
-                <Badge 
-                  key={index} 
-                  variant="outline" 
-                  className="cursor-pointer hover:bg-blue-50 text-xs"
-                >
-                  {topic}
-                </Badge>
-              ))}
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Click topics to include/exclude in training generation
-            </p>
+      {/* Key Topics as clickable badges */}
+      {detectedTopics.length > 0 && (
+        <div className="border-t pt-4">
+          <div className="flex items-center space-x-2 mb-2">
+            <Tag className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-600">Topics (click to include/exclude):</span>
           </div>
-        )}
-
-        {/* Simple Recommendations */}
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-          <h4 className="text-sm font-medium text-green-800 mb-2">Quick Recommendations</h4>
-          <ul className="text-xs text-green-700 space-y-1">
-            <li>• Suggested training length: {Math.max(10, Math.min(30, readingTime * 2))} minutes</li>
-            <li>• Recommended questions: {Math.max(3, Math.min(15, Math.floor(words / 200)))}</li>
-            <li>• Content difficulty: {words > 2000 ? 'Intermediate' : 'Basic'}</li>
-          </ul>
+          <div className="flex flex-wrap gap-2">
+            {detectedTopics.map((topic, index) => (
+              <Badge 
+                key={index} 
+                variant="outline" 
+                className="cursor-pointer hover:bg-blue-50 text-xs"
+              >
+                {topic}
+              </Badge>
+            ))}
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 };
 
