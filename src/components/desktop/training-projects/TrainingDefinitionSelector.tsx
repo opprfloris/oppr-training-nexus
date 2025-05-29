@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { SearchIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { TrainingDefinitionWithLatestVersion } from '@/types/training-definitions';
@@ -47,19 +46,27 @@ const TrainingDefinitionSelector: React.FC<TrainingDefinitionSelectorProps> = ({
             version_number,
             status,
             created_at,
-            published_at
+            published_at,
+            training_definition_id,
+            version_notes,
+            steps_json
           )
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Filter to only show definitions with published versions
-      const publishedDefinitions = (data || []).filter(def => 
+      // Transform the data to match our type structure and filter to only show definitions with published versions
+      const transformedData = (data || []).map(def => ({
+        ...def,
+        latest_version: Array.isArray(def.latest_version) && def.latest_version.length > 0 
+          ? def.latest_version[0] 
+          : null
+      })).filter(def => 
         def.latest_version && def.latest_version.status === 'published'
       );
 
-      setTrainingDefinitions(publishedDefinitions);
+      setTrainingDefinitions(transformedData);
     } catch (error) {
       console.error('Error loading training definitions:', error);
       toast({
@@ -138,7 +145,7 @@ const TrainingDefinitionSelector: React.FC<TrainingDefinitionSelectorProps> = ({
         <div className="space-y-4">
           {/* Search */}
           <div className="relative">
-            <SearchIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <MagnifyingGlassIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Search training definitions..."
               value={searchTerm}

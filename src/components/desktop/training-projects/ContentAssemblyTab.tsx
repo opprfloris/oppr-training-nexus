@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PlusIcon, DocumentTextIcon, ArrowRightIcon, LinkIcon, PencilIcon, UnlinkIcon, CopyIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, DocumentTextIcon, ArrowRightIcon, LinkIcon, PencilIcon, LinkSlashIcon, DocumentDuplicateIcon } from '@heroicons/react/24/outline';
 import { TrainingProject, TrainingProjectMarker, TrainingProjectContent } from '@/types/training-projects';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -40,7 +39,7 @@ export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
             id,
             version_number,
             status,
-            training_definition:training_definitions(title)
+            training_definition:training_definitions(id, title)
           )
         `)
         .eq('training_project_id', project.id)
@@ -246,7 +245,7 @@ export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
                   className="w-full justify-start"
                   onClick={handleCopyTDAsDraft}
                 >
-                  <CopyIcon className="w-4 h-4 mr-2" />
+                  <DocumentDuplicateIcon className="w-4 h-4 mr-2" />
                   Copy Published TD as New Draft...
                 </Button>
 
@@ -267,7 +266,7 @@ export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
                     className="w-full justify-start"
                     onClick={handleUnlinkTD}
                   >
-                    <UnlinkIcon className="w-4 h-4 mr-2" />
+                    <LinkSlashIcon className="w-4 h-4 mr-2" />
                     Unlink TD
                   </Button>
                 )}
@@ -325,6 +324,8 @@ export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
         onSelect={(tdVersion) => {
           // Handle TD selection logic here
           setShowTDSelector(false);
+          loadContent();
+          onContentChange();
         }}
         projectId={project.id}
         markerId={selectedMarkerId}
