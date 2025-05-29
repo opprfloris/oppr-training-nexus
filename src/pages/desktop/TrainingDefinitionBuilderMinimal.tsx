@@ -1,18 +1,18 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { TrainingDefinition, TrainingDefinitionVersion, StepBlock } from '@/types/training-definitions';
+import { TrainingDefinition, TrainingDefinitionVersion } from '@/types/training-definitions';
 import { fetchDefinitionAndVersion } from '@/services/trainingDefinitionService';
 import { saveDraft } from '@/services/trainingDefinitionSaveService';
 import BuilderHeader from '@/components/desktop/training-definitions/BuilderHeader';
 import BuilderControls from '@/components/desktop/training-definitions/BuilderControls';
-import BlockPalette from '@/components/desktop/training-definitions/BlockPalette';
-import FlowCanvas from '@/components/desktop/training-definitions/FlowCanvas';
-import BlockConfiguration from '@/components/desktop/training-definitions/BlockConfiguration';
-import VersionHistoryModal from '@/components/desktop/training-definitions/VersionHistoryModal';
-import { createNewBlock } from '@/utils/blockUtils';
-import { Button } from '@/components/ui/button';
-import { ClockIcon, DocumentTextIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import EnhancedHeader from '@/components/desktop/training-definitions/EnhancedHeader';
+import MobileNavigation from '@/components/desktop/training-definitions/MobileNavigation';
+import BuilderLayout from '@/components/desktop/training-definitions/BuilderLayout';
+import VersionManagement from '@/components/desktop/training-definitions/VersionManagement';
+import DebugInfo from '@/components/desktop/training-definitions/DebugInfo';
+import { useStepManagement } from '@/hooks/useStepManagement';
 
 const TrainingDefinitionBuilderMinimal = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,8 +25,6 @@ const TrainingDefinitionBuilderMinimal = () => {
   const [version, setVersion] = useState<TrainingDefinitionVersion | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [steps, setSteps] = useState<StepBlock[]>([]);
-  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
@@ -34,6 +32,20 @@ const TrainingDefinitionBuilderMinimal = () => {
   // Mobile UI state
   const [mobileActivePanel, setMobileActivePanel] = useState<'palette' | 'canvas' | 'config'>('canvas');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  
+  // Step management using custom hook
+  const {
+    steps,
+    setSteps,
+    selectedBlockId,
+    setSelectedBlockId,
+    selectedBlock,
+    addStep,
+    updateStep,
+    deleteStep,
+    reorderSteps,
+    applyAIFlow
+  } = useStepManagement();
   
   console.log('TrainingDefinitionBuilderMinimal render - id:', id, 'pathname:', location.pathname);
   
@@ -151,56 +163,10 @@ const TrainingDefinitionBuilderMinimal = () => {
     }
   };
 
-  // Step management functions
-  const addStep = (blockType: 'information' | 'goto' | 'question') => {
-    const newOrder = steps.length;
-    const newBlock = createNewBlock(blockType, newOrder);
-    setSteps([...steps, newBlock]);
-    setSelectedBlockId(newBlock.id);
-    
-    // On mobile, switch to config panel when adding a block
-    if (window.innerWidth < 1024) {
-      setMobileActivePanel('config');
-    }
-  };
-
-  const updateStep = (stepId: string, updatedConfig: any) => {
-    setSteps(steps.map(step => 
-      step.id === stepId 
-        ? { ...step, config: updatedConfig }
-        : step
-    ));
-  };
-
-  const deleteStep = (stepId: string) => {
-    const filteredSteps = steps.filter(step => step.id !== stepId);
-    const reorderedSteps = filteredSteps.map((step, index) => ({
-      ...step,
-      order: index
-    }));
-    setSteps(reorderedSteps);
-    
-    if (selectedBlockId === stepId) {
-      setSelectedBlockId(null);
-    }
-  };
-
-  const reorderSteps = (startIndex: number, endIndex: number) => {
-    const newSteps = [...steps];
-    const [movedStep] = newSteps.splice(startIndex, 1);
-    newSteps.splice(endIndex, 0, movedStep);
-    
-    newSteps.forEach((step, index) => {
-      step.order = index;
-    });
-
-    setSteps(newSteps);
-  };
-
-  const applyAIFlow = (blocks: StepBlock[]) => {
-    setSteps(blocks);
-    if (blocks.length > 0) {
-      setSelectedBlockId(blocks[0].id);
+  const handleAddStep = (blockType: 'information' | 'goto' | 'question') => {
+    const newPanel = addStep(blockType);
+    if (newPanel) {
+      setMobileActivePanel(newPanel as 'config');
     }
   };
 
@@ -225,105 +191,17 @@ const TrainingDefinitionBuilderMinimal = () => {
     );
   }
 
-  const selectedBlock = selectedBlockId ? steps.find(step => step.id === selectedBlockId) : null;
-
-  // Mobile Panel Navigation
-  const MobilePanelNavigation = () => (
-    <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-2">
-      <div className="flex space-x-1">
-        <Button
-          variant={mobileActivePanel === 'palette' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setMobileActivePanel('palette')}
-          className="flex-1"
-        >
-          Blocks
-        </Button>
-        <Button
-          variant={mobileActivePanel === 'canvas' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setMobileActivePanel('canvas')}
-          className="flex-1"
-        >
-          Flow ({steps.length})
-        </Button>
-        <Button
-          variant={mobileActivePanel === 'config' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setMobileActivePanel('config')}
-          className="flex-1"
-          disabled={!selectedBlock}
-        >
-          Config
-        </Button>
-      </div>
-    </div>
-  );
-
   return (
     <div className="h-full flex flex-col">
       {/* Enhanced Header with Mobile Menu */}
-      <div className="bg-white border-b border-gray-200 px-4 lg:px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            {/* Mobile Menu Toggle */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="lg:hidden"
-              onClick={() => setShowMobileMenu(!showMobileMenu)}
-            >
-              {showMobileMenu ? <XMarkIcon className="w-5 h-5" /> : <Bars3Icon className="w-5 h-5" />}
-            </Button>
-            
-            <div>
-              <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-                {isNewDefinition ? 'Create New Training Definition' : `Edit Training Definition`}
-              </h1>
-              <p className="text-sm lg:text-base text-gray-600 mt-1">
-                Phase 5C: UI Polish & Mobile Responsiveness
-              </p>
-              {version && (
-                <div className="flex flex-col lg:flex-row lg:items-center lg:space-x-4 mt-2">
-                  <p className="text-xs lg:text-sm text-gray-500">
-                    Current version: {version.version_number} ({version.status})
-                  </p>
-                  {version.published_at && (
-                    <p className="text-xs lg:text-sm text-green-600">
-                      Published: {new Date(version.published_at).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Enhanced Version Management Controls */}
-          <div className={`${showMobileMenu ? 'flex' : 'hidden'} lg:flex flex-col lg:flex-row items-start lg:items-center space-y-2 lg:space-y-0 lg:space-x-3 absolute lg:relative top-full lg:top-auto left-0 lg:left-auto right-0 lg:right-auto bg-white lg:bg-transparent border-b lg:border-b-0 border-gray-200 p-4 lg:p-0 z-10`}>
-            {definition && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowVersionHistory(true)}
-                className="w-full lg:w-auto flex items-center justify-center space-x-2"
-              >
-                <ClockIcon className="w-4 h-4" />
-                <span>Version History</span>
-              </Button>
-            )}
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/desktop/training-definitions')}
-              className="w-full lg:w-auto flex items-center justify-center space-x-2"
-            >
-              <DocumentTextIcon className="w-4 h-4" />
-              <span>Back to List</span>
-            </Button>
-          </div>
-        </div>
-      </div>
+      <EnhancedHeader
+        isNewDefinition={isNewDefinition}
+        definition={definition}
+        version={version}
+        showMobileMenu={showMobileMenu}
+        setShowMobileMenu={setShowMobileMenu}
+        setShowVersionHistory={setShowVersionHistory}
+      />
 
       {/* Enhanced Builder Header */}
       <div className="bg-white border-b border-gray-200 p-4 lg:p-6">
@@ -346,118 +224,50 @@ const TrainingDefinitionBuilderMinimal = () => {
       </div>
 
       {/* Mobile Panel Navigation */}
-      <MobilePanelNavigation />
+      <MobileNavigation
+        mobileActivePanel={mobileActivePanel}
+        setMobileActivePanel={setMobileActivePanel}
+        steps={steps}
+        selectedBlock={selectedBlock}
+      />
 
       {/* Enhanced Main Builder Layout - Responsive */}
-      <div className="flex-1 overflow-hidden">
-        {/* Desktop Layout */}
-        <div className="hidden lg:grid lg:grid-cols-12 lg:gap-6 h-full p-6">
-          {/* Left Panel - Block Palette */}
-          <div className="col-span-3">
-            <BlockPalette 
-              onAddBlock={addStep}
-              onApplyAIFlow={applyAIFlow}
-            />
-          </div>
-
-          {/* Center Panel - Flow Canvas */}
-          <div className="col-span-5">
-            <FlowCanvas
-              steps={steps}
-              selectedBlockId={selectedBlockId}
-              onSelectBlock={setSelectedBlockId}
-              onDeleteBlock={deleteStep}
-              onReorderBlocks={reorderSteps}
-            />
-          </div>
-
-          {/* Right Panel - Block Configuration */}
-          <div className="col-span-4">
-            <BlockConfiguration
-              block={selectedBlock || null}
-              onUpdateConfig={updateStep}
-            />
-          </div>
-        </div>
-
-        {/* Mobile Layout - Single Panel */}
-        <div className="lg:hidden h-full p-4">
-          {mobileActivePanel === 'palette' && (
-            <div className="h-full">
-              <BlockPalette 
-                onAddBlock={addStep}
-                onApplyAIFlow={applyAIFlow}
-              />
-            </div>
-          )}
-
-          {mobileActivePanel === 'canvas' && (
-            <div className="h-full">
-              <FlowCanvas
-                steps={steps}
-                selectedBlockId={selectedBlockId}
-                onSelectBlock={(blockId) => {
-                  setSelectedBlockId(blockId);
-                  if (blockId) {
-                    setMobileActivePanel('config');
-                  }
-                }}
-                onDeleteBlock={deleteStep}
-                onReorderBlocks={reorderSteps}
-              />
-            </div>
-          )}
-
-          {mobileActivePanel === 'config' && (
-            <div className="h-full">
-              <BlockConfiguration
-                block={selectedBlock || null}
-                onUpdateConfig={updateStep}
-              />
-            </div>
-          )}
-        </div>
-      </div>
+      <BuilderLayout
+        mobileActivePanel={mobileActivePanel}
+        setMobileActivePanel={setMobileActivePanel}
+        steps={steps}
+        selectedBlock={selectedBlock}
+        selectedBlockId={selectedBlockId}
+        onAddBlock={handleAddStep}
+        onSelectBlock={setSelectedBlockId}
+        onDeleteBlock={deleteStep}
+        onReorderBlocks={reorderSteps}
+        onUpdateConfig={updateStep}
+        onApplyAIFlow={applyAIFlow}
+      />
 
       {/* Version History Modal */}
-      {definition && (
-        <VersionHistoryModal
-          isOpen={showVersionHistory}
-          onClose={() => setShowVersionHistory(false)}
-          definitionId={definition.id}
-          definitionTitle={definition.title}
-          onCreateNewVersion={handleCreateNewVersion}
-        />
-      )}
+      <VersionManagement
+        definition={definition}
+        showVersionHistory={showVersionHistory}
+        setShowVersionHistory={setShowVersionHistory}
+        onCreateNewVersion={handleCreateNewVersion}
+      />
 
       {/* Enhanced Debug Info - Responsive */}
-      <div className="bg-gray-50 border-t border-gray-200 p-3 lg:p-4">
-        <details className="group">
-          <summary className="cursor-pointer font-medium text-gray-900 text-sm lg:text-base">
-            Debug Info & Status
-          </summary>
-          <div className="mt-2 grid grid-cols-1 lg:grid-cols-2 gap-2 text-xs lg:text-sm text-gray-600">
-            <div>
-              <p>Route ID: {id}</p>
-              <p>Pathname: {location.pathname}</p>
-              <p>Is New: {isNewDefinition ? 'Yes' : 'No'}</p>
-              <p>Loading: {loading ? 'Yes' : 'No'}</p>
-              <p>Mobile Panel: {mobileActivePanel}</p>
-            </div>
-            <div>
-              <p>Title: {title || 'Not set'}</p>
-              <p>Description: {description || 'Not set'}</p>
-              <p>Definition ID: {definition?.id || 'None'}</p>
-              <p>Version: {version?.version_number || 'None'}</p>
-              <p>Steps Count: {steps.length}</p>
-              <p>Selected Block: {selectedBlockId || 'None'}</p>
-            </div>
-          </div>
-          <p className="text-xs lg:text-sm text-green-600 font-medium mt-2">
-            Status: Phase 5C complete - UI Polish & Mobile Responsiveness
-          </p>
-        </details>
-      </div>
+      <DebugInfo
+        id={id}
+        pathname={location.pathname}
+        isNewDefinition={isNewDefinition}
+        loading={loading}
+        mobileActivePanel={mobileActivePanel}
+        title={title}
+        description={description}
+        definition={definition}
+        version={version}
+        steps={steps}
+        selectedBlockId={selectedBlockId}
+      />
     </div>
   );
 };
