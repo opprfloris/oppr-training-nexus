@@ -9,6 +9,59 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      floor_plan_images: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          file_path: string
+          file_size: number
+          file_type: string
+          height: number | null
+          id: string
+          name: string
+          updated_at: string
+          usage_count: number
+          width: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          file_path: string
+          file_size: number
+          file_type: string
+          height?: number | null
+          id?: string
+          name: string
+          updated_at?: string
+          usage_count?: number
+          width?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          height?: number | null
+          id?: string
+          name?: string
+          updated_at?: string
+          usage_count?: number
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "floor_plan_images_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
