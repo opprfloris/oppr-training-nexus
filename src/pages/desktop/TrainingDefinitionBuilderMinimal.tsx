@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { TrainingDefinition, TrainingDefinitionVersion } from '@/types/training-definitions';
 import { fetchDefinitionAndVersion } from '@/services/trainingDefinitionService';
@@ -9,6 +9,7 @@ import { saveDraft } from '@/services/trainingDefinitionSaveService';
 const TrainingDefinitionBuilderMinimal = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   
   // State management
@@ -19,28 +20,44 @@ const TrainingDefinitionBuilderMinimal = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
-  console.log('TrainingDefinitionBuilderMinimal loaded with id:', id);
+  console.log('TrainingDefinitionBuilderMinimal render - id:', id, 'pathname:', location.pathname);
   
-  const isNewDefinition = id === 'new';
+  // Determine if this is a new definition
+  const isNewDefinition = id === 'new' || location.pathname.includes('/new');
 
   // Load existing definition if editing
   useEffect(() => {
+    console.log('useEffect triggered - id:', id, 'isNewDefinition:', isNewDefinition);
+    
     if (isNewDefinition) {
+      console.log('This is a new definition, setting loading to false');
       setLoading(false);
       return;
     }
 
-    if (id) {
+    if (id && id !== 'new') {
+      console.log('Loading existing definition with id:', id);
       loadDefinition();
+    } else {
+      console.log('No valid id provided, setting loading to false');
+      setLoading(false);
     }
   }, [id, isNewDefinition]);
 
   const loadDefinition = async () => {
-    if (!id || id === 'new') return;
+    if (!id || id === 'new') {
+      console.log('loadDefinition called but id is invalid:', id);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log('Fetching definition for id:', id);
       const { definition: defData, version: versionData } = await fetchDefinitionAndVersion(id);
+      
+      console.log('Definition loaded:', defData);
+      console.log('Version loaded:', versionData);
       
       setDefinition(defData);
       setTitle(defData.title);
@@ -56,6 +73,7 @@ const TrainingDefinitionBuilderMinimal = () => {
       });
       navigate('/desktop/training-definitions');
     } finally {
+      console.log('Setting loading to false in loadDefinition finally block');
       setLoading(false);
     }
   };
@@ -116,6 +134,8 @@ const TrainingDefinitionBuilderMinimal = () => {
       setSaving(false);
     }
   };
+
+  console.log('Current loading state:', loading);
 
   if (loading) {
     return (
@@ -187,7 +207,9 @@ const TrainingDefinitionBuilderMinimal = () => {
       <div className="mt-6 bg-gray-50 rounded-lg p-4">
         <h3 className="font-medium text-gray-900 mb-2">Debug Info:</h3>
         <p className="text-sm text-gray-600">Route ID: {id}</p>
+        <p className="text-sm text-gray-600">Pathname: {location.pathname}</p>
         <p className="text-sm text-gray-600">Is New: {isNewDefinition ? 'Yes' : 'No'}</p>
+        <p className="text-sm text-gray-600">Loading: {loading ? 'Yes' : 'No'}</p>
         <p className="text-sm text-gray-600">Title: {title || 'Not set'}</p>
         <p className="text-sm text-gray-600">Description: {description || 'Not set'}</p>
         <p className="text-sm text-gray-600">Definition ID: {definition?.id || 'None'}</p>
