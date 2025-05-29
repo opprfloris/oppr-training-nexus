@@ -14,11 +14,13 @@ interface DocumentAnalysisDisplayProps {
     };
   } | null;
   documentContent?: string;
+  onGenerateFlow?: (config: { selectedTopics: string[]; stepCount: number; content: string; fileName: string }) => void;
 }
 
 const DocumentAnalysisDisplay: React.FC<DocumentAnalysisDisplayProps> = ({ 
   analysisResults, 
-  documentContent 
+  documentContent,
+  onGenerateFlow 
 }) => {
   console.log('DocumentAnalysisDisplay received:', { 
     hasAnalysisResults: !!analysisResults, 
@@ -35,6 +37,7 @@ const DocumentAnalysisDisplay: React.FC<DocumentAnalysisDisplayProps> = ({
     <SimpleContentSummary 
       content={documentContent}
       fileName={analysisResults.documentMetadata?.fileName || 'Document'}
+      onGenerateFlow={onGenerateFlow}
     />
   );
 };

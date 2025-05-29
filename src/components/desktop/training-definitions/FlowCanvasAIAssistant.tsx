@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Brain } from 'lucide-react';
@@ -6,7 +7,7 @@ import AIFlowPreview from './AIFlowPreview';
 import AISettingsModal from './AISettingsModal';
 import AIStatusDisplay from './AIStatusDisplay';
 import DocumentAnalysisDisplay from './DocumentAnalysisDisplay';
-import AIFlowGenerator from './AIFlowGenerator';
+import { useAIFlowGeneration as useAIFlowGenerationHook } from '@/hooks/useAIFlowGeneration';
 import { useAIFlowGeneration } from '@/hooks/useAIFlowGeneration';
 import { StepBlock } from '@/types/training-definitions';
 
@@ -27,9 +28,21 @@ const FlowCanvasAIAssistant: React.FC<FlowCanvasAIAssistantProps> = ({ onApplyFl
     handleBackToAssistant
   } = useAIFlowGeneration();
 
+  // Add the new flow generation hook
+  const { generateFlow, isGenerating, error: generationError } = useAIFlowGenerationHook();
+
   const handleApplyFlow = (blocks: StepBlock[]) => {
     onApplyFlow(blocks);
     handleInternalApplyFlow(blocks);
+  };
+
+  const handleGenerateFlow = async (config: { selectedTopics: string[]; stepCount: number; content: string; fileName: string }) => {
+    console.log('Generating flow with config:', config);
+    try {
+      await generateFlow(config);
+    } catch (error) {
+      console.error('Failed to generate flow:', error);
+    }
   };
 
   return (
@@ -59,13 +72,27 @@ const FlowCanvasAIAssistant: React.FC<FlowCanvasAIAssistantProps> = ({ onApplyFl
         <DocumentAnalysisDisplay 
           analysisResults={analysisResults} 
           documentContent={documentContent}
+          onGenerateFlow={handleGenerateFlow}
         />
 
-        <AIFlowGenerator
-          onGenerateFlow={generateTrainingFlow}
-          isProcessing={isProcessing}
-          documentContent={documentContent}
-        />
+        {/* Show generation status */}
+        {isGenerating && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-center space-x-2 text-blue-800">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              <span className="text-sm font-medium">Generating training flow...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Show generation error */}
+        {generationError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+            <div className="flex items-center space-x-2 text-red-800">
+              <span className="text-sm font-medium">Generation Error: {generationError}</span>
+            </div>
+          </div>
+        )}
 
         {/* AI Flow Preview */}
         {showPreview && (
