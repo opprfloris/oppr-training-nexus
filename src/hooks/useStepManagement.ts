@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { StepBlock } from '@/types/training-definitions';
 import { createNewBlock } from '@/utils/blockUtils';
@@ -7,7 +6,7 @@ export const useStepManagement = (initialSteps: StepBlock[] = []) => {
   const [steps, setSteps] = useState<StepBlock[]>(initialSteps);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
 
-  const addStep = (blockType: 'information' | 'goto' | 'question'): 'config' | null => {
+  const addStep = (blockType: 'information' | 'goto' | 'question'): 'config' | 'validation' | null => {
     const newOrder = steps.length;
     const newBlock = createNewBlock(blockType, newOrder);
     setSteps([...steps, newBlock]);
