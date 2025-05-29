@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { PlusCircleIcon } from "@heroicons/react/24/outline";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { TrainingDefinitionWithLatestVersion, StepBlock } from '@/types/training-definitions';
@@ -33,13 +33,13 @@ const TrainingDefinitions = () => {
   const [definitions, setDefinitions] = useState<TrainingDefinitionWithLatestVersion[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState('active');
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchDefinitions();
-  }, [searchTerm, statusFilter]);
+  }, [searchTerm]);
 
   const fetchDefinitions = async () => {
     try {
@@ -49,6 +49,11 @@ const TrainingDefinitions = () => {
         .from('training_definitions')
         .select(`
           *,
+          profiles!training_definitions_created_by_fkey (
+            first_name,
+            last_name,
+            email
+          ),
           training_definition_versions!inner (
             id,
             version_number,
@@ -94,10 +99,6 @@ const TrainingDefinitions = () => {
           ...def,
           latest_version: null
         };
-      }).filter(def => {
-        // Apply status filter
-        if (statusFilter === 'all') return true;
-        return def.latest_version?.status === statusFilter;
       }) || [];
 
       setDefinitions(transformedData);
@@ -117,6 +118,14 @@ const TrainingDefinitions = () => {
   const handleCreateNew = () => {
     navigate('/desktop/training-definitions/builder/new');
   };
+
+  const activeDefinitions = definitions.filter(def => 
+    def.latest_version?.status === 'draft' || def.latest_version?.status === 'published'
+  );
+
+  const archivedDefinitions = definitions.filter(def => 
+    def.latest_version?.status === 'archived'
+  );
 
   return (
     <div className="space-y-6">
@@ -139,22 +148,6 @@ const TrainingDefinitions = () => {
         </Button>
 
         <div className="flex items-center space-x-4">
-          {/* Status Filter */}
-          <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium text-gray-700">Status:</span>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="published">Published</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* Search */}
           <Input
             placeholder="Search by title or description..."
@@ -165,12 +158,31 @@ const TrainingDefinitions = () => {
         </div>
       </div>
 
-      {/* Table */}
-      <TrainingDefinitionsTable 
-        definitions={definitions}
-        loading={loading}
-        onRefresh={fetchDefinitions}
-      />
+      {/* Tabbed Content */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="active">Active ({activeDefinitions.length})</TabsTrigger>
+          <TabsTrigger value="archived">Archived ({archivedDefinitions.length})</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="active" className="mt-6">
+          <TrainingDefinitionsTable 
+            definitions={activeDefinitions}
+            loading={loading}
+            onRefresh={fetchDefinitions}
+            showDeleteAction={false}
+          />
+        </TabsContent>
+        
+        <TabsContent value="archived" className="mt-6">
+          <TrainingDefinitionsTable 
+            definitions={archivedDefinitions}
+            loading={loading}
+            onRefresh={fetchDefinitions}
+            showDeleteAction={true}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
