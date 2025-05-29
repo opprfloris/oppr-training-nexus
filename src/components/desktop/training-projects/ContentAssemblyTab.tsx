@@ -1,13 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { PlusIcon, DocumentTextIcon, ArrowRightIcon, LinkIcon, PencilIcon, LinkSlashIcon, DocumentDuplicateIcon } from '@heroicons/react/24/outline';
 import { TrainingProject, TrainingProjectMarker, TrainingProjectContent } from '@/types/training-projects';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import MarkerSequenceEditor from './MarkerSequenceEditor';
 import TrainingDefinitionSelector from './TrainingDefinitionSelector';
+import { CurrentAssociationDisplay } from './CurrentAssociationDisplay';
+import { TrainingDefinitionActions } from './TrainingDefinitionActions';
+import { TrainingFlowOverview } from './TrainingFlowOverview';
+import { EmptyMarkersState } from './EmptyMarkersState';
+import { MarkerSelectionPrompt } from './MarkerSelectionPrompt';
 
 interface ContentAssemblyTabProps {
   project: TrainingProject;
@@ -78,12 +80,10 @@ export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
   };
 
   const handleCreateNewTD = () => {
-    // Navigate to TD builder with context
     window.open(`/desktop/training-definitions/new?project=${project.id}&marker=${selectedMarkerId}`, '_blank');
   };
 
   const handleCopyTDAsDraft = () => {
-    // Similar to link existing but with copy flag
     setShowTDSelector(true);
   };
 
@@ -133,20 +133,7 @@ export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
   }
 
   if (markers.length === 0) {
-    return (
-      <div className="text-center py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-        <div className="w-16 h-16 bg-gray-200 rounded-lg mx-auto mb-4 flex items-center justify-center">
-          <span className="text-2xl">📍</span>
-        </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No Markers Added Yet</h3>
-        <p className="text-gray-600 mb-4">
-          You need to add markers to your floor plan before you can assign training content.
-        </p>
-        <p className="text-sm text-gray-500">
-          Go to the "Floor Plan & Markers" tab to add markers first.
-        </p>
-      </div>
-    );
+    return <EmptyMarkersState />;
   }
 
   return (
@@ -194,137 +181,29 @@ export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
 
           {selectedMarker ? (
             <div className="space-y-4">
-              {/* Current Association Display */}
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">Current Association:</span>
-                </div>
-                {selectedMarkerContent ? (
-                  <div className="flex items-center space-x-3">
-                    <DocumentTextIcon className="w-5 h-5 text-gray-400" />
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">
-                        {selectedMarkerContent.training_definition_version?.training_definition?.title || 'Untitled Training'}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Version {selectedMarkerContent.training_definition_version?.version_number} • 
-                        <Badge 
-                          variant={selectedMarkerContent.training_definition_version?.status === 'published' ? 'default' : 'secondary'} 
-                          className="ml-2"
-                        >
-                          {selectedMarkerContent.training_definition_version?.status}
-                        </Badge>
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-gray-500 italic">No training definition assigned</p>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-3">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={handleLinkExistingTD}
-                >
-                  <LinkIcon className="w-4 h-4 mr-2" />
-                  Link Existing Published TD...
-                </Button>
-
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={handleCreateNewTD}
-                >
-                  <PlusIcon className="w-4 h-4 mr-2" />
-                  Create New Draft TD for this Marker...
-                </Button>
-
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={handleCopyTDAsDraft}
-                >
-                  <DocumentDuplicateIcon className="w-4 h-4 mr-2" />
-                  Copy Published TD as New Draft...
-                </Button>
-
-                {selectedMarkerContent?.training_definition_version?.status === 'draft' && (
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start"
-                    onClick={handleEditDraftTD}
-                  >
-                    <PencilIcon className="w-4 h-4 mr-2" />
-                    Edit Associated Draft TD
-                  </Button>
-                )}
-
-                {selectedMarkerContent && (
-                  <Button 
-                    variant="destructive" 
-                    className="w-full justify-start"
-                    onClick={handleUnlinkTD}
-                  >
-                    <LinkSlashIcon className="w-4 h-4 mr-2" />
-                    Unlink TD
-                  </Button>
-                )}
-              </div>
+              <CurrentAssociationDisplay selectedMarkerContent={selectedMarkerContent} />
+              
+              <TrainingDefinitionActions
+                selectedMarkerContent={selectedMarkerContent}
+                onLinkExistingTD={handleLinkExistingTD}
+                onCreateNewTD={handleCreateNewTD}
+                onCopyTDAsDraft={handleCopyTDAsDraft}
+                onEditDraftTD={handleEditDraftTD}
+                onUnlinkTD={handleUnlinkTD}
+              />
             </div>
           ) : (
-            <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-              <DocumentTextIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-600 text-sm">Select a marker to assign training content</p>
-            </div>
+            <MarkerSelectionPrompt />
           )}
         </div>
       </div>
 
-      {/* Visual Flow Overview */}
-      {sortedMarkers.length > 0 && (
-        <div className="border-t pt-6">
-          <h4 className="text-base font-medium text-gray-900 mb-4">Training Flow Overview</h4>
-          <div className="flex items-center space-x-2 overflow-x-auto pb-4">
-            {sortedMarkers.map((marker, index) => {
-              const markerContent = content.find(c => c.marker_id === marker.id);
-              return (
-                <React.Fragment key={marker.id}>
-                  <div className="flex-shrink-0 text-center">
-                    <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-medium mb-2">
-                      {marker.sequence_order || marker.pin_number}
-                    </div>
-                    <div className="text-xs text-gray-600 max-w-20 truncate">
-                      {marker.machine_qr_entity?.machine_id}
-                    </div>
-                    {markerContent ? (
-                      <Badge 
-                        variant={markerContent.training_definition_version?.status === 'published' ? 'default' : 'secondary'} 
-                        className="text-xs mt-1"
-                      >
-                        {markerContent.training_definition_version?.status === 'published' ? 'Published' : 'Draft'}
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs mt-1">No TD</Badge>
-                    )}
-                  </div>
-                  {index < sortedMarkers.length - 1 && (
-                    <ArrowRightIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      <TrainingFlowOverview sortedMarkers={sortedMarkers} content={content} />
 
       <TrainingDefinitionSelector
         isOpen={showTDSelector}
         onClose={() => setShowTDSelector(false)}
         onSelect={(tdVersion) => {
-          // Handle TD selection logic here
           setShowTDSelector(false);
           loadContent();
           onContentChange();
