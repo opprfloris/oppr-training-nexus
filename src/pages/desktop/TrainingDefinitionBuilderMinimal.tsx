@@ -1,20 +1,64 @@
 
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { TrainingDefinition, TrainingDefinitionVersion } from '@/types/training-definitions';
+import { fetchDefinitionAndVersion } from '@/services/trainingDefinitionService';
+import { saveDraft } from '@/services/trainingDefinitionSaveService';
 
 const TrainingDefinitionBuilderMinimal = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { toast } = useToast();
   
   // State management
+  const [definition, setDefinition] = useState<TrainingDefinition | null>(null);
+  const [version, setVersion] = useState<TrainingDefinitionVersion | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
   console.log('TrainingDefinitionBuilderMinimal loaded with id:', id);
   
   const isNewDefinition = id === 'new';
+
+  // Load existing definition if editing
+  useEffect(() => {
+    if (isNewDefinition) {
+      setLoading(false);
+      return;
+    }
+
+    if (id) {
+      loadDefinition();
+    }
+  }, [id, isNewDefinition]);
+
+  const loadDefinition = async () => {
+    if (!id || id === 'new') return;
+
+    try {
+      setLoading(true);
+      const { definition: defData, version: versionData } = await fetchDefinitionAndVersion(id);
+      
+      setDefinition(defData);
+      setTitle(defData.title);
+      setDescription(defData.description || '');
+      setVersion(versionData);
+
+    } catch (error) {
+      console.error('Error loading training definition:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load training definition",
+        variant: "destructive"
+      });
+      navigate('/desktop/training-definitions');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Basic validation
   const validateForm = () => {
@@ -29,28 +73,43 @@ const TrainingDefinitionBuilderMinimal = () => {
     return true;
   };
 
-  // Simple save functionality (Phase 2 - no database calls yet)
+  // Real database save functionality (Phase 3)
   const handleSave = async () => {
     if (!validateForm()) return;
 
-    setSaving(true);
-
-    // Simulate save operation
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      
-      toast({
-        title: "Success",
-        description: isNewDefinition 
-          ? "Training definition created successfully!" 
-          : "Training definition updated successfully!",
+      setSaving(true);
+
+      const result = await saveDraft({
+        title,
+        description,
+        steps: [], // Empty steps for now - will add in Phase 4
+        isNewDefinition,
+        definition,
+        version
       });
-      
-      console.log('Saved training definition:', { title, description, isNew: isNewDefinition });
+
+      setDefinition(result.definition);
+      setVersion(result.version);
+
+      if (result.isNew) {
+        toast({
+          title: "Success",
+          description: "Training definition created and saved as draft (v0.1)",
+        });
+        // Navigate to the editor with the new ID
+        navigate(`/desktop/training-definitions/${result.definition.id}`, { replace: true });
+      } else {
+        toast({
+          title: "Success",
+          description: "Draft saved successfully",
+        });
+      }
     } catch (error) {
+      console.error('Error saving draft:', error);
       toast({
         title: "Error",
-        description: "Failed to save training definition",
+        description: "Failed to save draft",
         variant: "destructive"
       });
     } finally {
@@ -58,15 +117,30 @@ const TrainingDefinitionBuilderMinimal = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="h-full flex flex-col p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex flex-col p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">
-          {isNewDefinition ? 'Create New Training Definition' : `Edit Training Definition ${id}`}
+          {isNewDefinition ? 'Create New Training Definition' : `Edit Training Definition`}
         </h1>
         <p className="text-gray-600 mt-2">
-          Phase 2: Basic state management and validation - {isNewDefinition ? 'New Definition' : 'Existing Definition'}
+          Phase 3: Database integration - {isNewDefinition ? 'New Definition' : 'Existing Definition'}
         </p>
+        {version && (
+          <p className="text-sm text-gray-500 mt-1">
+            Current version: {version.version_number} ({version.status})
+          </p>
+        )}
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border p-6">
@@ -116,7 +190,9 @@ const TrainingDefinitionBuilderMinimal = () => {
         <p className="text-sm text-gray-600">Is New: {isNewDefinition ? 'Yes' : 'No'}</p>
         <p className="text-sm text-gray-600">Title: {title || 'Not set'}</p>
         <p className="text-sm text-gray-600">Description: {description || 'Not set'}</p>
-        <p className="text-sm text-gray-600">Status: Phase 2 complete</p>
+        <p className="text-sm text-gray-600">Definition ID: {definition?.id || 'None'}</p>
+        <p className="text-sm text-gray-600">Version: {version?.version_number || 'None'}</p>
+        <p className="text-sm text-gray-600">Status: Phase 3 complete - Database integrated</p>
       </div>
     </div>
   );
