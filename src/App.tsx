@@ -6,7 +6,7 @@ import DesktopLayout from './components/desktop/DesktopLayout';
 import DesktopDashboard from './pages/desktop/DesktopDashboard';
 import DesktopLogin from './pages/desktop/DesktopLogin';
 import { Toaster } from '@/components/ui/toaster';
-import TrainingDefinitionBuilder from './pages/desktop/TrainingDefinitionBuilder';
+import TrainingDefinitionBuilderMinimal from './pages/desktop/TrainingDefinitionBuilderMinimal';
 import TrainingDefinitions from './pages/desktop/TrainingDefinitions';
 import TrainingProjects from './pages/desktop/TrainingProjects';
 import FloorPlans from './pages/desktop/FloorPlans';
@@ -33,8 +33,8 @@ function App() {
                   <Route index element={<DesktopDashboard />} />
                   <Route path="dashboard" element={<DesktopDashboard />} />
                   <Route path="training-definitions" element={<TrainingDefinitions />} />
-                  <Route path="training-definitions/new" element={<TrainingDefinitionBuilder />} />
-                  <Route path="training-definitions/:id" element={<TrainingDefinitionBuilder />} />
+                  <Route path="training-definitions/new" element={<TrainingDefinitionBuilderMinimal />} />
+                  <Route path="training-definitions/:id" element={<TrainingDefinitionBuilderMinimal />} />
                   <Route path="training-projects" element={<TrainingProjects />} />
                   <Route path="floor-plans" element={<FloorPlans />} />
                   <Route path="machine-registry" element={<MachineRegistry />} />
