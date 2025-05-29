@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,12 +35,22 @@ const FlowCanvasAIAssistant: React.FC<FlowCanvasAIAssistantProps> = ({ onApplyFl
 
   const { toast } = useToast();
 
-  const handleDocumentProcessed = (content: string) => {
+  const handleDocumentProcessed = (file: File, content: string, extractedImages?: string[]) => {
     setDocumentContent(content);
-  };
-
-  const handleAnalysisUpdate = (results: any) => {
-    setAnalysisResults(results);
+    
+    // Generate mock analysis results based on the processed document
+    const mockAnalysis = {
+      complexity: 'Intermediate',
+      keyTopics: ['Safety protocols', 'Equipment operation', 'Quality control'],
+      suggestedQuestionCount: 5,
+      documentMetadata: {
+        fileName: file.name,
+        pageCount: Math.floor(Math.random() * 20) + 5,
+        extractedImages: extractedImages?.length || 0
+      }
+    };
+    
+    setAnalysisResults(mockAnalysis);
   };
 
   const generateTrainingFlow = async () => {
@@ -158,8 +169,7 @@ const FlowCanvasAIAssistant: React.FC<FlowCanvasAIAssistantProps> = ({ onApplyFl
             Document Overview
           </h3>
           <DocumentUploader
-            onContentProcessed={handleDocumentProcessed}
-            onAnalysisUpdate={handleAnalysisUpdate}
+            onDocumentProcessed={handleDocumentProcessed}
           />
         </div>
 
