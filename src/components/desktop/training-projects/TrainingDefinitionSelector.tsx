@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { MagnifyingGlassIcon, DocumentTextIcon } from '@heroicons/react/24/outli
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { TrainingDefinitionWithLatestVersion } from '@/types/training-definitions';
+import { safeConvertToStepBlocks } from '@/utils/stepBlockValidation';
 
 interface TrainingDefinitionSelectorProps {
   isOpen: boolean;
@@ -60,11 +62,14 @@ const TrainingDefinitionSelector: React.FC<TrainingDefinitionSelectorProps> = ({
       const transformedData = (data || []).map(def => ({
         ...def,
         latest_version: Array.isArray(def.latest_version) && def.latest_version.length > 0 
-          ? def.latest_version[0] 
+          ? {
+              ...def.latest_version[0],
+              steps_json: safeConvertToStepBlocks(def.latest_version[0].steps_json)
+            }
           : null
       })).filter(def => 
         def.latest_version && def.latest_version.status === 'published'
-      );
+      ) as TrainingDefinitionWithLatestVersion[];
 
       setTrainingDefinitions(transformedData);
     } catch (error) {
