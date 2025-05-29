@@ -8,7 +8,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { XMarkIcon } from '@heroicons/react/24/outline';
 
 interface Document {
   id: string;
@@ -71,12 +70,7 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle>{file.display_name}</DialogTitle>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <XMarkIcon className="w-4 h-4" />
-            </Button>
-          </div>
+          <DialogTitle>{file.display_name}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">

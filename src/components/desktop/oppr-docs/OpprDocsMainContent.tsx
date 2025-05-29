@@ -1,11 +1,11 @@
 
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { FileUploader } from './FileUploader';
 import { FileTableView } from './FileTableView';
 import { FileCardView } from './FileCardView';
-import { FileUploader } from './FileUploader';
 import { BulkActionsToolbar } from './BulkActionsToolbar';
-import { DocumentIcon } from '@heroicons/react/24/outline';
+import { Button } from '@/components/ui/button';
+import { FolderIcon } from '@heroicons/react/24/outline';
 
 interface Document {
   id: string;
@@ -31,7 +31,7 @@ interface Folder {
 
 interface OpprDocsMainContentProps {
   currentFolderId: string | null;
-  currentFolder: Folder | undefined;
+  currentFolder?: Folder;
   documents: Document[];
   selectedFiles: string[];
   viewMode: 'table' | 'card';
@@ -54,9 +54,23 @@ export const OpprDocsMainContent: React.FC<OpprDocsMainContentProps> = ({
   onClearSelection,
   onBulkDelete
 }) => {
+  const handleFileUpdated = () => {
+    onUploadComplete(); // Reuse the same callback to refresh the documents
+  };
+
   return (
-    <div className="flex-1 flex flex-col min-h-0">
-      {/* Bulk Actions */}
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Current folder breadcrumb */}
+      <div className="p-4 border-b bg-gray-50">
+        <div className="flex items-center gap-2">
+          <FolderIcon className="w-5 h-5 text-gray-500" />
+          <span className="text-sm text-gray-600">
+            {currentFolder ? currentFolder.path : 'Root'}
+          </span>
+        </div>
+      </div>
+
+      {/* Bulk actions toolbar */}
       {selectedFiles.length > 0 && (
         <BulkActionsToolbar
           selectedCount={selectedFiles.length}
@@ -65,35 +79,31 @@ export const OpprDocsMainContent: React.FC<OpprDocsMainContentProps> = ({
         />
       )}
 
-      {/* Upload Area */}
-      <div className="mb-4">
+      {/* File uploader */}
+      <div className="p-4 border-b">
         <FileUploader
           currentFolderId={currentFolderId}
           onUploadComplete={onUploadComplete}
         />
       </div>
 
-      {/* File Display */}
-      <div className="flex-1 overflow-hidden">
-        <Card className="h-full">
-          <CardContent className="p-4 h-full">
-            {documents.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                <DocumentIcon className="w-12 h-12 mb-4" />
-                <h3 className="text-lg font-medium mb-2">No documents found</h3>
-                <p className="text-sm">
-                  {currentFolder 
-                    ? `Upload documents to the "${currentFolder.name}" folder`
-                    : 'Upload documents or select a folder to get started'
-                  }
-                </p>
-              </div>
-            ) : viewMode === 'table' ? (
+      {/* Files display */}
+      <div className="flex-1 p-4 overflow-hidden">
+        {documents.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+            <FolderIcon className="w-16 h-16 mb-4" />
+            <h3 className="text-lg font-medium mb-2">No files found</h3>
+            <p className="text-sm">Upload some files to get started</p>
+          </div>
+        ) : (
+          <>
+            {viewMode === 'table' ? (
               <FileTableView
                 documents={documents}
                 selectedFiles={selectedFiles}
                 onFileSelect={onFileSelect}
                 onFilePreview={onFilePreview}
+                onFileUpdated={handleFileUpdated}
               />
             ) : (
               <FileCardView
@@ -101,10 +111,11 @@ export const OpprDocsMainContent: React.FC<OpprDocsMainContentProps> = ({
                 selectedFiles={selectedFiles}
                 onFileSelect={onFileSelect}
                 onFilePreview={onFilePreview}
+                onFileUpdated={handleFileUpdated}
               />
             )}
-          </CardContent>
-        </Card>
+          </>
+        )}
       </div>
     </div>
   );
