@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { TrainingProject } from '@/types/training-projects';
+import { TrainingProject, mapDatabaseToTrainingProject } from '@/types/training-projects';
 
 export const useTrainingProjects = () => {
   const [projects, setProjects] = useState<TrainingProject[]>([]);
@@ -25,7 +25,10 @@ export const useTrainingProjects = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setProjects(data || []);
+      
+      // Map database response to our TypeScript interface
+      const mappedProjects = (data || []).map(mapDatabaseToTrainingProject);
+      setProjects(mappedProjects);
     } catch (error) {
       console.error('Error fetching training projects:', error);
       toast({
@@ -38,7 +41,7 @@ export const useTrainingProjects = () => {
     }
   };
 
-  const createProject = async (name: string, description?: string) => {
+  const createProject = async (name: string, description?: string): Promise<void> => {
     try {
       const { data: projectId } = await supabase.rpc('generate_project_id', { prefix: 'AMS' });
       
@@ -61,7 +64,6 @@ export const useTrainingProjects = () => {
       });
 
       await fetchProjects();
-      return data;
     } catch (error) {
       console.error('Error creating training project:', error);
       toast({

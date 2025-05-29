@@ -10,9 +10,8 @@ const TrainingProjects = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { projects, loading, createProject, deleteProject } = useTrainingProjects();
 
-  const handleCreateProject = async (name: string, description?: string) => {
-    const newProject = await createProject(name, description);
-    return newProject;
+  const handleCreateProject = async (name: string, description?: string): Promise<void> => {
+    await createProject(name, description);
   };
 
   const filteredProjects = projects.filter(project =>

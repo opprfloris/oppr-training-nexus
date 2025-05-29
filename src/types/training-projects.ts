@@ -88,3 +88,25 @@ export interface ReadinessCheck {
   learnerAssigned: boolean;
   passFailThresholdSet: boolean;
 }
+
+// Helper function to convert database response to TrainingProject
+export const mapDatabaseToTrainingProject = (dbProject: any): TrainingProject => {
+  return {
+    id: dbProject.id,
+    project_id: dbProject.project_id,
+    name: dbProject.name,
+    description: dbProject.description,
+    color_code: dbProject.color_code || '#3a7ca5',
+    icon: dbProject.icon || 'folder',
+    status: dbProject.status as 'draft' | 'scheduled' | 'active' | 'stopped' | 'archived',
+    floor_plan_image_id: dbProject.floor_plan_image_id,
+    start_date: dbProject.start_date,
+    end_date: dbProject.end_date,
+    pass_fail_threshold: dbProject.pass_fail_threshold || 80,
+    max_retake_attempts: dbProject.max_retake_attempts || 3,
+    recommended_completion_time: dbProject.recommended_completion_time,
+    created_by: dbProject.created_by,
+    created_at: dbProject.created_at,
+    updated_at: dbProject.updated_at,
+  };
+};

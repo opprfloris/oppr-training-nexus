@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, CheckBadgeIcon, PlayIcon } from "@heroicons/react/24/outline";
@@ -7,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { TrainingProject } from '@/types/training-projects';
+import { TrainingProject, mapDatabaseToTrainingProject } from '@/types/training-projects';
 
 const TrainingProjectEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -36,7 +35,10 @@ const TrainingProjectEditor = () => {
         .single();
 
       if (error) throw error;
-      setProject(data);
+      
+      // Map database response to our TypeScript interface
+      const mappedProject = mapDatabaseToTrainingProject(data);
+      setProject(mappedProject);
     } catch (error) {
       console.error('Error loading training project:', error);
       toast({
