@@ -1,28 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { ImageIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { supabase } from '@/integrations/supabase/client';
-import { useFloorPlans } from '@/hooks/useFloorPlans';
-import { ArrowUpTrayIcon } from '@heroicons/react/24/outline';
-import FloorPlanSelectionModal from './FloorPlanSelectionModal';
-import FloorPlanChangeConfirmationModal from './FloorPlanChangeConfirmationModal';
-import FloorPlanViewer from './FloorPlanViewer';
-
-interface FloorPlan {
-  id: string;
-  name: string;
-  description: string | null;
-  file_path: string;
-  width: number | null;
-  height: number | null;
-}
+import { useToast } from '@/hooks/use-toast';
+import { FloorPlanImage } from '@/types/floor-plans';
+import { TrainingProjectMarker } from '@/types/training-projects';
 
 interface FloorPlanSelectorProps {
   selectedFloorPlanId: string | null;
-  onFloorPlanSelect: (floorPlanId: string) => void;
+  onFloorPlanSelect: (floorPlanId: string) => Promise<void>;
   projectId: string;
-  markers: any[];
+  markers: TrainingProjectMarker[];
   onMarkersChange: () => void;
 }
 
@@ -33,38 +23,28 @@ const FloorPlanSelector: React.FC<FloorPlanSelectorProps> = ({
   markers,
   onMarkersChange
 }) => {
-  const [selectedFloorPlan, setSelectedFloorPlan] = useState<FloorPlan | null>(null);
-  const [showSelectionModal, setShowSelectionModal] = useState(false);
-  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
-  const [pendingFloorPlanId, setPendingFloorPlanId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const { getImageUrl } = useFloorPlans();
+  const [floorPlans, setFloorPlans] = useState<FloorPlanImage[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (selectedFloorPlanId) {
-      loadSelectedFloorPlan();
-    }
-  }, [selectedFloorPlanId]);
+    loadFloorPlans();
+  }, []);
 
-  const loadSelectedFloorPlan = async () => {
-    if (!selectedFloorPlanId) return;
-
+  const loadFloorPlans = async () => {
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from('floor_plan_images')
         .select('*')
-        .eq('id', selectedFloorPlanId)
-        .single();
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setSelectedFloorPlan(data);
+      setFloorPlans(data || []);
     } catch (error) {
-      console.error('Error loading selected floor plan:', error);
+      console.error('Error loading floor plans:', error);
       toast({
         title: "Error",
-        description: "Failed to load selected floor plan",
+        description: "Failed to load floor plans",
         variant: "destructive"
       });
     } finally {
@@ -72,64 +52,15 @@ const FloorPlanSelector: React.FC<FloorPlanSelectorProps> = ({
     }
   };
 
-  const handleFloorPlanSelect = (floorPlanId: string) => {
-    // If there are existing markers and we're changing floor plans, show confirmation
-    if (markers.length > 0 && selectedFloorPlanId && selectedFloorPlanId !== floorPlanId) {
-      setPendingFloorPlanId(floorPlanId);
-      setShowConfirmationModal(true);
-      setShowSelectionModal(false);
-    } else {
-      // No existing markers or first time selecting, proceed directly
-      proceedWithFloorPlanSelection(floorPlanId);
-      setShowSelectionModal(false);
-    }
-  };
+  const handleFloorPlanSelect = async (floorPlanId: string) => {
+    if (selectedFloorPlanId === floorPlanId) return;
 
-  const proceedWithFloorPlanSelection = async (floorPlanId: string) => {
     try {
-      // If there are existing markers, delete them first
-      if (markers.length > 0) {
-        const { error: deleteError } = await supabase
-          .from('training_project_markers')
-          .delete()
-          .eq('training_project_id', projectId);
-
-        if (deleteError) throw deleteError;
-      }
-
-      // Update the floor plan
-      onFloorPlanSelect(floorPlanId);
-      
-      // Refresh markers (should be empty now if there were any)
+      await onFloorPlanSelect(floorPlanId);
       onMarkersChange();
-      
-      toast({
-        title: "Success",
-        description: markers.length > 0 
-          ? "Floor plan changed and existing markers removed"
-          : "Floor plan selected successfully"
-      });
     } catch (error) {
-      console.error('Error changing floor plan:', error);
-      toast({
-        title: "Error",
-        description: "Failed to change floor plan",
-        variant: "destructive"
-      });
+      console.error('Error selecting floor plan:', error);
     }
-  };
-
-  const handleConfirmFloorPlanChange = () => {
-    if (pendingFloorPlanId) {
-      proceedWithFloorPlanSelection(pendingFloorPlanId);
-      setPendingFloorPlanId(null);
-    }
-    setShowConfirmationModal(false);
-  };
-
-  const handleCancelFloorPlanChange = () => {
-    setPendingFloorPlanId(null);
-    setShowConfirmationModal(false);
   };
 
   if (loading) {
@@ -140,72 +71,60 @@ const FloorPlanSelector: React.FC<FloorPlanSelectorProps> = ({
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h4 className="text-base font-medium text-gray-900">Floor Plan & Markers</h4>
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => setShowSelectionModal(true)}
-        >
-          <ArrowUpTrayIcon className="w-4 h-4 mr-2" />
-          {selectedFloorPlanId ? 'Change Floor Plan' : 'Select Floor Plan'}
+  if (floorPlans.length === 0) {
+    return (
+      <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+        <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">No Floor Plans Available</h3>
+        <p className="text-gray-600 mb-4">
+          You need to upload floor plans before you can select one for your training project.
+        </p>
+        <Button variant="outline">
+          Upload Floor Plan
         </Button>
       </div>
+    );
+  }
 
-      {!selectedFloorPlanId ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-          <h3 className="text-sm font-medium text-gray-900 mb-2">No floor plan selected</h3>
-          <p className="text-sm text-gray-500 mb-4">Select a floor plan to start adding markers</p>
-          <Button 
-            variant="outline"
-            onClick={() => setShowSelectionModal(true)}
-          >
-            <ArrowUpTrayIcon className="w-4 h-4 mr-2" />
-            Select Floor Plan
-          </Button>
-        </div>
-      ) : selectedFloorPlan ? (
-        <div className="space-y-4">
-          <div className="bg-white p-4 rounded-lg border">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h5 className="font-medium text-gray-900">{selectedFloorPlan.name}</h5>
-                {selectedFloorPlan.description && (
-                  <p className="text-sm text-gray-500">{selectedFloorPlan.description}</p>
-                )}
-                {selectedFloorPlan.width && selectedFloorPlan.height && (
-                  <p className="text-xs text-gray-400 mt-1">
-                    {selectedFloorPlan.width} × {selectedFloorPlan.height}
-                  </p>
-                )}
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {floorPlans.map((floorPlan) => (
+        <div
+          key={floorPlan.id}
+          className={`relative border rounded-lg p-4 cursor-pointer transition-all ${
+            selectedFloorPlanId === floorPlan.id
+              ? 'border-blue-500 bg-blue-50'
+              : 'border-gray-200 hover:border-gray-300'
+          }`}
+          onClick={() => handleFloorPlanSelect(floorPlan.id)}
+        >
+          {selectedFloorPlanId === floorPlan.id && (
+            <div className="absolute top-2 right-2">
+              <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center">
+                <CheckIcon className="w-4 h-4" />
               </div>
             </div>
-            
-            <FloorPlanViewer
-              floorPlanId={selectedFloorPlan.file_path}
-              projectId={projectId}
-              markers={markers}
-              onMarkersChange={onMarkersChange}
-            />
+          )}
+          
+          <div className="aspect-video bg-gray-100 rounded-md mb-3 flex items-center justify-center">
+            <ImageIcon className="w-8 h-8 text-gray-400" />
+          </div>
+          
+          <h4 className="font-medium text-gray-900 mb-1">{floorPlan.name}</h4>
+          {floorPlan.description && (
+            <p className="text-sm text-gray-600 mb-2">{floorPlan.description}</p>
+          )}
+          
+          <div className="flex items-center justify-between">
+            <Badge variant="outline">
+              {floorPlan.width}x{floorPlan.height}
+            </Badge>
+            <span className="text-xs text-gray-500">
+              {floorPlan.usage_count} projects
+            </span>
           </div>
         </div>
-      ) : null}
-
-      <FloorPlanSelectionModal
-        isOpen={showSelectionModal}
-        onClose={() => setShowSelectionModal(false)}
-        onFloorPlanSelect={handleFloorPlanSelect}
-        selectedFloorPlanId={selectedFloorPlanId}
-      />
-
-      <FloorPlanChangeConfirmationModal
-        isOpen={showConfirmationModal}
-        onClose={handleCancelFloorPlanChange}
-        onConfirm={handleConfirmFloorPlanChange}
-        markerCount={markers.length}
-      />
+      ))}
     </div>
   );
 };
