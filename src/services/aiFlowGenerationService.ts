@@ -44,9 +44,15 @@ Requirements:
 Generate a well-structured training sequence with clear learning progression.`;
 
   console.log('Using AI generation prompt:', generationPrompt);
-  console.log('Generation request:', { ...request, content: `${request.content.substring(0, 100)}...` });
+  console.log('Generation request:', { 
+    fileName: request.fileName,
+    selectedTopics: request.selectedTopics,
+    stepCount: request.stepCount,
+    contentLength: request.content.length
+  });
 
   if (!config.apiKey) {
+    console.warn('No API key configured, using fallback flow');
     return {
       blocks: generateFallbackFlow(request),
       error: 'No API key configured'
@@ -54,28 +60,30 @@ Generate a well-structured training sequence with clear learning progression.`;
   }
 
   try {
-    const systemPrompt = `You are an expert training developer. Create engaging training flows that follow this exact JSON structure:
+    const systemPrompt = `You are an expert training developer. Create engaging training flows based on the provided content and requirements.
+
+IMPORTANT: You must respond with ONLY valid JSON in this exact format:
 
 {
   "blocks": [
     {
-      "id": "unique-id",
+      "id": "step-1",
       "type": "information",
       "order": 1,
       "config": {
-        "content": "Detailed information content"
+        "content": "Your information content here"
       }
     },
     {
-      "id": "unique-id", 
+      "id": "step-2",
       "type": "question",
       "order": 2,
       "config": {
-        "question_text": "Question text?",
+        "question_text": "Your question here?",
         "question_type": "multiple_choice",
-        "options": ["Option A", "Option B", "Option C"],
+        "options": ["Option A", "Option B", "Option C", "Option D"],
         "correct_option": 0,
-        "hint": "Why this is correct",
+        "hint": "Explanation for the correct answer",
         "points": 10,
         "mandatory": true
       }
@@ -83,18 +91,30 @@ Generate a well-structured training sequence with clear learning progression.`;
   ]
 }
 
-Always return valid JSON. Mix information and question blocks appropriately. Use the exact structure shown above.`;
+Guidelines:
+- Use "information" blocks for teaching content
+- Use "question" blocks for assessments
+- For multiple_choice questions, always include 3-4 options
+- Set correct_option as the index (0, 1, 2, or 3)
+- Make questions practical and relevant to the content
+- Provide helpful hints that explain why the answer is correct
+- Mix information and question blocks appropriately`;
 
     const userPrompt = `${generationPrompt}
 
 Document: ${request.fileName}
 Selected Topics: ${request.selectedTopics.join(', ')}
 Required Steps: ${request.stepCount}
-Content: ${request.content}
+
+Content Summary (first 2000 chars):
+${request.content.substring(0, 2000)}
 
 ${request.analysisResult ? `Analysis: ${request.analysisResult}` : ''}
 
-Create exactly ${request.stepCount} training steps focusing on: ${request.selectedTopics.join(', ')}.`;
+Please create exactly ${request.stepCount} training steps focusing on: ${request.selectedTopics.join(', ')}.
+Ensure the content is practical and engaging for learners.`;
+
+    console.log('Sending request to OpenAI API...');
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -121,7 +141,9 @@ Create exactly ${request.stepCount} training steps focusing on: ${request.select
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`);
+      const errorMessage = `API request failed: ${response.status} ${response.statusText}`;
+      console.error('OpenAI API Error:', errorMessage, errorData);
+      throw new Error(`${errorMessage} - ${errorData.error?.message || 'Unknown error'}`);
     }
 
     const data = await response.json();
@@ -131,18 +153,36 @@ Create exactly ${request.stepCount} training steps focusing on: ${request.select
       throw new Error('No response generated from AI');
     }
 
-    const responseContent = data.choices[0].message.content;
+    const responseContent = data.choices[0].message.content.trim();
+    console.log('Raw AI response content:', responseContent);
     
     try {
-      const parsedResponse = JSON.parse(responseContent);
+      // Try to extract JSON if the response has extra text
+      let jsonContent = responseContent;
+      
+      // Look for JSON block markers
+      const jsonStart = responseContent.indexOf('{');
+      const jsonEnd = responseContent.lastIndexOf('}');
+      
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+        jsonContent = responseContent.substring(jsonStart, jsonEnd + 1);
+      }
+      
+      console.log('Extracted JSON content:', jsonContent);
+      
+      const parsedResponse = JSON.parse(jsonContent);
+      
       if (parsedResponse.blocks && Array.isArray(parsedResponse.blocks)) {
+        console.log('Successfully parsed AI response with', parsedResponse.blocks.length, 'blocks');
         return { blocks: parsedResponse.blocks };
       } else {
-        throw new Error('Invalid response structure');
+        console.error('Invalid response structure - missing blocks array');
+        throw new Error('Invalid response structure - missing blocks array');
       }
     } catch (parseError) {
       console.error('Failed to parse AI response as JSON:', parseError);
-      throw new Error('AI response was not valid JSON');
+      console.error('Response content was:', responseContent);
+      throw new Error(`AI response was not valid JSON: ${parseError.message}`);
     }
 
   } catch (error) {
@@ -157,11 +197,13 @@ Create exactly ${request.stepCount} training steps focusing on: ${request.select
 const generateFallbackFlow = (request: AIFlowGenerationRequest): StepBlock[] => {
   const blocks: StepBlock[] = [];
   
+  console.log('Generating fallback flow with topics:', request.selectedTopics);
+  
   // Create a mix of information and question blocks
   for (let i = 0; i < request.stepCount; i++) {
     const isQuestion = i % 2 === 1 && i > 0; // Every other block after the first
     const topicIndex = i % request.selectedTopics.length;
-    const topic = request.selectedTopics[topicIndex] || 'General';
+    const topic = request.selectedTopics[topicIndex] || 'General Training';
     
     if (isQuestion) {
       blocks.push({
@@ -189,11 +231,12 @@ const generateFallbackFlow = (request: AIFlowGenerationRequest): StepBlock[] => 
         type: 'information',
         order: i + 1,
         config: {
-          content: `This section covers important aspects of ${topic.toLowerCase()} related to the training content. Key points include proper procedures, safety considerations, and best practices that should be followed.`
+          content: `This section covers important aspects of ${topic.toLowerCase()} based on the training content. Key points include proper procedures, safety considerations, and best practices that should be followed in this area.`
         }
       });
     }
   }
   
+  console.log('Generated fallback flow with', blocks.length, 'blocks');
   return blocks;
 };
