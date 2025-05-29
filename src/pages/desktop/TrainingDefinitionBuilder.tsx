@@ -9,7 +9,6 @@ import BlockConfiguration from '@/components/desktop/training-definitions/BlockC
 import BuilderBreadcrumbs from '@/components/desktop/training-definitions/BuilderBreadcrumbs';
 import BuilderHeader from '@/components/desktop/training-definitions/BuilderHeader';
 import BuilderControls from '@/components/desktop/training-definitions/BuilderControls';
-import FlowCanvasAIAssistant from '@/components/desktop/training-definitions/FlowCanvasAIAssistant';
 import FlowValidationPanel from '@/components/desktop/training-definitions/FlowValidationPanel';
 
 const TrainingDefinitionBuilder = () => {
@@ -113,10 +112,10 @@ const TrainingDefinitionBuilder = () => {
       <div className="flex-1 flex space-x-6 min-h-0">
         {/* Left Panel - Block Palette */}
         <div className="w-64 flex-shrink-0">
-          <BlockPalette onAddBlock={addBlock} />
-          <div className="mt-4">
-            <FlowCanvasAIAssistant onApplyFlow={handleApplyAIFlow} />
-          </div>
+          <BlockPalette 
+            onAddBlock={addBlock} 
+            onApplyAIFlow={handleApplyAIFlow}
+          />
         </div>
 
         {/* Center Panel - Flow Canvas (narrower) */}
