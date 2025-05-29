@@ -26,19 +26,23 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     if (!name.trim()) return;
 
     try {
+      console.log('🔍 DEBUG: Modal submitting with:', { name: name.trim(), description: description.trim() });
       setSubmitting(true);
       await onSubmit(name.trim(), description.trim() || undefined);
+      console.log('✅ DEBUG: Modal submission successful');
       setName('');
       setDescription('');
       onClose();
     } catch (error) {
-      // Error handling is done in the parent component
+      console.error('🚨 DEBUG: Modal submission failed:', error);
+      // Error handling is done in the parent component, just log here
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleClose = () => {
+    console.log('🔍 DEBUG: Modal closing');
     setName('');
     setDescription('');
     onClose();
