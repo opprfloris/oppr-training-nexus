@@ -7,7 +7,7 @@ interface DebugInfoProps {
   pathname: string;
   isNewDefinition: boolean;
   loading: boolean;
-  mobileActivePanel: 'palette' | 'canvas' | 'config';
+  mobileActivePanel: 'palette' | 'canvas' | 'config' | 'validation';
   title: string;
   description: string;
   definition: TrainingDefinition | null;
