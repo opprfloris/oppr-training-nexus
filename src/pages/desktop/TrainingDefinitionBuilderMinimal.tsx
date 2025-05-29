@@ -12,7 +12,7 @@ import BlockConfiguration from '@/components/desktop/training-definitions/BlockC
 import VersionHistoryModal from '@/components/desktop/training-definitions/VersionHistoryModal';
 import { createNewBlock } from '@/utils/blockUtils';
 import { Button } from '@/components/ui/button';
-import { ClockIcon, DocumentTextIcon, MenuIcon, XIcon } from '@heroicons/react/24/outline';
+import { ClockIcon, DocumentTextIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 
 const TrainingDefinitionBuilderMinimal = () => {
   const { id } = useParams<{ id: string }>();
@@ -273,7 +273,7 @@ const TrainingDefinitionBuilderMinimal = () => {
               className="lg:hidden"
               onClick={() => setShowMobileMenu(!showMobileMenu)}
             >
-              {showMobileMenu ? <XIcon className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
+              {showMobileMenu ? <XMarkIcon className="w-5 h-5" /> : <Bars3Icon className="w-5 h-5" />}
             </Button>
             
             <div>
