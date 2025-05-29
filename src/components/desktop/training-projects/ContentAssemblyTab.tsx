@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChevronUpIcon, ChevronDownIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { TrainingProject, TrainingProjectMarker } from '@/types/training-projects';
-import { TrainingDefinitionSelector } from './TrainingDefinitionSelector';
+import TrainingDefinitionSelector from './TrainingDefinitionSelector';
 import { TrainingFlowOverview } from './TrainingFlowOverview';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -140,9 +140,20 @@ export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
     return marker ? `Pin ${marker.pin_number} - ${marker.machine_qr_entity?.qr_name || 'Unknown'}` : 'Unknown Marker';
   };
 
-  const getTrainingDefinitionId = (content: MarkerContent) => {
-    return content.training_definition_version?.training_definition?.title || 'No Definition';
-  };
+  // Create sorted markers with sequence order for TrainingFlowOverview
+  const sortedMarkers = markers
+    .sort((a, b) => (a.sequence_order || 0) - (b.sequence_order || 0));
+
+  // Transform markerContents to match TrainingProjectContent type
+  const content = markerContents.map(mc => ({
+    id: mc.id,
+    training_project_id: project.id,
+    marker_id: mc.marker_id,
+    training_definition_version_id: mc.training_definition_version_id,
+    sequence_order: mc.sequence_order,
+    created_at: new Date().toISOString(),
+    training_definition_version: mc.training_definition_version
+  }));
 
   if (loading) {
     return (
@@ -163,9 +174,8 @@ export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
 
       {/* Training Flow Overview */}
       <TrainingFlowOverview 
-        projectId={project.id}
-        markers={markers}
-        markerContents={markerContents}
+        sortedMarkers={sortedMarkers}
+        content={content}
       />
 
       {/* Marker Content Assignment */}
@@ -280,7 +290,7 @@ export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
             setSelectedMarkerId(null);
           }}
           projectId={project.id}
-          selectedMarkerId={selectedMarkerId}
+          markerId={selectedMarkerId}
         />
       )}
     </div>
