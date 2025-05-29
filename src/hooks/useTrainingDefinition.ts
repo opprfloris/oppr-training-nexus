@@ -22,20 +22,32 @@ export const useTrainingDefinition = () => {
   const isNewDefinition = id === 'new';
 
   useEffect(() => {
+    console.log('useTrainingDefinition useEffect triggered with id:', id);
+    
     if (isNewDefinition) {
+      console.log('This is a new definition, setting loading to false');
       setLoading(false);
       return;
     }
 
-    loadDefinitionAndVersion();
-  }, [id]);
+    if (id) {
+      console.log('Loading existing definition with id:', id);
+      loadDefinitionAndVersion();
+    }
+  }, [id, isNewDefinition]);
 
   const loadDefinitionAndVersion = async () => {
-    if (!id) return;
+    if (!id || id === 'new') {
+      console.log('loadDefinitionAndVersion called but id is invalid:', id);
+      return;
+    }
 
     try {
+      console.log('Starting to load definition and version for id:', id);
       setLoading(true);
       const { definition: defData, version: versionData, steps: stepsData } = await fetchDefinitionAndVersion(id);
+      
+      console.log('Data loaded successfully:', { defData, versionData, stepsData });
       
       setDefinition(defData);
       setTitle(defData.title);
@@ -52,6 +64,7 @@ export const useTrainingDefinition = () => {
       });
       navigate('/desktop/training-definitions');
     } finally {
+      console.log('Setting loading to false');
       setLoading(false);
     }
   };
@@ -86,7 +99,7 @@ export const useTrainingDefinition = () => {
           title: "Success",
           description: "Training definition created and saved as draft (v0.1)",
         });
-        // Navigate to the editor with the new ID - FIXED PATH
+        // Navigate to the editor with the new ID
         navigate(`/desktop/training-definitions/${result.definition.id}`, { replace: true });
       } else {
         toast({
