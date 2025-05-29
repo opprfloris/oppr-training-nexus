@@ -1,7 +1,10 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Tag } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Tag, RefreshCw, AlertCircle } from 'lucide-react';
+import { useAIAnalysis } from '@/hooks/useAIAnalysis';
+import { useAISettings } from '@/contexts/AISettingsContext';
 
 interface SimpleContentSummaryProps {
   content: string;
@@ -9,25 +12,22 @@ interface SimpleContentSummaryProps {
 }
 
 const SimpleContentSummary: React.FC<SimpleContentSummaryProps> = ({ content, fileName }) => {
-  // Get the saved analysis prompt
-  const savedPrompt = localStorage.getItem('ai-analysis-prompt');
-  const defaultPrompt = `Analyze this training document and provide a simple, helpful summary.
+  const { analysis, isLoading, error, analyzeDocument, regenerateAnalysis } = useAIAnalysis();
+  const { config } = useAISettings();
 
-Focus on:
-- Main topics and themes
-- Key learning points
-- Suggested training approach
-- Content difficulty level
+  // Trigger analysis when component mounts or content changes
+  useEffect(() => {
+    if (content && fileName) {
+      console.log('Content changed, starting analysis...');
+      analyzeDocument(content, fileName);
+    }
+  }, [content, fileName, analyzeDocument]);
 
-Keep the response concise and actionable for training developers.`;
-
-  const analysisPrompt = savedPrompt || defaultPrompt;
-
-  // Simple content analysis for basic stats
+  // Simple content analysis for basic stats (as fallback info)
   const words = content.split(/\s+/).length;
-  const readingTime = Math.ceil(words / 200); // 200 words per minute
+  const readingTime = Math.ceil(words / 200);
   
-  // Extract basic topics using simple keyword matching for fallback
+  // Extract basic topics using simple keyword matching for badges
   const topicPatterns = [
     { pattern: /safety|hazard|risk|protection|emergency/gi, topic: 'Safety' },
     { pattern: /equipment|machine|tool|device/gi, topic: 'Equipment' },
@@ -42,79 +42,66 @@ Keep the response concise and actionable for training developers.`;
     .map(({ topic }) => topic)
     .slice(0, 6);
 
-  // Generate analysis using the custom prompt
-  const generateCustomAnalysis = () => {
-    // This would be where we'd call the AI API with the custom prompt
-    // For now, we'll show a more dynamic response based on the prompt structure
-    const promptLines = analysisPrompt.split('\n').filter(line => line.trim());
-    
-    let analysisText = `**Document Analysis: ${fileName}**\n\n`;
-    
-    // Add basic document stats
-    analysisText += `Document contains ${words} words (${readingTime} minute read).\n\n`;
-    
-    // Process the prompt to generate a more relevant response
-    if (analysisPrompt.includes('summary') || analysisPrompt.includes('2 sentences')) {
-      analysisText += `**Summary:**\n`;
-      analysisText += `This document covers ${detectedTopics.length > 0 ? detectedTopics.slice(0, 2).join(' and ').toLowerCase() : 'operational procedures'} with ${words > 1000 ? 'detailed' : 'concise'} information. `;
-      analysisText += `The content is ${words > 2000 ? 'comprehensive and suitable for advanced training' : words > 1000 ? 'moderately detailed for intermediate training' : 'focused and appropriate for basic training'}.\n\n`;
-    }
-    
-    if (analysisPrompt.includes('equipment tags') || analysisPrompt.includes('equipment')) {
-      analysisText += `**Equipment Tags Identified:**\n`;
-      // Extract potential equipment tags (uppercase alphanumeric patterns)
-      const equipmentTags = content.match(/[A-Z]{2,}-[A-Z0-9]{2,}/g) || [];
-      if (equipmentTags.length > 0) {
-        analysisText += equipmentTags.slice(0, 5).map(tag => `• ${tag}`).join('\n') + '\n\n';
-      } else {
-        analysisText += '• No specific equipment tags detected in document\n\n';
-      }
-    }
-    
-    if (analysisPrompt.includes('topics') || analysisPrompt.includes('themes')) {
-      analysisText += `**Main Topics and Themes:**\n`;
-      if (detectedTopics.length > 0) {
-        analysisText += detectedTopics.map(topic => `• ${topic}`).join('\n') + '\n\n';
-      } else {
-        analysisText += '• General operational procedures\n\n';
-      }
-    }
-    
-    if (analysisPrompt.includes('learning points') || analysisPrompt.includes('key learning')) {
-      analysisText += `**Key Learning Points:**\n`;
-      analysisText += `• Understanding of ${detectedTopics.length > 0 ? detectedTopics[0].toLowerCase() : 'operational'} procedures\n`;
-      analysisText += `• Practical application of documented processes\n`;
-      analysisText += `• ${words > 1500 ? 'Advanced' : 'Basic'} operational knowledge\n\n`;
-    }
-    
-    if (analysisPrompt.includes('training approach') || analysisPrompt.includes('suggested training')) {
-      analysisText += `**Suggested Training Approach:**\n`;
-      analysisText += `• Duration: ${Math.max(10, Math.min(30, readingTime * 2))} minutes\n`;
-      analysisText += `• Format: ${words > 1000 ? 'Interactive workshop with hands-on practice' : 'Brief overview with practical examples'}\n`;
-      analysisText += `• Assessment: ${Math.max(3, Math.min(15, Math.floor(words / 200)))} questions\n\n`;
-    }
-    
-    if (analysisPrompt.includes('difficulty') || analysisPrompt.includes('Content difficulty')) {
-      analysisText += `**Content Difficulty Level:**\n`;
-      analysisText += `• ${words > 2000 ? 'Advanced' : words > 1000 ? 'Intermediate' : 'Basic'} level content\n`;
-      analysisText += `• ${detectedTopics.includes('Safety') ? 'Safety-critical' : 'Standard operational'} procedures\n\n`;
-    }
-    
-    analysisText += `*Analysis generated using custom prompt. Configure AI settings with an API key for enhanced analysis.*`;
-    
-    return analysisText;
+  const handleRegenerate = async () => {
+    console.log('User requested analysis regeneration');
+    await regenerateAnalysis();
   };
-
-  const analysisResult = generateCustomAnalysis();
 
   return (
     <div className="mt-4 space-y-4">
-      {/* Custom analysis output */}
-      <div className="prose prose-sm max-w-none">
-        <div className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">
-          {analysisResult}
+      {/* AI Status and Controls */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <div className={`w-2 h-2 rounded-full ${config.apiKey ? 'bg-green-500' : 'bg-red-500'}`}></div>
+          <span className="text-xs text-gray-600">
+            {config.apiKey ? `AI Analysis (${config.model})` : 'Basic Analysis Only'}
+          </span>
+          {error && (
+            <div className="flex items-center space-x-1 text-amber-600">
+              <AlertCircle className="w-3 h-3" />
+              <span className="text-xs">Using fallback analysis</span>
+            </div>
+          )}
         </div>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRegenerate}
+          disabled={isLoading}
+          className="flex items-center space-x-1"
+        >
+          <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
+          <span className="text-xs">
+            {isLoading ? 'Analyzing...' : 'Regenerate'}
+          </span>
+        </Button>
       </div>
+
+      {/* Analysis Results */}
+      <div className="prose prose-sm max-w-none">
+        {isLoading ? (
+          <div className="flex items-center space-x-2 text-gray-500">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+            <span className="text-sm">Analyzing document with AI...</span>
+          </div>
+        ) : (
+          <div className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">
+            {analysis || 'No analysis available'}
+          </div>
+        )}
+      </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <div className="flex items-center space-x-2 text-amber-800">
+            <AlertCircle className="w-4 h-4" />
+            <span className="text-sm font-medium">AI Analysis Error</span>
+          </div>
+          <p className="text-xs text-amber-700 mt-1">{error}</p>
+        </div>
+      )}
 
       {/* Key Topics as clickable badges */}
       {detectedTopics.length > 0 && (
