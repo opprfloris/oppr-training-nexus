@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { PlusIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import React, { useState, useEffect } from 'react';
+import { PlusIcon, MagnifyingGlassIcon, ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,7 +8,9 @@ import { useMachineQR } from '@/hooks/useMachineQR';
 import { MachineQRTable } from '@/components/desktop/machine-qr/MachineQRTable';
 import { AddMachineQRModal } from '@/components/desktop/machine-qr/AddMachineQRModal';
 import { EditMachineQRModal } from '@/components/desktop/machine-qr/EditMachineQRModal';
-import { ViewUsageModal } from '@/components/desktop/machine-qr/ViewUsageModal';
+import { ViewMachineModal } from '@/components/desktop/machine-qr/ViewMachineModal';
+import { BulkUploadModal } from '@/components/desktop/machine-qr/BulkUploadModal';
+import { ColumnVisibilitySettings, defaultVisibility, ColumnVisibility } from '@/components/desktop/machine-qr/ColumnVisibilitySettings';
 import { MachineQREntity } from '@/types/machine-qr';
 
 const MachineRegistry = () => {
@@ -22,23 +24,40 @@ const MachineRegistry = () => {
     locationFilter,
     setLocationFilter,
     createEntity,
+    bulkCreateEntities,
     updateEntity,
     deleteEntity,
   } = useMachineQR();
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showUsageModal, setShowUsageModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<MachineQREntity | null>(null);
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>(defaultVisibility);
+
+  useEffect(() => {
+    // Load saved column visibility settings from localStorage
+    const savedVisibility = localStorage.getItem('machineQRColumnVisibility');
+    if (savedVisibility) {
+      try {
+        setColumnVisibility(JSON.parse(savedVisibility));
+      } catch (error) {
+        console.error('Error loading column visibility settings:', error);
+        // Use default if parsing fails
+        setColumnVisibility(defaultVisibility);
+      }
+    }
+  }, []);
 
   const handleEdit = (entity: MachineQREntity) => {
     setSelectedEntity(entity);
     setShowEditModal(true);
   };
 
-  const handleViewUsage = (entity: MachineQREntity) => {
+  const handleView = (entity: MachineQREntity) => {
     setSelectedEntity(entity);
-    setShowUsageModal(true);
+    setShowViewModal(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -62,13 +81,23 @@ const MachineRegistry = () => {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Machine & QR Registry</h1>
           <p className="text-gray-600">Manage equipment catalog and QR code assignments</p>
         </div>
-        <Button 
-          className="oppr-button-primary flex items-center space-x-2"
-          onClick={() => setShowAddModal(true)}
-        >
-          <PlusIcon className="w-5 h-5" />
-          <span>Add New Machine+QR</span>
-        </Button>
+        <div className="flex space-x-2">
+          <Button 
+            className="flex items-center space-x-2"
+            variant="outline"
+            onClick={() => setShowBulkUploadModal(true)}
+          >
+            <ArrowUpTrayIcon className="w-5 h-5" />
+            <span>Bulk Upload</span>
+          </Button>
+          <Button 
+            className="oppr-button-primary flex items-center space-x-2"
+            onClick={() => setShowAddModal(true)}
+          >
+            <PlusIcon className="w-5 h-5" />
+            <span>Add New Machine+QR</span>
+          </Button>
+        </div>
       </div>
 
       {/* Controls Bar */}
@@ -116,14 +145,21 @@ const MachineRegistry = () => {
             ))}
           </select>
         </div>
+
+        {/* Column Visibility */}
+        <ColumnVisibilitySettings 
+          visibility={columnVisibility}
+          onVisibilityChange={setColumnVisibility}
+        />
       </div>
 
       {/* Machine QR Table */}
       <MachineQRTable
         entities={entities}
         loading={loading}
+        columnVisibility={columnVisibility}
         onEdit={handleEdit}
-        onViewUsage={handleViewUsage}
+        onViewUsage={handleView}
         onDelete={handleDelete}
       />
 
@@ -144,13 +180,19 @@ const MachineRegistry = () => {
         onUpdate={updateEntity}
       />
 
-      <ViewUsageModal
-        isOpen={showUsageModal}
+      <ViewMachineModal
+        isOpen={showViewModal}
         onClose={() => {
-          setShowUsageModal(false);
+          setShowViewModal(false);
           setSelectedEntity(null);
         }}
         entity={selectedEntity}
+      />
+
+      <BulkUploadModal
+        isOpen={showBulkUploadModal}
+        onClose={() => setShowBulkUploadModal(false)}
+        onBulkCreate={bulkCreateEntities}
       />
     </div>
   );
