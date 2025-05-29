@@ -49,11 +49,6 @@ const TrainingDefinitions = () => {
         .from('training_definitions')
         .select(`
           *,
-          profiles!training_definitions_created_by_fkey (
-            first_name,
-            last_name,
-            email
-          ),
           training_definition_versions!inner (
             id,
             version_number,
@@ -76,11 +71,31 @@ const TrainingDefinitions = () => {
 
       if (error) throw error;
 
+      // Fetch creator profiles separately to avoid relationship issues
+      const creatorIds = [...new Set(data?.map(def => def.created_by).filter(Boolean))];
+      let profiles: any[] = [];
+      
+      if (creatorIds.length > 0) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, email')
+          .in('id', creatorIds);
+        
+        if (profileError) {
+          console.warn('Could not fetch creator profiles:', profileError);
+        } else {
+          profiles = profileData || [];
+        }
+      }
+
       // Transform the data to match our interface
       const transformedData: TrainingDefinitionWithLatestVersion[] = data?.map(def => {
         // Get the latest version for each definition
         const latestVersion = def.training_definition_versions
           .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+
+        // Find the creator profile
+        const creatorProfile = profiles.find(p => p.id === def.created_by);
 
         if (latestVersion) {
           // Safely convert steps_json to StepBlock[]
@@ -88,6 +103,7 @@ const TrainingDefinitions = () => {
 
           return {
             ...def,
+            profiles: creatorProfile,
             latest_version: {
               ...latestVersion,
               steps_json
@@ -97,6 +113,7 @@ const TrainingDefinitions = () => {
 
         return {
           ...def,
+          profiles: creatorProfile,
           latest_version: null
         };
       }) || [];
