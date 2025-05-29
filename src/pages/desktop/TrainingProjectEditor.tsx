@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, CheckBadgeIcon, PlayIcon } from "@heroicons/react/24/outline";
@@ -126,7 +127,7 @@ const TrainingProjectEditor = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Breadcrumb */}
       <div className="flex items-center space-x-2 text-sm text-gray-600">
         <button 
@@ -145,7 +146,7 @@ const TrainingProjectEditor = () => {
       </div>
 
       {/* Project Header */}
-      <div className="oppr-card">
+      <div className="oppr-card p-6">
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center space-x-4 mb-2">
@@ -180,74 +181,88 @@ const TrainingProjectEditor = () => {
       {/* Tabbed Content */}
       <div className="oppr-card">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="settings">Settings & Shell</TabsTrigger>
-            <TabsTrigger value="floor-plan">Floor Plan & Markers</TabsTrigger>
-            <TabsTrigger value="content">Content Assembly</TabsTrigger>
-            <TabsTrigger value="users">User Access</TabsTrigger>
-            <TabsTrigger value="parameters">Parameters & Activation</TabsTrigger>
-            <TabsTrigger value="statistics">Statistics</TabsTrigger>
-          </TabsList>
+          <div className="border-b px-6">
+            <TabsList className="grid w-full grid-cols-6 bg-transparent h-auto p-0">
+              <TabsTrigger value="settings" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-3">
+                Settings & Shell
+              </TabsTrigger>
+              <TabsTrigger value="floor-plan" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-3">
+                Floor Plan & Markers
+              </TabsTrigger>
+              <TabsTrigger value="content" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-3">
+                Content Assembly
+              </TabsTrigger>
+              <TabsTrigger value="users" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-3">
+                User Access
+              </TabsTrigger>
+              <TabsTrigger value="parameters" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-3">
+                Parameters & Activation
+              </TabsTrigger>
+              <TabsTrigger value="statistics" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-3">
+                Statistics
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-          <TabsContent value="settings" className="mt-6">
-            <div className="space-y-6">
+          <TabsContent value="settings" className="mt-0 p-6">
+            <div className="space-y-8">
               <h3 className="text-lg font-medium">Project Settings & Shell</h3>
-              <div className="grid gap-4 max-w-2xl">
+              <div className="grid gap-6 max-w-2xl">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Training Project ID
                   </label>
                   <input
                     type="text"
                     value={project.project_id}
                     readOnly
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-500"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-md text-gray-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Training Project Name *
                   </label>
                   <input
                     type="text"
                     value={project.name}
                     onChange={(e) => setProject({ ...project, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-oppr-blue focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-oppr-blue focus:border-transparent"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Description
                   </label>
                   <textarea
                     value={project.description || ''}
                     onChange={(e) => setProject({ ...project, description: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-oppr-blue focus:border-transparent"
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-oppr-blue focus:border-transparent"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Color Code
                     </label>
                     <input
                       type="color"
                       value={project.color_code}
                       onChange={(e) => setProject({ ...project, color_code: e.target.value })}
-                      className="w-full h-10 border border-gray-300 rounded-md"
+                      className="w-full h-12 border border-gray-300 rounded-md"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Icon
                     </label>
                     <input
                       type="text"
                       value={project.icon}
                       onChange={(e) => setProject({ ...project, icon: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-oppr-blue focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-oppr-blue focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -255,62 +270,62 @@ const TrainingProjectEditor = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="floor-plan" className="mt-6">
-            <div className="space-y-6">
+          <TabsContent value="floor-plan" className="mt-0 p-6">
+            <div className="space-y-8">
               <h3 className="text-lg font-medium">Floor Plan & Markers</h3>
-              <div className="text-center py-12 bg-gray-50 rounded-lg">
-                <p className="text-gray-600">Floor plan and marker management will be implemented here</p>
-                <p className="text-sm text-gray-500 mt-2">
+              <div className="text-center py-16 bg-gray-50 rounded-lg">
+                <p className="text-gray-600 text-lg mb-2">Floor plan and marker management will be implemented here</p>
+                <p className="text-sm text-gray-500">
                   This will include floor plan selection/upload and interactive marker placement
                 </p>
               </div>
             </div>
           </TabsContent>
 
-          <TabsContent value="content" className="mt-6">
-            <div className="space-y-6">
+          <TabsContent value="content" className="mt-0 p-6">
+            <div className="space-y-8">
               <h3 className="text-lg font-medium">Content Assembly</h3>
-              <div className="text-center py-12 bg-gray-50 rounded-lg">
-                <p className="text-gray-600">Content assembly interface will be implemented here</p>
-                <p className="text-sm text-gray-500 mt-2">
+              <div className="text-center py-16 bg-gray-50 rounded-lg">
+                <p className="text-gray-600 text-lg mb-2">Content assembly interface will be implemented here</p>
+                <p className="text-sm text-gray-500">
                   This will include marker sequencing and training definition assignment
                 </p>
               </div>
             </div>
           </TabsContent>
 
-          <TabsContent value="users" className="mt-6">
-            <div className="space-y-6">
+          <TabsContent value="users" className="mt-0 p-6">
+            <div className="space-y-8">
               <h3 className="text-lg font-medium">User Access</h3>
-              <div className="text-center py-12 bg-gray-50 rounded-lg">
-                <p className="text-gray-600">User assignment interface will be implemented here</p>
-                <p className="text-sm text-gray-500 mt-2">
+              <div className="text-center py-16 bg-gray-50 rounded-lg">
+                <p className="text-gray-600 text-lg mb-2">User assignment interface will be implemented here</p>
+                <p className="text-sm text-gray-500">
                   This will include operator and collaborator assignment
                 </p>
               </div>
             </div>
           </TabsContent>
 
-          <TabsContent value="parameters" className="mt-6">
-            <div className="space-y-6">
+          <TabsContent value="parameters" className="mt-0 p-6">
+            <div className="space-y-8">
               <h3 className="text-lg font-medium">Parameters & Activation</h3>
-              <div className="text-center py-12 bg-gray-50 rounded-lg">
-                <p className="text-gray-600">Parameters and activation controls will be implemented here</p>
-                <p className="text-sm text-gray-500 mt-2">
+              <div className="text-center py-16 bg-gray-50 rounded-lg">
+                <p className="text-gray-600 text-lg mb-2">Parameters and activation controls will be implemented here</p>
+                <p className="text-sm text-gray-500">
                   This will include activation period, success criteria, and readiness checks
                 </p>
               </div>
             </div>
           </TabsContent>
 
-          <TabsContent value="statistics" className="mt-6">
-            <div className="space-y-6">
+          <TabsContent value="statistics" className="mt-0 p-6">
+            <div className="space-y-8">
               <h3 className="text-lg font-medium">Project Statistics</h3>
-              <div className="text-center py-12 bg-gray-50 rounded-lg">
-                <Button className="bg-oppr-blue hover:bg-oppr-blue/90">
+              <div className="text-center py-16 bg-gray-50 rounded-lg">
+                <Button className="bg-oppr-blue hover:bg-oppr-blue/90 mb-4">
                   View Project Statistics Dashboard
                 </Button>
-                <p className="text-sm text-gray-500 mt-2">
+                <p className="text-sm text-gray-500">
                   Navigate to the project-specific performance dashboard
                 </p>
               </div>
