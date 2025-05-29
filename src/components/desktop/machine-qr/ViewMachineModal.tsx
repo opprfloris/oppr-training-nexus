@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import * as QRCode from 'qrcode';
+import QRCode from 'qrcode';
 import { Printer, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
