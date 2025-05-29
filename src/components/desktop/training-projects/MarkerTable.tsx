@@ -65,8 +65,8 @@ const MarkerTable: React.FC<MarkerTableProps> = ({ markers, onMarkersChange }) =
               marker={marker}
               index={index}
               totalMarkers={sortedMarkers.length}
-              onMoveUp={moveMarker}
-              onMoveDown={moveMarker}
+              onMoveUp={(markerId) => moveMarker(markerId, 'up')}
+              onMoveDown={(markerId) => moveMarker(markerId, 'down')}
               onDelete={deleteMarker}
               disabled={saving}
             />
