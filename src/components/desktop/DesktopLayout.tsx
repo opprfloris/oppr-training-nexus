@@ -18,7 +18,10 @@ const DesktopLayout = () => {
   const navigate = useNavigate();
 
   const isActive = (path: string) => {
-    return location.pathname.includes(path) || (path === 'dashboard' && location.pathname === '/desktop');
+    if (path === 'dashboard') {
+      return location.pathname === '/desktop' || location.pathname === '/desktop/dashboard';
+    }
+    return location.pathname.includes(path);
   };
 
   const navigationItems = [
@@ -30,6 +33,14 @@ const DesktopLayout = () => {
     { name: 'User Management', path: 'user-management', icon: UsersIcon },
     { name: 'Skills Matrix', path: 'skills-matrix', icon: TableCellsIcon },
   ];
+
+  const handleNavigation = (path: string) => {
+    if (path === 'dashboard') {
+      navigate('/desktop/dashboard');
+    } else {
+      navigate(`/desktop/${path}`);
+    }
+  };
 
   return (
     <div className="min-h-screen flex w-full">
@@ -52,7 +63,7 @@ const DesktopLayout = () => {
             return (
               <button
                 key={item.path}
-                onClick={() => navigate(`/desktop/${item.path}`)}
+                onClick={() => handleNavigation(item.path)}
                 className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
                   isActive(item.path)
                     ? 'bg-oppr-blue text-white'
