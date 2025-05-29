@@ -9,6 +9,7 @@ import { Toaster } from '@/components/ui/toaster';
 import TrainingDefinitionBuilderMinimal from './pages/desktop/TrainingDefinitionBuilderMinimal';
 import TrainingDefinitions from './pages/desktop/TrainingDefinitions';
 import TrainingProjects from './pages/desktop/TrainingProjects';
+import TrainingProjectEditor from './pages/desktop/TrainingProjectEditor';
 import FloorPlans from './pages/desktop/FloorPlans';
 import MachineRegistry from './pages/desktop/MachineRegistry';
 import UserManagement from './pages/desktop/UserManagement';
@@ -36,6 +37,7 @@ function App() {
                   <Route path="training-definitions/new" element={<TrainingDefinitionBuilderMinimal />} />
                   <Route path="training-definitions/:id" element={<TrainingDefinitionBuilderMinimal />} />
                   <Route path="training-projects" element={<TrainingProjects />} />
+                  <Route path="training-projects/:id" element={<TrainingProjectEditor />} />
                   <Route path="floor-plans" element={<FloorPlans />} />
                   <Route path="machine-registry" element={<MachineRegistry />} />
                   <Route path="user-management" element={<UserManagement />} />

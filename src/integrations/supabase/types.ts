@@ -216,11 +216,276 @@ export type Database = {
         }
         Relationships: []
       }
+      training_project_collaborators: {
+        Row: {
+          assigned_at: string
+          assigned_by: string
+          collaborator_id: string
+          id: string
+          training_project_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by: string
+          collaborator_id: string
+          id?: string
+          training_project_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string
+          collaborator_id?: string
+          id?: string
+          training_project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_project_collaborators_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_project_collaborators_collaborator_id_fkey"
+            columns: ["collaborator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_project_collaborators_training_project_id_fkey"
+            columns: ["training_project_id"]
+            isOneToOne: false
+            referencedRelation: "training_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_project_content: {
+        Row: {
+          created_at: string
+          id: string
+          marker_id: string
+          sequence_order: number
+          training_definition_version_id: string | null
+          training_project_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          marker_id: string
+          sequence_order: number
+          training_definition_version_id?: string | null
+          training_project_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          marker_id?: string
+          sequence_order?: number
+          training_definition_version_id?: string | null
+          training_project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_project_content_marker_id_fkey"
+            columns: ["marker_id"]
+            isOneToOne: false
+            referencedRelation: "training_project_markers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_project_content_training_definition_version_id_fkey"
+            columns: ["training_definition_version_id"]
+            isOneToOne: false
+            referencedRelation: "training_definition_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_project_content_training_project_id_fkey"
+            columns: ["training_project_id"]
+            isOneToOne: false
+            referencedRelation: "training_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_project_markers: {
+        Row: {
+          created_at: string
+          id: string
+          machine_qr_entity_id: string
+          pin_number: number
+          sequence_order: number | null
+          training_project_id: string
+          x_position: number
+          y_position: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          machine_qr_entity_id: string
+          pin_number: number
+          sequence_order?: number | null
+          training_project_id: string
+          x_position: number
+          y_position: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          machine_qr_entity_id?: string
+          pin_number?: number
+          sequence_order?: number | null
+          training_project_id?: string
+          x_position?: number
+          y_position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_project_markers_machine_qr_entity_id_fkey"
+            columns: ["machine_qr_entity_id"]
+            isOneToOne: false
+            referencedRelation: "machine_qr_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_project_markers_training_project_id_fkey"
+            columns: ["training_project_id"]
+            isOneToOne: false
+            referencedRelation: "training_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_project_operator_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string
+          id: string
+          operator_id: string
+          training_project_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by: string
+          id?: string
+          operator_id: string
+          training_project_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string
+          id?: string
+          operator_id?: string
+          training_project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_project_operator_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_project_operator_assignments_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_project_operator_assignments_training_project_id_fkey"
+            columns: ["training_project_id"]
+            isOneToOne: false
+            referencedRelation: "training_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_projects: {
+        Row: {
+          color_code: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          end_date: string | null
+          floor_plan_image_id: string | null
+          icon: string | null
+          id: string
+          max_retake_attempts: number | null
+          name: string
+          pass_fail_threshold: number | null
+          project_id: string
+          recommended_completion_time: string | null
+          start_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          color_code?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          end_date?: string | null
+          floor_plan_image_id?: string | null
+          icon?: string | null
+          id?: string
+          max_retake_attempts?: number | null
+          name: string
+          pass_fail_threshold?: number | null
+          project_id: string
+          recommended_completion_time?: string | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          color_code?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          end_date?: string | null
+          floor_plan_image_id?: string | null
+          icon?: string | null
+          id?: string
+          max_retake_attempts?: number | null
+          name?: string
+          pass_fail_threshold?: number | null
+          project_id?: string
+          recommended_completion_time?: string | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_projects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_projects_floor_plan_image_id_fkey"
+            columns: ["floor_plan_image_id"]
+            isOneToOne: false
+            referencedRelation: "floor_plan_images"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      generate_project_id: {
+        Args: { prefix?: string }
+        Returns: string
+      }
       generate_qr_identifier: {
         Args: Record<PropertyKey, never>
         Returns: string
