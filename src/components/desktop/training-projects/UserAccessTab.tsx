@@ -6,6 +6,8 @@ import { PlusIcon, UserIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { TrainingProject, TrainingProjectOperatorAssignment, TrainingProjectCollaborator } from '@/types/training-projects';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { AssignOperatorsModal } from './AssignOperatorsModal';
+import { AssignCollaboratorsModal } from './AssignCollaboratorsModal';
 
 interface UserAccessTabProps {
   project: TrainingProject;
@@ -19,6 +21,8 @@ export const UserAccessTab: React.FC<UserAccessTabProps> = ({
   const [operators, setOperators] = useState<TrainingProjectOperatorAssignment[]>([]);
   const [collaborators, setCollaborators] = useState<TrainingProjectCollaborator[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showOperatorsModal, setShowOperatorsModal] = useState(false);
+  const [showCollaboratorsModal, setShowCollaboratorsModal] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -73,6 +77,58 @@ export const UserAccessTab: React.FC<UserAccessTabProps> = ({
     }
   };
 
+  const handleRemoveOperator = async (assignmentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('training_project_operator_assignments')
+        .delete()
+        .eq('id', assignmentId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Operator removed successfully"
+      });
+
+      loadUserAccess();
+      onAccessChange();
+    } catch (error) {
+      console.error('Error removing operator:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove operator",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleRemoveCollaborator = async (collaborationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('training_project_collaborators')
+        .delete()
+        .eq('id', collaborationId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Collaborator removed successfully"
+      });
+
+      loadUserAccess();
+      onAccessChange();
+    } catch (error) {
+      console.error('Error removing collaborator:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove collaborator",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getUserDisplayName = (user: any) => {
     if (user?.first_name || user?.last_name) {
       return `${user.first_name || ''} ${user.last_name || ''}`.trim();
@@ -104,7 +160,7 @@ export const UserAccessTab: React.FC<UserAccessTabProps> = ({
             <h4 className="font-medium text-gray-900">Training Operators</h4>
             <p className="text-sm text-gray-600">Users who will complete this training project</p>
           </div>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setShowOperatorsModal(true)}>
             <PlusIcon className="w-4 h-4 mr-2" />
             Assign Operators
           </Button>
@@ -129,7 +185,12 @@ export const UserAccessTab: React.FC<UserAccessTabProps> = ({
                 </div>
                 <div className="flex items-center space-x-2">
                   <Badge variant="outline">Operator</Badge>
-                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-red-600 hover:text-red-700"
+                    onClick={() => handleRemoveOperator(assignment.id)}
+                  >
                     <TrashIcon className="w-4 h-4" />
                   </Button>
                 </div>
@@ -152,7 +213,7 @@ export const UserAccessTab: React.FC<UserAccessTabProps> = ({
             <h4 className="font-medium text-gray-900">Project Collaborators</h4>
             <p className="text-sm text-gray-600">Users who can help manage and monitor this training project</p>
           </div>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setShowCollaboratorsModal(true)}>
             <PlusIcon className="w-4 h-4 mr-2" />
             Add Collaborators
           </Button>
@@ -179,7 +240,12 @@ export const UserAccessTab: React.FC<UserAccessTabProps> = ({
                   <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
                     Collaborator
                   </Badge>
-                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-red-600 hover:text-red-700"
+                    onClick={() => handleRemoveCollaborator(collaboration.id)}
+                  >
                     <TrashIcon className="w-4 h-4" />
                   </Button>
                 </div>
@@ -194,6 +260,27 @@ export const UserAccessTab: React.FC<UserAccessTabProps> = ({
           </div>
         )}
       </div>
+
+      {/* Modals */}
+      <AssignOperatorsModal
+        isOpen={showOperatorsModal}
+        onClose={() => setShowOperatorsModal(false)}
+        projectId={project.id}
+        onAssignmentComplete={() => {
+          loadUserAccess();
+          onAccessChange();
+        }}
+      />
+
+      <AssignCollaboratorsModal
+        isOpen={showCollaboratorsModal}
+        onClose={() => setShowCollaboratorsModal(false)}
+        projectId={project.id}
+        onAssignmentComplete={() => {
+          loadUserAccess();
+          onAccessChange();
+        }}
+      />
     </div>
   );
 };
