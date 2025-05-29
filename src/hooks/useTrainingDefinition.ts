@@ -2,27 +2,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { TrainingDefinition, TrainingDefinitionVersion, StepBlock } from '@/types/training-definitions';
-
-// Type guard to safely convert Json to StepBlock[]
-const isStepBlockArray = (value: any): value is StepBlock[] => {
-  return Array.isArray(value) && value.every((item: any) => 
-    item && 
-    typeof item === 'object' && 
-    typeof item.id === 'string' &&
-    typeof item.type === 'string' &&
-    typeof item.order === 'number' &&
-    item.config !== undefined
-  );
-};
-
-const safeConvertToStepBlocks = (value: any): StepBlock[] => {
-  if (isStepBlockArray(value)) {
-    return value;
-  }
-  return [];
-};
+import { fetchDefinitionAndVersion } from '@/services/trainingDefinitionService';
+import { saveDraft } from '@/services/trainingDefinitionSaveService';
 
 export const useTrainingDefinition = () => {
   const { id } = useParams<{ id: string }>();
@@ -45,48 +27,21 @@ export const useTrainingDefinition = () => {
       return;
     }
 
-    fetchDefinitionAndVersion();
+    loadDefinitionAndVersion();
   }, [id]);
 
-  const fetchDefinitionAndVersion = async () => {
+  const loadDefinitionAndVersion = async () => {
     if (!id) return;
 
     try {
       setLoading(true);
-
-      // Fetch the training definition
-      const { data: defData, error: defError } = await supabase
-        .from('training_definitions')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (defError) throw defError;
-
+      const { definition: defData, version: versionData, steps: stepsData } = await fetchDefinitionAndVersion(id);
+      
       setDefinition(defData);
       setTitle(defData.title);
       setDescription(defData.description || '');
-
-      // Fetch the latest draft version or latest version
-      const { data: versionData, error: versionError } = await supabase
-        .from('training_definition_versions')
-        .select('*')
-        .eq('training_definition_id', id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (versionError) throw versionError;
-
-      if (versionData) {
-        const safeStepsJson = safeConvertToStepBlocks(versionData.steps_json);
-        const typedVersion: TrainingDefinitionVersion = {
-          ...versionData,
-          steps_json: safeStepsJson
-        };
-        setVersion(typedVersion);
-        setSteps(safeStepsJson);
-      }
+      setVersion(versionData);
+      setSteps(stepsData);
 
     } catch (error) {
       console.error('Error fetching training definition:', error);
@@ -114,75 +69,26 @@ export const useTrainingDefinition = () => {
     try {
       setSaving(true);
 
-      if (isNewDefinition) {
-        // Create new training definition with version 0.1 (draft)
-        const { data: newDef, error: defError } = await supabase
-          .from('training_definitions')
-          .insert({
-            title: title.trim(),
-            description: description.trim() || null,
-            created_by: (await supabase.auth.getUser()).data.user?.id
-          })
-          .select()
-          .single();
+      const result = await saveDraft({
+        title,
+        description,
+        steps,
+        isNewDefinition,
+        definition,
+        version
+      });
 
-        if (defError) throw defError;
+      setDefinition(result.definition);
+      setVersion(result.version);
 
-        const { data: newVersion, error: versionError } = await supabase
-          .from('training_definition_versions')
-          .insert({
-            training_definition_id: newDef.id,
-            version_number: '0.1',
-            status: 'draft' as const,
-            steps_json: steps as any
-          })
-          .select()
-          .single();
-
-        if (versionError) throw versionError;
-
-        const typedNewVersion: TrainingDefinitionVersion = {
-          ...newVersion,
-          steps_json: steps
-        };
-
-        setDefinition(newDef);
-        setVersion(typedNewVersion);
-
+      if (result.isNew) {
         toast({
           title: "Success",
           description: "Training definition created and saved as draft (v0.1)",
         });
-
         // Navigate to the editor with the new ID - FIXED PATH
-        navigate(`/desktop/training-definitions/${newDef.id}`, { replace: true });
+        navigate(`/desktop/training-definitions/${result.definition.id}`, { replace: true });
       } else {
-        // Update existing definition
-        if (definition) {
-          const { error: defError } = await supabase
-            .from('training_definitions')
-            .update({
-              title: title.trim(),
-              description: description.trim() || null,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', definition.id);
-
-          if (defError) throw defError;
-        }
-
-        // Update or create version
-        if (version) {
-          const { error: versionError } = await supabase
-            .from('training_definition_versions')
-            .update({
-              steps_json: steps as any
-            })
-            .eq('id', version.id);
-
-          if (versionError) throw versionError;
-        }
-
         toast({
           title: "Success",
           description: "Draft saved successfully",
