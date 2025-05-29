@@ -67,43 +67,50 @@ export const useMarkerTableActions = ({
         swap: { id: swapMarker.id, order: swapMarker.sequence_order || swapMarker.pin_number }
       });
 
-      // Use a temporary high value to avoid constraint violations
-      const tempValue = 9999 + Date.now();
-      
-      // Step 1: Set current marker to temporary value
-      const { error: tempError } = await supabase
-        .from('training_project_markers')
-        .update({ 
-          sequence_order: tempValue,
-          pin_number: tempValue
-        })
-        .eq('id', currentMarker.id);
+      // Instead of swapping, renumber all markers to avoid constraint violations
+      const updates = sortedMarkers.map((marker, index) => {
+        let newOrder;
+        if (marker.id === currentMarker.id) {
+          // Current marker takes the swap marker's position
+          newOrder = newIndex + 1;
+        } else if (marker.id === swapMarker.id) {
+          // Swap marker takes the current marker's position
+          newOrder = currentIndex + 1;
+        } else if (index < Math.min(currentIndex, newIndex)) {
+          // Markers before the affected range stay the same
+          newOrder = index + 1;
+        } else if (index > Math.max(currentIndex, newIndex)) {
+          // Markers after the affected range stay the same
+          newOrder = index + 1;
+        } else {
+          // Markers in between get shifted
+          newOrder = index + 1;
+        }
 
-      if (tempError) throw tempError;
+        return {
+          id: marker.id,
+          sequence_order: newOrder,
+          pin_number: newOrder
+        };
+      });
 
-      // Step 2: Move swap marker to current marker's position
-      const currentOrder = currentMarker.sequence_order || currentMarker.pin_number;
-      const { error: swapError } = await supabase
-        .from('training_project_markers')
-        .update({ 
-          sequence_order: currentOrder,
-          pin_number: currentOrder
-        })
-        .eq('id', swapMarker.id);
+      console.log('Update plan:', updates);
 
-      if (swapError) throw swapError;
+      // Execute updates in sequence to avoid constraint violations
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('training_project_markers')
+          .update({
+            sequence_order: update.sequence_order,
+            pin_number: update.pin_number
+          })
+          .eq('id', update.id);
 
-      // Step 3: Move current marker to swap marker's final position
-      const swapOrder = swapMarker.sequence_order || swapMarker.pin_number;
-      const { error: finalError } = await supabase
-        .from('training_project_markers')
-        .update({ 
-          sequence_order: swapOrder,
-          pin_number: swapOrder
-        })
-        .eq('id', currentMarker.id);
-
-      if (finalError) throw finalError;
+        if (error) {
+          console.error('Error updating marker:', update.id, error);
+          throw error;
+        }
+      }
 
       toast({
         title: "Success",
