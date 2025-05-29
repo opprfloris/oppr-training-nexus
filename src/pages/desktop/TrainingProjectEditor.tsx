@@ -1,16 +1,19 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeftIcon, CheckBadgeIcon, PlayIcon } from "@heroicons/react/24/outline";
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { TrainingProject, TrainingProjectMarker, mapDatabaseToTrainingProject } from '@/types/training-projects';
+import { ProjectBreadcrumb } from '@/components/desktop/training-projects/ProjectBreadcrumb';
+import { ProjectHeader } from '@/components/desktop/training-projects/ProjectHeader';
+import { SettingsTab } from '@/components/desktop/training-projects/SettingsTab';
 import { FloorPlanMarkerTab } from '@/components/desktop/training-projects/FloorPlanMarkerTab';
 import { ContentAssemblyTab } from '@/components/desktop/training-projects/ContentAssemblyTab';
 import { UserAccessTab } from '@/components/desktop/training-projects/UserAccessTab';
 import { ParametersActivationTab } from '@/components/desktop/training-projects/ParametersActivationTab';
+import { StatisticsTab } from '@/components/desktop/training-projects/StatisticsTab';
 
 const TrainingProjectEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -42,7 +45,6 @@ const TrainingProjectEditor = () => {
 
       if (error) throw error;
       
-      // Map database response to our TypeScript interface
       const mappedProject = mapDatabaseToTrainingProject(data);
       setProject(mappedProject);
     } catch (error) {
@@ -169,22 +171,6 @@ const TrainingProjectEditor = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const colors = {
-      draft: 'text-amber-600 border-amber-200 bg-amber-50',
-      scheduled: 'text-blue-600 border-blue-200 bg-blue-50',
-      active: 'text-green-600 border-green-200 bg-green-50',
-      stopped: 'text-red-600 border-red-200 bg-red-50',
-      archived: 'text-gray-600 border-gray-200 bg-gray-50',
-    };
-
-    return (
-      <Badge variant="outline" className={colors[status as keyof typeof colors] || ''}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    );
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -210,57 +196,10 @@ const TrainingProjectEditor = () => {
 
   return (
     <div className="space-y-6 p-8">
-      {/* Breadcrumb */}
-      <div className="flex items-center space-x-2 text-sm text-gray-600">
-        <button 
-          onClick={() => navigate('/desktop/training-projects')}
-          className="hover:text-gray-900 flex items-center space-x-1"
-        >
-          <ArrowLeftIcon className="w-4 h-4" />
-          <span>Training Projects</span>
-        </button>
-        <span>/</span>
-        <span className="text-gray-900">{project.project_id}</span>
-        <span>/</span>
-        <span className="text-gray-900">Edit</span>
-        <span>/</span>
-        <span className="text-gray-900 capitalize">{activeTab.replace('-', ' & ')}</span>
-      </div>
+      <ProjectBreadcrumb projectId={project.project_id} activeTab={activeTab} />
+      
+      <ProjectHeader project={project} saving={saving} onSave={handleSave} />
 
-      {/* Project Header */}
-      <div className="oppr-card p-8">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <div className="flex items-center space-x-4 mb-3">
-              <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
-              {getStatusBadge(project.status)}
-            </div>
-            <p className="text-gray-600 mb-2">ID: {project.project_id}</p>
-            {project.description && (
-              <p className="text-gray-600">{project.description}</p>
-            )}
-          </div>
-          <div className="flex items-center space-x-3">
-            <Button
-              variant="outline"
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving ? 'Saving...' : 'Save Draft Project'}
-            </Button>
-            <Button variant="outline" size="sm">
-              <CheckBadgeIcon className="w-4 h-4 mr-2" />
-              Readiness Check
-            </Button>
-            <Button className="bg-oppr-blue hover:bg-oppr-blue/90">
-              <PlayIcon className="w-4 h-4 mr-2" />
-              Activate Project
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabbed Content */}
       <div className="oppr-card">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="border-b px-8">
@@ -287,69 +226,7 @@ const TrainingProjectEditor = () => {
           </div>
 
           <TabsContent value="settings" className="mt-0 p-8">
-            <div className="space-y-8">
-              <h3 className="text-lg font-medium">Project Settings & Shell</h3>
-              <div className="grid gap-6 max-w-2xl">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Training Project ID
-                  </label>
-                  <input
-                    type="text"
-                    value={project.project_id}
-                    readOnly
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-md text-gray-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Training Project Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={project.name}
-                    onChange={(e) => setProject({ ...project, name: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-oppr-blue focus:border-transparent"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Description
-                  </label>
-                  <textarea
-                    value={project.description || ''}
-                    onChange={(e) => setProject({ ...project, description: e.target.value })}
-                    rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-oppr-blue focus:border-transparent"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Color Code
-                    </label>
-                    <input
-                      type="color"
-                      value={project.color_code}
-                      onChange={(e) => setProject({ ...project, color_code: e.target.value })}
-                      className="w-full h-12 border border-gray-300 rounded-md"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Icon
-                    </label>
-                    <input
-                      type="text"
-                      value={project.icon}
-                      onChange={(e) => setProject({ ...project, icon: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-oppr-blue focus:border-transparent"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
+            <SettingsTab project={project} onProjectChange={setProject} />
           </TabsContent>
 
           <TabsContent value="floor-plan" className="mt-0 p-8">
@@ -366,14 +243,14 @@ const TrainingProjectEditor = () => {
             <ContentAssemblyTab
               project={project}
               markers={markers}
-              onContentChange={() => {}} // This would reload content if needed
+              onContentChange={() => {}}
             />
           </TabsContent>
 
           <TabsContent value="users" className="mt-0 p-8">
             <UserAccessTab
               project={project}
-              onAccessChange={() => {}} // This would reload access data if needed
+              onAccessChange={() => {}}
             />
           </TabsContent>
 
@@ -386,17 +263,7 @@ const TrainingProjectEditor = () => {
           </TabsContent>
 
           <TabsContent value="statistics" className="mt-0 p-8">
-            <div className="space-y-8">
-              <h3 className="text-lg font-medium">Project Statistics</h3>
-              <div className="text-center py-16 bg-gray-50 rounded-lg">
-                <Button className="bg-oppr-blue hover:bg-oppr-blue/90 mb-4">
-                  View Project Statistics Dashboard
-                </Button>
-                <p className="text-sm text-gray-500">
-                  Navigate to the project-specific performance dashboard
-                </p>
-              </div>
-            </div>
+            <StatisticsTab />
           </TabsContent>
         </Tabs>
       </div>
