@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -131,7 +130,7 @@ export const UserAccessTab: React.FC<UserAccessTabProps> = ({
     }
   };
 
-  const handleOperatorAssigned = () => {
+  const handleOperatorAssignmentComplete = () => {
     setShowOperatorModal(false);
     loadAssignments();
     onAccessChange();
@@ -141,7 +140,7 @@ export const UserAccessTab: React.FC<UserAccessTabProps> = ({
     });
   };
 
-  const handleCollaboratorAssigned = () => {
+  const handleCollaboratorAssignmentComplete = () => {
     setShowCollaboratorModal(false);
     loadAssignments();
     onAccessChange();
@@ -274,17 +273,15 @@ export const UserAccessTab: React.FC<UserAccessTabProps> = ({
       <AssignOperatorsModal
         isOpen={showOperatorModal}
         onClose={() => setShowOperatorModal(false)}
-        onOperatorsAssigned={handleOperatorAssigned}
+        onAssignmentComplete={handleOperatorAssignmentComplete}
         projectId={project.id}
-        currentOperatorIds={operatorAssignments.map(a => a.operator_id)}
       />
 
       <AssignCollaboratorsModal
         isOpen={showCollaboratorModal}
         onClose={() => setShowCollaboratorModal(false)}
-        onCollaboratorsAssigned={handleCollaboratorAssigned}
+        onAssignmentComplete={handleCollaboratorAssignmentComplete}
         projectId={project.id}
-        currentCollaboratorIds={collaborators.map(c => c.collaborator_id)}
       />
     </div>
   );

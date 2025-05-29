@@ -13,6 +13,7 @@ import { ParametersActivationTab } from '@/components/desktop/training-projects/
 import { StatisticsTab } from '@/components/desktop/training-projects/StatisticsTab';
 import { supabase } from '@/integrations/supabase/client';
 import type { TrainingProject, TrainingProjectMarker } from '@/types/training-projects';
+import type { FloorPlanMarker } from '@/types/floor-plan-marker';
 
 const TrainingProjectEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -135,6 +136,11 @@ const TrainingProjectEditor = () => {
     await handleSave(updatedProject);
   };
 
+  const handleHeaderSave = async () => {
+    if (!project) return;
+    await handleSave(project);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -163,7 +169,7 @@ const TrainingProjectEditor = () => {
         <ProjectHeader 
           project={project}
           saving={saving}
-          onSave={handleSave}
+          onSave={handleHeaderSave}
         />
         
         <div className="p-6">
