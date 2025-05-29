@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Brain } from 'lucide-react';
@@ -57,7 +56,10 @@ const FlowCanvasAIAssistant: React.FC<FlowCanvasAIAssistantProps> = ({ onApplyFl
           <DocumentUploader onDocumentProcessed={handleDocumentProcessed} />
         </div>
 
-        <DocumentAnalysisDisplay analysisResults={analysisResults} />
+        <DocumentAnalysisDisplay 
+          analysisResults={analysisResults} 
+          documentContent={documentContent}
+        />
 
         <AIFlowGenerator
           onGenerateFlow={generateTrainingFlow}
