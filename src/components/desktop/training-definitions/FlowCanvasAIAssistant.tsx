@@ -1,122 +1,36 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Sparkles, FileText, Brain } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { StepBlock } from '@/types/training-definitions';
-import { createNewBlock } from '@/utils/blockUtils';
+import { Brain } from 'lucide-react';
 import DocumentUploader from './DocumentUploader';
 import AIFlowPreview from './AIFlowPreview';
 import AISettingsModal from './AISettingsModal';
-import { useAISettings } from '@/contexts/AISettingsContext';
+import AIStatusDisplay from './AIStatusDisplay';
+import DocumentAnalysisDisplay from './DocumentAnalysisDisplay';
+import AIFlowGenerator from './AIFlowGenerator';
+import { useAIFlowGeneration } from '@/hooks/useAIFlowGeneration';
+import { StepBlock } from '@/types/training-definitions';
 
 interface FlowCanvasAIAssistantProps {
   onApplyFlow: (blocks: StepBlock[]) => void;
 }
 
 const FlowCanvasAIAssistant: React.FC<FlowCanvasAIAssistantProps> = ({ onApplyFlow }) => {
-  const [documentContent, setDocumentContent] = useState('');
-  const [analysisResults, setAnalysisResults] = useState<any>(null);
-  const [generatedFlow, setGeneratedFlow] = useState<StepBlock[]>([]);
-  const [showPreview, setShowPreview] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const { config, connectionStatus } = useAISettings();
-  const { toast } = useToast();
-
-  const handleDocumentProcessed = (file: File, content: string, extractedImages?: string[]) => {
-    setDocumentContent(content);
-    
-    // Generate mock analysis results based on the processed document
-    const mockAnalysis = {
-      complexity: 'Intermediate',
-      keyTopics: ['Safety protocols', 'Equipment operation', 'Quality control'],
-      suggestedQuestionCount: 5,
-      documentMetadata: {
-        fileName: file.name,
-        pageCount: Math.floor(Math.random() * 20) + 5,
-        extractedImages: extractedImages?.length || 0
-      }
-    };
-    
-    setAnalysisResults(mockAnalysis);
-  };
-
-  const generateTrainingFlow = async () => {
-    if (!documentContent.trim()) {
-      toast({
-        title: "Document Required",
-        description: "Please upload a document to generate a training flow",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsProcessing(true);
-
-    // Simulate AI generation with mock data for now
-    // In a real implementation, this would call an AI service
-    setTimeout(() => {
-      const mockFlow = generateMockFlow(documentContent);
-      setGeneratedFlow(mockFlow);
-      setIsProcessing(false);
-      setShowPreview(true);
-
-      toast({
-        title: "Flow Generated",
-        description: `Generated a training flow with ${mockFlow.length} blocks`,
-      });
-    }, 2000);
-  };
-
-  const generateMockFlow = (content: string): StepBlock[] => {
-    const baseId = Date.now();
-
-    return [
-      {
-        id: `${baseId}-1`,
-        type: 'information',
-        order: 0,
-        config: {
-          content: `Understanding ${content.substring(0, 50)}...\n\nThis section covers the fundamental concepts and principles related to ${content.substring(0, 50)}. It's important to understand these basics before proceeding to practical applications.`
-        }
-      },
-      {
-        id: `${baseId}-2`,
-        type: 'question',
-        order: 1,
-        config: {
-          question_text: `What are the three most important considerations when working with ${content.substring(0, 50)}?`,
-          question_type: 'text_input',
-          ideal_answer: 'Consideration 1, Consideration 2, and Consideration 3',
-          hint: 'Think about key factors and requirements',
-          points: 3,
-          mandatory: true
-        }
-      },
-      {
-        id: `${baseId}-3`,
-        type: 'goto',
-        order: 2,
-        config: {
-          instructions: `Navigate to the next section to learn more about ${content.substring(0, 50)}. Ensure you have completed the previous steps before proceeding.`
-        }
-      }
-    ];
-  };
+  const {
+    documentContent,
+    analysisResults,
+    generatedFlow,
+    showPreview,
+    isProcessing,
+    handleDocumentProcessed,
+    generateTrainingFlow,
+    handleApplyFlow: handleInternalApplyFlow,
+    handleBackToAssistant
+  } = useAIFlowGeneration();
 
   const handleApplyFlow = (blocks: StepBlock[]) => {
     onApplyFlow(blocks);
-    setShowPreview(false);
-    toast({
-      title: "Flow Applied",
-      description: "The AI-generated training flow has been applied to the canvas",
-    });
-  };
-
-  const handleBackToAssistant = () => {
-    setShowPreview(false);
+    handleInternalApplyFlow(blocks);
   };
 
   return (
@@ -132,70 +46,23 @@ const FlowCanvasAIAssistant: React.FC<FlowCanvasAIAssistantProps> = ({ onApplyFl
       </CardHeader>
       
       <CardContent className="flex-1 overflow-y-auto space-y-4">
-        {/* AI Configuration Status */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Brain className="w-4 h-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-800">AI Status</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className={`w-2 h-2 rounded-full ${config.apiKey ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span className="text-xs text-blue-700">
-                {config.apiKey ? `Connected (${config.model})` : 'No API Key'}
-              </span>
-            </div>
-          </div>
-          {!config.apiKey && (
-            <p className="text-xs text-blue-600 mt-2">
-              Configure your AI settings in the Settings page to enable advanced features.
-            </p>
-          )}
-        </div>
+        <AIStatusDisplay />
 
         {/* Document Upload Section */}
         <div className="border border-gray-200 rounded-lg p-4">
           <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
             Document Overview
           </h3>
-          <DocumentUploader
-            onDocumentProcessed={handleDocumentProcessed}
-          />
+          <DocumentUploader onDocumentProcessed={handleDocumentProcessed} />
         </div>
 
-        {/* Analysis Results Section */}
-        {analysisResults && (
-          <div className="border border-gray-200 rounded-lg p-4">
-            <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
-              <FileText className="w-4 h-4 mr-2 text-gray-600" />
-              Content Analysis
-            </h3>
-            <div className="text-sm text-gray-700 space-y-2">
-              <p><strong>Complexity:</strong> {analysisResults.complexity}</p>
-              <p><strong>Key Topics:</strong> {analysisResults.keyTopics.join(', ')}</p>
-              <p><strong>Suggested Questions:</strong> {analysisResults.suggestedQuestionCount}</p>
-            </div>
-          </div>
-        )}
+        <DocumentAnalysisDisplay analysisResults={analysisResults} />
 
-        {/* Generate Flow Button */}
-        <Button
-          onClick={generateTrainingFlow}
-          disabled={isProcessing || !documentContent.trim()}
-          className="w-full"
-        >
-          {isProcessing ? (
-            <>
-              <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-              Generating Flow...
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4 mr-2" />
-              Generate Training Flow
-            </>
-          )}
-        </Button>
+        <AIFlowGenerator
+          onGenerateFlow={generateTrainingFlow}
+          isProcessing={isProcessing}
+          documentContent={documentContent}
+        />
 
         {/* AI Flow Preview */}
         {showPreview && (
