@@ -3,17 +3,20 @@ import React from 'react';
 import BlockPalette from './BlockPalette';
 import FlowCanvas from './FlowCanvas';
 import BlockConfiguration from './BlockConfiguration';
+import AdvancedValidation from './AdvancedValidation';
 import { StepBlock } from '@/types/training-definitions';
 
 interface BuilderLayoutProps {
   // Mobile state
-  mobileActivePanel: 'palette' | 'canvas' | 'config';
-  setMobileActivePanel: (panel: 'palette' | 'canvas' | 'config') => void;
+  mobileActivePanel: 'palette' | 'canvas' | 'config' | 'validation';
+  setMobileActivePanel: (panel: 'palette' | 'canvas' | 'config' | 'validation') => void;
   
   // Data
   steps: StepBlock[];
   selectedBlock: StepBlock | null;
   selectedBlockId: string | null;
+  title: string;
+  description: string;
   
   // Actions
   onAddBlock: (blockType: 'information' | 'goto' | 'question') => void;
@@ -30,6 +33,8 @@ const BuilderLayout: React.FC<BuilderLayoutProps> = ({
   steps,
   selectedBlock,
   selectedBlockId,
+  title,
+  description,
   onAddBlock,
   onSelectBlock,
   onDeleteBlock,
@@ -104,6 +109,16 @@ const BuilderLayout: React.FC<BuilderLayoutProps> = ({
             <BlockConfiguration
               block={selectedBlock}
               onUpdateConfig={onUpdateConfig}
+            />
+          </div>
+        )}
+
+        {mobileActivePanel === 'validation' && (
+          <div className="h-full">
+            <AdvancedValidation
+              steps={steps}
+              title={title}
+              description={description}
             />
           </div>
         )}

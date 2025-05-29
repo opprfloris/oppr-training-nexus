@@ -33,7 +33,7 @@ const TrainingDefinitionBuilderMinimal = () => {
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
   
-  // Mobile UI state
+  // Mobile UI state - updated type
   const [mobileActivePanel, setMobileActivePanel] = useState<'palette' | 'canvas' | 'config' | 'validation'>('canvas');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   
@@ -276,6 +276,8 @@ const TrainingDefinitionBuilderMinimal = () => {
         steps={steps}
         selectedBlock={selectedBlock}
         selectedBlockId={selectedBlockId}
+        title={title}
+        description={description}
         onAddBlock={handleAddStep}
         onSelectBlock={setSelectedBlockId}
         onDeleteBlock={deleteStep}

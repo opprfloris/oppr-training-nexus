@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { StepBlock } from '@/types/training-definitions';
 
 interface MobileNavigationProps {
-  mobileActivePanel: 'palette' | 'canvas' | 'config';
-  setMobileActivePanel: (panel: 'palette' | 'canvas' | 'config') => void;
+  mobileActivePanel: 'palette' | 'canvas' | 'config' | 'validation';
+  setMobileActivePanel: (panel: 'palette' | 'canvas' | 'config' | 'validation') => void;
   steps: StepBlock[];
   selectedBlock: StepBlock | null;
 }
@@ -43,6 +43,14 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
           disabled={!selectedBlock}
         >
           Config
+        </Button>
+        <Button
+          variant={mobileActivePanel === 'validation' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setMobileActivePanel('validation')}
+          className="flex-1"
+        >
+          Valid
         </Button>
       </div>
     </div>
