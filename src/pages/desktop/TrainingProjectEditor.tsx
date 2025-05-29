@@ -18,10 +18,12 @@ const TrainingProjectEditor = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('settings');
+  const [markers, setMarkers] = useState<TrainingProjectMarker[]>([]);
 
   useEffect(() => {
     if (id) {
       loadProject();
+      loadMarkers();
     }
   }, [id]);
 
@@ -51,6 +53,26 @@ const TrainingProjectEditor = () => {
       navigate('/desktop/training-projects');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMarkers = async () => {
+    if (!id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('training_project_markers')
+        .select(`
+          *,
+          machine_qr_entity:machine_qr_entities(*)
+        `)
+        .eq('training_project_id', id)
+        .order('sequence_order', { ascending: true });
+
+      if (error) throw error;
+      setMarkers(data || []);
+    } catch (error) {
+      console.error('Error loading markers:', error);
     }
   };
 
@@ -311,14 +333,21 @@ const TrainingProjectEditor = () => {
               <FloorPlanSelector
                 selectedFloorPlanId={project.floor_plan_image_id}
                 onFloorPlanSelect={handleFloorPlanSelect}
+                projectId={project.id}
+                markers={markers}
+                onMarkersChange={loadMarkers}
               />
 
-              <div className="border-t pt-8">
-                <MarkerManagement
-                  projectId={project.id}
-                  floorPlanId={project.floor_plan_image_id}
-                />
-              </div>
+              {project.floor_plan_image_id && (
+                <div className="border-t pt-8">
+                  <MarkerManagement
+                    projectId={project.id}
+                    floorPlanId={project.floor_plan_image_id}
+                    markers={markers}
+                    onMarkersChange={loadMarkers}
+                  />
+                </div>
+              )}
             </div>
           </TabsContent>
 
