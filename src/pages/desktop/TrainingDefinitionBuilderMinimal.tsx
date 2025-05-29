@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -176,8 +175,8 @@ const TrainingDefinitionBuilderMinimal = () => {
 
   const handleAddStep = (blockType: 'information' | 'goto' | 'question') => {
     const newPanel = addStep(blockType);
-    if (newPanel) {
-      setMobileActivePanel(newPanel as 'config');
+    if (newPanel && window.innerWidth < 1024) {
+      setMobileActivePanel(newPanel);
     }
   };
 

@@ -7,7 +7,7 @@ export const useStepManagement = (initialSteps: StepBlock[] = []) => {
   const [steps, setSteps] = useState<StepBlock[]>(initialSteps);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
 
-  const addStep = (blockType: 'information' | 'goto' | 'question') => {
+  const addStep = (blockType: 'information' | 'goto' | 'question'): 'config' | null => {
     const newOrder = steps.length;
     const newBlock = createNewBlock(blockType, newOrder);
     setSteps([...steps, newBlock]);
