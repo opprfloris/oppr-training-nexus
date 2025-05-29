@@ -1,38 +1,40 @@
 
 import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PlusIcon, UserIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { TrainingProject, TrainingProjectOperatorAssignment, TrainingProjectCollaborator } from '@/types/training-projects';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { TrainingProject, TrainingProjectOperatorAssignment, TrainingProjectCollaborator } from '@/types/training-projects';
 import { AssignOperatorsModal } from './AssignOperatorsModal';
 import { AssignCollaboratorsModal } from './AssignCollaboratorsModal';
+import { UserPlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 interface UserAccessTabProps {
   project: TrainingProject;
   onAccessChange: () => void;
 }
 
-export const UserAccessTab: React.FC<UserAccessTabProps> = ({
+export const UserAccessTab: React.FC<UserAccessTabProps> = ({ 
   project,
-  onAccessChange
+  onAccessChange 
 }) => {
-  const [operators, setOperators] = useState<TrainingProjectOperatorAssignment[]>([]);
+  const [operatorAssignments, setOperatorAssignments] = useState<TrainingProjectOperatorAssignment[]>([]);
   const [collaborators, setCollaborators] = useState<TrainingProjectCollaborator[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showOperatorsModal, setShowOperatorsModal] = useState(false);
-  const [showCollaboratorsModal, setShowCollaboratorsModal] = useState(false);
+  const [showOperatorModal, setShowOperatorModal] = useState(false);
+  const [showCollaboratorModal, setShowCollaboratorModal] = useState(false);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    loadUserAccess();
+    loadAssignments();
   }, [project.id]);
 
-  const loadUserAccess = async () => {
+  const loadAssignments = async () => {
+    setLoading(true);
     try {
-      // Load operators
-      const { data: operatorData, error: operatorError } = await supabase
+      // Load operator assignments
+      const { data: operators, error: operatorError } = await supabase
         .from('training_project_operator_assignments')
         .select(`
           *,
@@ -48,7 +50,7 @@ export const UserAccessTab: React.FC<UserAccessTabProps> = ({
       if (operatorError) throw operatorError;
 
       // Load collaborators
-      const { data: collaboratorData, error: collaboratorError } = await supabase
+      const { data: collabs, error: collabError } = await supabase
         .from('training_project_collaborators')
         .select(`
           *,
@@ -61,15 +63,15 @@ export const UserAccessTab: React.FC<UserAccessTabProps> = ({
         `)
         .eq('training_project_id', project.id);
 
-      if (collaboratorError) throw collaboratorError;
+      if (collabError) throw collabError;
 
-      setOperators(operatorData || []);
-      setCollaborators(collaboratorData || []);
+      setOperatorAssignments(operators || []);
+      setCollaborators(collabs || []);
     } catch (error) {
-      console.error('Error loading user access:', error);
+      console.error('Error loading assignments:', error);
       toast({
         title: "Error",
-        description: "Failed to load user access information",
+        description: "Failed to load user assignments",
         variant: "destructive"
       });
     } finally {
@@ -91,7 +93,7 @@ export const UserAccessTab: React.FC<UserAccessTabProps> = ({
         description: "Operator removed successfully"
       });
 
-      loadUserAccess();
+      loadAssignments();
       onAccessChange();
     } catch (error) {
       console.error('Error removing operator:', error);
@@ -103,12 +105,12 @@ export const UserAccessTab: React.FC<UserAccessTabProps> = ({
     }
   };
 
-  const handleRemoveCollaborator = async (collaborationId: string) => {
+  const handleRemoveCollaborator = async (collaboratorId: string) => {
     try {
       const { error } = await supabase
         .from('training_project_collaborators')
         .delete()
-        .eq('id', collaborationId);
+        .eq('id', collaboratorId);
 
       if (error) throw error;
 
@@ -117,7 +119,7 @@ export const UserAccessTab: React.FC<UserAccessTabProps> = ({
         description: "Collaborator removed successfully"
       });
 
-      loadUserAccess();
+      loadAssignments();
       onAccessChange();
     } catch (error) {
       console.error('Error removing collaborator:', error);
@@ -129,11 +131,24 @@ export const UserAccessTab: React.FC<UserAccessTabProps> = ({
     }
   };
 
-  const getUserDisplayName = (user: any) => {
-    if (user?.first_name || user?.last_name) {
-      return `${user.first_name || ''} ${user.last_name || ''}`.trim();
-    }
-    return user?.email || 'Unknown User';
+  const handleOperatorAssigned = () => {
+    setShowOperatorModal(false);
+    loadAssignments();
+    onAccessChange();
+    toast({
+      title: "Success",
+      description: "Operators assigned successfully"
+    });
+  };
+
+  const handleCollaboratorAssigned = () => {
+    setShowCollaboratorModal(false);
+    loadAssignments();
+    onAccessChange();
+    toast({
+      title: "Success",
+      description: "Collaborators assigned successfully"
+    });
   };
 
   if (loading) {
@@ -145,141 +160,131 @@ export const UserAccessTab: React.FC<UserAccessTabProps> = ({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
         <h3 className="text-lg font-medium mb-2">User Access Management</h3>
         <p className="text-gray-600">
-          Assign operators who will take the training and collaborators who can help manage the project.
+          Manage who can access and collaborate on this training project.
         </p>
       </div>
 
       {/* Operators Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="font-medium text-gray-900">Training Operators</h4>
-            <p className="text-sm text-gray-600">Users who will complete this training project</p>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Assigned Operators</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowOperatorModal(true)}
+            >
+              <UserPlusIcon className="w-4 h-4 mr-2" />
+              Assign Operators
+            </Button>
           </div>
-          <Button variant="outline" onClick={() => setShowOperatorsModal(true)}>
-            <PlusIcon className="w-4 h-4 mr-2" />
-            Assign Operators
-          </Button>
-        </div>
-
-        {operators.length > 0 ? (
-          <div className="space-y-2">
-            {operators.map((assignment) => (
-              <div key={assignment.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
-                    <UserIcon className="w-4 h-4" />
+        </CardHeader>
+        <CardContent>
+          {operatorAssignments.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>No operators assigned to this project</p>
+              <p className="text-sm mt-1">Click "Assign Operators" to add learners</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {operatorAssignments.map((assignment) => (
+                <div key={assignment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <div className="font-medium">
+                      {assignment.operator?.first_name} {assignment.operator?.last_name}
+                    </div>
+                    <div className="text-sm text-gray-600">{assignment.operator?.email}</div>
+                    {assignment.operator?.department && (
+                      <Badge variant="secondary" className="mt-1">
+                        {assignment.operator.department}
+                      </Badge>
+                    )}
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900">
-                      {getUserDisplayName(assignment.operator)}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {assignment.operator?.email} • {assignment.operator?.department || 'No department'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Badge variant="outline">Operator</Badge>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-red-600 hover:text-red-700"
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => handleRemoveOperator(assignment.id)}
+                    className="text-red-600 hover:text-red-700"
                   >
                     <TrashIcon className="w-4 h-4" />
                   </Button>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-            <UserIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-            <p className="text-gray-600">No operators assigned yet</p>
-            <p className="text-sm text-gray-500 mt-1">Assign operators who will take this training</p>
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Collaborators Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="font-medium text-gray-900">Project Collaborators</h4>
-            <p className="text-sm text-gray-600">Users who can help manage and monitor this training project</p>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Project Collaborators</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCollaboratorModal(true)}
+            >
+              <UserPlusIcon className="w-4 h-4 mr-2" />
+              Add Collaborators
+            </Button>
           </div>
-          <Button variant="outline" onClick={() => setShowCollaboratorsModal(true)}>
-            <PlusIcon className="w-4 h-4 mr-2" />
-            Add Collaborators
-          </Button>
-        </div>
-
-        {collaborators.length > 0 ? (
-          <div className="space-y-2">
-            {collaborators.map((collaboration) => (
-              <div key={collaboration.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
-                    <UserIcon className="w-4 h-4" />
+        </CardHeader>
+        <CardContent>
+          {collaborators.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>No collaborators added to this project</p>
+              <p className="text-sm mt-1">Click "Add Collaborators" to invite team members</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {collaborators.map((collaborator) => (
+                <div key={collaborator.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <div className="font-medium">
+                      {collaborator.collaborator?.first_name} {collaborator.collaborator?.last_name}
+                    </div>
+                    <div className="text-sm text-gray-600">{collaborator.collaborator?.email}</div>
+                    {collaborator.collaborator?.department && (
+                      <Badge variant="secondary" className="mt-1">
+                        {collaborator.collaborator.department}
+                      </Badge>
+                    )}
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900">
-                      {getUserDisplayName(collaboration.collaborator)}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {collaboration.collaborator?.email} • {collaboration.collaborator?.department || 'No department'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
-                    Collaborator
-                  </Badge>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveCollaborator(collaborator.id)}
                     className="text-red-600 hover:text-red-700"
-                    onClick={() => handleRemoveCollaborator(collaboration.id)}
                   >
                     <TrashIcon className="w-4 h-4" />
                   </Button>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-            <UserIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-            <p className="text-gray-600">No collaborators assigned yet</p>
-            <p className="text-sm text-gray-500 mt-1">Add collaborators to help manage this project</p>
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Modals */}
       <AssignOperatorsModal
-        isOpen={showOperatorsModal}
-        onClose={() => setShowOperatorsModal(false)}
+        isOpen={showOperatorModal}
+        onClose={() => setShowOperatorModal(false)}
+        onOperatorsAssigned={handleOperatorAssigned}
         projectId={project.id}
-        onAssignmentComplete={() => {
-          loadUserAccess();
-          onAccessChange();
-        }}
+        currentOperatorIds={operatorAssignments.map(a => a.operator_id)}
       />
 
       <AssignCollaboratorsModal
-        isOpen={showCollaboratorsModal}
-        onClose={() => setShowCollaboratorsModal(false)}
+        isOpen={showCollaboratorModal}
+        onClose={() => setShowCollaboratorModal(false)}
+        onCollaboratorsAssigned={handleCollaboratorAssigned}
         projectId={project.id}
-        onAssignmentComplete={() => {
-          loadUserAccess();
-          onAccessChange();
-        }}
+        currentCollaboratorIds={collaborators.map(c => c.collaborator_id)}
       />
     </div>
   );

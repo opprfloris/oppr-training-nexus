@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -11,13 +12,12 @@ import { UserAccessTab } from '@/components/desktop/training-projects/UserAccess
 import { ParametersActivationTab } from '@/components/desktop/training-projects/ParametersActivationTab';
 import { StatisticsTab } from '@/components/desktop/training-projects/StatisticsTab';
 import { supabase } from '@/integrations/supabase/client';
-import type { TrainingProject } from '@/types/training-projects';
-import type { FloorPlanMarker } from '@/types/floor-plan-marker';
+import type { TrainingProject, TrainingProjectMarker } from '@/types/training-projects';
 
 const TrainingProjectEditor = () => {
   const { id } = useParams<{ id: string }>();
   const [project, setProject] = useState<TrainingProject | null>(null);
-  const [markers, setMarkers] = useState<FloorPlanMarker[]>([]);
+  const [markers, setMarkers] = useState<TrainingProjectMarker[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -40,9 +40,16 @@ const TrainingProjectEditor = () => {
 
       if (error) {
         console.error('Error fetching project:', error);
+        return;
       }
 
-      setProject(data || null);
+      // Ensure status is properly typed
+      const typedProject: TrainingProject = {
+        ...data,
+        status: data.status as 'draft' | 'scheduled' | 'active' | 'stopped' | 'archived'
+      };
+
+      setProject(typedProject);
     } finally {
       setLoading(false);
     }
@@ -51,17 +58,28 @@ const TrainingProjectEditor = () => {
   const fetchMarkers = async (projectId: string) => {
     try {
       const { data, error } = await supabase
-        .from('floor_plan_markers')
-        .select('*')
-        .eq('project_id', projectId);
+        .from('training_project_markers')
+        .select(`
+          *,
+          machine_qr_entity:machine_qr_entities(
+            machine_id,
+            qr_identifier,
+            qr_name,
+            machine_type,
+            brand,
+            location_description
+          )
+        `)
+        .eq('training_project_id', projectId);
 
       if (error) {
         console.error('Error fetching markers:', error);
+        return;
       }
 
       setMarkers(data || []);
     } catch (error) {
-      console.error('Error fetching floor plan markers:', error);
+      console.error('Error fetching training project markers:', error);
     }
   };
 
@@ -87,6 +105,36 @@ const TrainingProjectEditor = () => {
     setProject(updatedProject);
   };
 
+  const handleFloorPlanSelect = async (floorPlanId: string) => {
+    if (!project) return;
+    
+    const updatedProject = { ...project, floor_plan_image_id: floorPlanId };
+    await handleSave(updatedProject);
+  };
+
+  const handleMarkersChange = () => {
+    if (project?.id) {
+      fetchMarkers(project.id);
+    }
+  };
+
+  const handleContentChange = () => {
+    // Refresh content when needed
+    console.log('Content changed');
+  };
+
+  const handleAccessChange = () => {
+    // Refresh access when needed
+    console.log('Access changed');
+  };
+
+  const handleParametersUpdate = async (updates: Partial<TrainingProject>) => {
+    if (!project) return;
+    
+    const updatedProject = { ...project, ...updates };
+    await handleSave(updatedProject);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -106,7 +154,10 @@ const TrainingProjectEditor = () => {
 
   return (
     <div className="h-full flex flex-col">
-      <ProjectBreadcrumb projectId={project.id} />
+      <ProjectBreadcrumb 
+        projectId={project.id} 
+        activeTab={activeTab}
+      />
       
       <div className="flex-1 overflow-hidden">
         <ProjectHeader 
@@ -134,6 +185,9 @@ const TrainingProjectEditor = () => {
               <FloorPlanMarkerTab 
                 project={project}
                 markers={markers}
+                onFloorPlanSelect={handleFloorPlanSelect}
+                onMarkersChange={handleMarkersChange}
+                saving={saving}
               />
             </TabsContent>
 
@@ -141,12 +195,14 @@ const TrainingProjectEditor = () => {
               <ContentAssemblyTab 
                 project={project}
                 markers={markers}
+                onContentChange={handleContentChange}
               />
             </TabsContent>
 
             <TabsContent value="users" className="mt-6">
               <UserAccessTab 
                 project={project}
+                onAccessChange={handleAccessChange}
               />
             </TabsContent>
 
@@ -154,7 +210,7 @@ const TrainingProjectEditor = () => {
               <ParametersActivationTab 
                 project={project}
                 saving={saving}
-                onProjectUpdate={handleProjectUpdate}
+                onProjectUpdate={handleParametersUpdate}
               />
             </TabsContent>
 
