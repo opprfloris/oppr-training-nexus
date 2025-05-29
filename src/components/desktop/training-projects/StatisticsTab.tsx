@@ -63,30 +63,30 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({ projectId }) => {
   const recentActivities: ActivityItem[] = [
     {
       id: "1",
-      type: "completion" as const,
+      type: "completion",
       description: "completed Machine Setup training",
-      user: { name: "John Smith", avatarUrl: undefined },
+      user: { name: "John Smith", avatar: undefined },
       timestamp: "2024-01-15T10:30:00Z"
     },
     {
       id: "2", 
-      type: "assignment" as const,
+      type: "assignment",
       description: "was assigned to Quality Check training",
-      user: { name: "Sarah Johnson", avatarUrl: undefined },
+      user: { name: "Sarah Johnson", avatar: undefined },
       timestamp: "2024-01-15T09:15:00Z"
     },
     {
       id: "3",
-      type: "content_change" as const,
+      type: "content_change",
       description: "updated Safety Briefing content",
-      user: { name: "Manager Admin", avatarUrl: undefined },
+      user: { name: "Manager Admin", avatar: undefined },
       timestamp: "2024-01-14T16:45:00Z"
     },
     {
       id: "4",
-      type: "status_change" as const,
+      type: "status_change",
       description: "changed project status to Active",
-      user: { name: "Manager Admin", avatarUrl: undefined },
+      user: { name: "Manager Admin", avatar: undefined },
       timestamp: "2024-01-14T14:20:00Z"
     }
   ];

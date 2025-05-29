@@ -136,7 +136,10 @@ const TrainingProjectEditor = () => {
     }
   };
 
-  const handleProjectUpdate = (updatedProject: TrainingProject) => {
+  const handleProjectUpdate = async (updates: Partial<TrainingProject>) => {
+    if (!project) return;
+    
+    const updatedProject = { ...project, ...updates };
     setProject(updatedProject);
   };
 
@@ -169,11 +172,11 @@ const TrainingProjectEditor = () => {
 
   return (
     <div className="h-full flex flex-col">
-      <ProjectBreadcrumb projectName={project.name} />
+      <ProjectBreadcrumb project={project} />
       
       <div className="flex-1 flex flex-col min-h-0">
         <div className="flex-shrink-0">
-          <ProjectHeader project={project} onProjectUpdate={handleProjectUpdate} />
+          <ProjectHeader project={project} />
         </div>
 
         <div className="flex-1 overflow-hidden">
@@ -196,7 +199,7 @@ const TrainingProjectEditor = () => {
                     <ProjectOverviewTab 
                       project={project}
                       markers={markers}
-                      content={content}
+                      contents={content}
                       operators={operators}
                       collaborators={collaborators}
                     />
@@ -204,7 +207,7 @@ const TrainingProjectEditor = () => {
 
                   <TabsContent value="floor-plan" className="mt-4 h-full">
                     <FloorPlanMarkerTab
-                      projectId={project.id}
+                      project={project}
                       markers={markers}
                       onMarkersUpdate={handleMarkersUpdate}
                     />
@@ -212,7 +215,7 @@ const TrainingProjectEditor = () => {
 
                   <TabsContent value="content" className="mt-4 h-full">
                     <ContentAssemblyTab
-                      projectId={project.id}
+                      project={project}
                       markers={markers}
                       content={content}
                       onContentUpdate={handleContentUpdate}
@@ -221,7 +224,7 @@ const TrainingProjectEditor = () => {
 
                   <TabsContent value="user-access" className="mt-4 h-full">
                     <UserAccessTab
-                      projectId={project.id}
+                      project={project}
                       operators={operators}
                       collaborators={collaborators}
                     />

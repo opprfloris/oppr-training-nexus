@@ -12,6 +12,7 @@ import TrainingProjects from './pages/desktop/TrainingProjects';
 import TrainingProjectEditor from './pages/desktop/TrainingProjectEditor';
 import FloorPlans from './pages/desktop/FloorPlans';
 import MachineRegistry from './pages/desktop/MachineRegistry';
+import OpprDocs from './pages/desktop/OpprDocs';
 import UserManagement from './pages/desktop/UserManagement';
 import SkillsMatrix from './pages/desktop/SkillsMatrix';
 import DesktopSettings from './pages/desktop/DesktopSettings';
@@ -40,6 +41,7 @@ function App() {
                   <Route path="training-projects/:id" element={<TrainingProjectEditor />} />
                   <Route path="floor-plans" element={<FloorPlans />} />
                   <Route path="machine-registry" element={<MachineRegistry />} />
+                  <Route path="oppr-docs" element={<OpprDocs />} />
                   <Route path="user-management" element={<UserManagement />} />
                   <Route path="skills-matrix" element={<SkillsMatrix />} />
                   <Route path="settings" element={<DesktopSettings />} />

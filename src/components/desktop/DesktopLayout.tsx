@@ -10,7 +10,8 @@ import {
   CogIcon,
   MagnifyingGlassIcon,
   UserCircleIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  DocumentIcon
 } from "@heroicons/react/24/outline";
 
 const DesktopLayout = () => {
@@ -30,6 +31,7 @@ const DesktopLayout = () => {
     { name: 'Training Projects', path: 'training-projects', icon: ClipboardDocumentListIcon },
     { name: 'Floor Plans', path: 'floor-plans', icon: ArchiveBoxIcon },
     { name: 'Machine & QR Registry', path: 'machine-registry', icon: ArchiveBoxIcon },
+    { name: 'Oppr Docs', path: 'oppr-docs', icon: DocumentIcon },
     { name: 'User Management', path: 'user-management', icon: UsersIcon },
     { name: 'Skills Matrix', path: 'skills-matrix', icon: TableCellsIcon },
   ];
