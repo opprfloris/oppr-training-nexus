@@ -1,12 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronUpIcon, ChevronDownIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { TrainingProject, TrainingProjectMarker } from '@/types/training-projects';
 import TrainingDefinitionSelector from './TrainingDefinitionSelector';
 import { TrainingFlowOverview } from './TrainingFlowOverview';
+import { ContentAssemblyActions } from './ContentAssemblyActions';
+import { MarkerContentList } from './MarkerContentList';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -135,9 +133,9 @@ export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
     }
   };
 
-  const getMarkerName = (markerId: string) => {
-    const marker = markers.find(m => m.id === markerId);
-    return marker ? `Pin ${marker.pin_number} - ${marker.machine_qr_entity?.qr_name || 'Unknown'}` : 'Unknown Marker';
+  const handleOpenSelector = (markerId?: string) => {
+    setSelectedMarkerId(markerId || null);
+    setShowDefinitionSelector(true);
   };
 
   // Create sorted markers with sequence order for TrainingFlowOverview
@@ -180,98 +178,14 @@ export const ContentAssemblyTab: React.FC<ContentAssemblyTabProps> = ({
 
       {/* Marker Content Assignment */}
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h4 className="font-medium text-gray-900">Training Content by Marker</h4>
-          <Button
-            onClick={() => setShowDefinitionSelector(true)}
-            className="bg-[#3a7ca5] hover:bg-[#2f6690]"
-          >
-            <PlusIcon className="w-4 h-4 mr-2" />
-            Assign Content
-          </Button>
-        </div>
-
-        <div className="space-y-4">
-          {markers.length === 0 ? (
-            <div className="text-center py-8 text-gray-600">
-              <p>No markers found. Please add markers in the Floor Plan & Markers tab first.</p>
-            </div>
-          ) : (
-            markers.map(marker => {
-              const assignedContents = markerContents.filter(c => c.marker_id === marker.id);
-              
-              return (
-                <Card key={marker.id} className="border">
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-base">
-                        Pin {marker.pin_number} - {marker.machine_qr_entity?.qr_name}
-                      </CardTitle>
-                      <Badge variant="outline">
-                        {assignedContents.length} Definition(s)
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {assignedContents.length === 0 ? (
-                      <div className="text-center py-4 text-gray-500">
-                        <p>No training content assigned</p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedMarkerId(marker.id);
-                            setShowDefinitionSelector(true);
-                          }}
-                          className="mt-2"
-                        >
-                          <PlusIcon className="w-4 h-4 mr-1" />
-                          Assign Content
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {assignedContents.map(content => (
-                          <div key={content.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div>
-                              <p className="font-medium">
-                                {content.training_definition_version?.training_definition?.title || 'Unknown Definition'}
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                Version {content.training_definition_version?.version_number} • 
-                                Status: {content.training_definition_version?.status}
-                              </p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveContent(content.id)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <TrashIcon className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedMarkerId(marker.id);
-                            setShowDefinitionSelector(true);
-                          }}
-                          className="w-full mt-2"
-                        >
-                          <PlusIcon className="w-4 h-4 mr-1" />
-                          Add More Content
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })
-          )}
-        </div>
+        <ContentAssemblyActions onAssignContent={() => handleOpenSelector()} />
+        
+        <MarkerContentList
+          markers={markers}
+          markerContents={markerContents}
+          onAssignContent={handleOpenSelector}
+          onRemoveContent={handleRemoveContent}
+        />
       </div>
 
       {/* Training Definition Selector Modal */}
