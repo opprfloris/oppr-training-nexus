@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { TrainingProject, TrainingProjectMarker, mapDatabaseToTrainingProject } from '@/types/training-projects';
+import { TrainingProject, TrainingProjectMarker, mapDatabaseToTrainingProject, TrainingProjectContent, TrainingProjectOperatorAssignment, TrainingProjectCollaborator } from '@/types/training-projects';
 import { ProjectBreadcrumb } from '@/components/desktop/training-projects/ProjectBreadcrumb';
 import { ProjectHeader } from '@/components/desktop/training-projects/ProjectHeader';
-import { SettingsTab } from '@/components/desktop/training-projects/SettingsTab';
+import { ProjectOverviewTab } from '@/components/desktop/training-projects/ProjectOverviewTab';
 import { FloorPlanMarkerTab } from '@/components/desktop/training-projects/FloorPlanMarkerTab';
 import { ContentAssemblyTab } from '@/components/desktop/training-projects/ContentAssemblyTab';
 import { UserAccessTab } from '@/components/desktop/training-projects/UserAccessTab';
@@ -22,13 +22,19 @@ const TrainingProjectEditor = () => {
   const [project, setProject] = useState<TrainingProject | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('settings');
+  const [activeTab, setActiveTab] = useState('overview');
   const [markers, setMarkers] = useState<TrainingProjectMarker[]>([]);
+  const [contents, setContents] = useState<TrainingProjectContent[]>([]);
+  const [operators, setOperators] = useState<TrainingProjectOperatorAssignment[]>([]);
+  const [collaborators, setCollaborators] = useState<TrainingProjectCollaborator[]>([]);
 
   useEffect(() => {
     if (id) {
       loadProject();
       loadMarkers();
+      loadContents();
+      loadOperators();
+      loadCollaborators();
     }
   }, [id]);
 
@@ -77,6 +83,80 @@ const TrainingProjectEditor = () => {
       setMarkers(data || []);
     } catch (error) {
       console.error('Error loading markers:', error);
+    }
+  };
+
+  const loadContents = async () => {
+    if (!id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('training_project_content')
+        .select(`
+          *,
+          training_definition_version:training_definition_versions(
+            id,
+            version_number,
+            status,
+            training_definition:training_definitions(
+              title
+            )
+          )
+        `)
+        .eq('training_project_id', id);
+
+      if (error) throw error;
+      setContents(data || []);
+    } catch (error) {
+      console.error('Error loading contents:', error);
+    }
+  };
+
+  const loadOperators = async () => {
+    if (!id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('training_project_operator_assignments')
+        .select(`
+          *,
+          operator:profiles(
+            first_name,
+            last_name,
+            email,
+            department
+          )
+        `)
+        .eq('training_project_id', id);
+
+      if (error) throw error;
+      setOperators(data || []);
+    } catch (error) {
+      console.error('Error loading operators:', error);
+    }
+  };
+
+  const loadCollaborators = async () => {
+    if (!id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('training_project_collaborators')
+        .select(`
+          *,
+          collaborator:profiles(
+            first_name,
+            last_name,
+            email,
+            department
+          )
+        `)
+        .eq('training_project_id', id);
+
+      if (error) throw error;
+      setCollaborators(data || []);
+    } catch (error) {
+      console.error('Error loading collaborators:', error);
     }
   };
 
@@ -204,8 +284,8 @@ const TrainingProjectEditor = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="border-b px-8">
             <TabsList className="grid w-full grid-cols-6 bg-transparent h-auto p-0">
-              <TabsTrigger value="settings" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-4">
-                Settings & Shell
+              <TabsTrigger value="overview" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-4">
+                Overview
               </TabsTrigger>
               <TabsTrigger value="floor-plan" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-4">
                 Floor Plan & Markers
@@ -225,8 +305,14 @@ const TrainingProjectEditor = () => {
             </TabsList>
           </div>
 
-          <TabsContent value="settings" className="mt-0 p-8">
-            <SettingsTab project={project} onProjectChange={setProject} />
+          <TabsContent value="overview" className="mt-0 p-8">
+            <ProjectOverviewTab 
+              project={project}
+              markers={markers}
+              contents={contents}
+              operators={operators}
+              collaborators={collaborators}
+            />
           </TabsContent>
 
           <TabsContent value="floor-plan" className="mt-0 p-8">
@@ -243,14 +329,17 @@ const TrainingProjectEditor = () => {
             <ContentAssemblyTab
               project={project}
               markers={markers}
-              onContentChange={() => {}}
+              onContentChange={loadContents}
             />
           </TabsContent>
 
           <TabsContent value="users" className="mt-0 p-8">
             <UserAccessTab
               project={project}
-              onAccessChange={() => {}}
+              onAccessChange={() => {
+                loadOperators();
+                loadCollaborators();
+              }}
             />
           </TabsContent>
 

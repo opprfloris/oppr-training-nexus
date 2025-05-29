@@ -89,6 +89,27 @@ export interface ReadinessCheck {
   passFailThresholdSet: boolean;
 }
 
+// Stats-related interfaces
+export interface ProjectStat {
+  name: string;
+  value: number;
+  trend?: {
+    value: number;
+    isUp: boolean;
+  };
+}
+
+export interface ActivityItem {
+  id: string;
+  type: string;
+  description: string;
+  user: {
+    name: string;
+    avatar?: string;
+  };
+  timestamp: string;
+}
+
 // Helper function to convert database response to TrainingProject
 export const mapDatabaseToTrainingProject = (dbProject: any): TrainingProject => {
   return {
