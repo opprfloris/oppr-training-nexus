@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -33,7 +32,7 @@ const TrainingDefinitionBuilderMinimal = () => {
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
   
-  // Mobile UI state - updated type
+  // Mobile UI state - updated type to include validation
   const [mobileActivePanel, setMobileActivePanel] = useState<'palette' | 'canvas' | 'config' | 'validation'>('canvas');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   
