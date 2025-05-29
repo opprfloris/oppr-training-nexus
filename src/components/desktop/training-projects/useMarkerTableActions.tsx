@@ -67,50 +67,73 @@ export const useMarkerTableActions = ({
         swap: { id: swapMarker.id, order: swapMarker.sequence_order || swapMarker.pin_number }
       });
 
-      // Instead of swapping, renumber all markers to avoid constraint violations
-      const updates = sortedMarkers.map((marker, index) => {
-        let newOrder;
-        if (marker.id === currentMarker.id) {
-          // Current marker takes the swap marker's position
-          newOrder = newIndex + 1;
-        } else if (marker.id === swapMarker.id) {
-          // Swap marker takes the current marker's position
-          newOrder = currentIndex + 1;
-        } else if (index < Math.min(currentIndex, newIndex)) {
-          // Markers before the affected range stay the same
-          newOrder = index + 1;
-        } else if (index > Math.max(currentIndex, newIndex)) {
-          // Markers after the affected range stay the same
-          newOrder = index + 1;
-        } else {
-          // Markers in between get shifted
-          newOrder = index + 1;
-        }
-
-        return {
-          id: marker.id,
-          sequence_order: newOrder,
-          pin_number: newOrder
-        };
-      });
-
-      console.log('Update plan:', updates);
-
-      // Execute updates in sequence to avoid constraint violations
-      for (const update of updates) {
+      // 3-step approach to handle dual unique constraints:
+      // Step 1: Set all pin_numbers to negative values to avoid conflicts
+      console.log('Step 1: Setting pin_numbers to negative values');
+      for (let i = 0; i < sortedMarkers.length; i++) {
+        const marker = sortedMarkers[i];
         const { error } = await supabase
           .from('training_project_markers')
-          .update({
-            sequence_order: update.sequence_order,
-            pin_number: update.pin_number
-          })
-          .eq('id', update.id);
+          .update({ pin_number: -(i + 1) })
+          .eq('id', marker.id);
 
         if (error) {
-          console.error('Error updating marker:', update.id, error);
+          console.error('Error in step 1 for marker:', marker.id, error);
           throw error;
         }
       }
+
+      // Step 2: Update sequence_order values to their final positions
+      console.log('Step 2: Updating sequence_order values');
+      for (let i = 0; i < sortedMarkers.length; i++) {
+        const marker = sortedMarkers[i];
+        let newSequenceOrder;
+        
+        if (marker.id === currentMarker.id) {
+          newSequenceOrder = newIndex + 1;
+        } else if (marker.id === swapMarker.id) {
+          newSequenceOrder = currentIndex + 1;
+        } else {
+          newSequenceOrder = i + 1;
+        }
+
+        const { error } = await supabase
+          .from('training_project_markers')
+          .update({ sequence_order: newSequenceOrder })
+          .eq('id', marker.id);
+
+        if (error) {
+          console.error('Error in step 2 for marker:', marker.id, error);
+          throw error;
+        }
+      }
+
+      // Step 3: Update pin_number values to match sequence_order
+      console.log('Step 3: Updating pin_numbers to match sequence_order');
+      for (let i = 0; i < sortedMarkers.length; i++) {
+        const marker = sortedMarkers[i];
+        let newPinNumber;
+        
+        if (marker.id === currentMarker.id) {
+          newPinNumber = newIndex + 1;
+        } else if (marker.id === swapMarker.id) {
+          newPinNumber = currentIndex + 1;
+        } else {
+          newPinNumber = i + 1;
+        }
+
+        const { error } = await supabase
+          .from('training_project_markers')
+          .update({ pin_number: newPinNumber })
+          .eq('id', marker.id);
+
+        if (error) {
+          console.error('Error in step 3 for marker:', marker.id, error);
+          throw error;
+        }
+      }
+
+      console.log('All steps completed successfully');
 
       toast({
         title: "Success",
