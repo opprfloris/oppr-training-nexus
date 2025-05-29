@@ -12,7 +12,7 @@ import BlockConfiguration from '@/components/desktop/training-definitions/BlockC
 import VersionHistoryModal from '@/components/desktop/training-definitions/VersionHistoryModal';
 import { createNewBlock } from '@/utils/blockUtils';
 import { Button } from '@/components/ui/button';
-import { ClockIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { ClockIcon, DocumentTextIcon, MenuIcon, XIcon } from '@heroicons/react/24/outline';
 
 const TrainingDefinitionBuilderMinimal = () => {
   const { id } = useParams<{ id: string }>();
@@ -30,6 +30,10 @@ const TrainingDefinitionBuilderMinimal = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
+  
+  // Mobile UI state
+  const [mobileActivePanel, setMobileActivePanel] = useState<'palette' | 'canvas' | 'config'>('canvas');
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   
   console.log('TrainingDefinitionBuilderMinimal render - id:', id, 'pathname:', location.pathname);
   
@@ -128,7 +132,6 @@ const TrainingDefinitionBuilderMinimal = () => {
           title: "Success",
           description: "Training definition created and saved as draft (v0.1)",
         });
-        // Navigate to the editor with the new ID
         navigate(`/desktop/training-definitions/${result.definition.id}`, { replace: true });
       } else {
         toast({
@@ -154,6 +157,11 @@ const TrainingDefinitionBuilderMinimal = () => {
     const newBlock = createNewBlock(blockType, newOrder);
     setSteps([...steps, newBlock]);
     setSelectedBlockId(newBlock.id);
+    
+    // On mobile, switch to config panel when adding a block
+    if (window.innerWidth < 1024) {
+      setMobileActivePanel('config');
+    }
   };
 
   const updateStep = (stepId: string, updatedConfig: any) => {
@@ -166,14 +174,12 @@ const TrainingDefinitionBuilderMinimal = () => {
 
   const deleteStep = (stepId: string) => {
     const filteredSteps = steps.filter(step => step.id !== stepId);
-    // Reorder remaining steps
     const reorderedSteps = filteredSteps.map((step, index) => ({
       ...step,
       order: index
     }));
     setSteps(reorderedSteps);
     
-    // Clear selection if deleted step was selected
     if (selectedBlockId === stepId) {
       setSelectedBlockId(null);
     }
@@ -184,7 +190,6 @@ const TrainingDefinitionBuilderMinimal = () => {
     const [movedStep] = newSteps.splice(startIndex, 1);
     newSteps.splice(endIndex, 0, movedStep);
     
-    // Update order numbers
     newSteps.forEach((step, index) => {
       step.order = index;
     });
@@ -200,12 +205,10 @@ const TrainingDefinitionBuilderMinimal = () => {
   };
 
   const handlePublishSuccess = () => {
-    // Reload the definition to get the updated version info
     loadDefinition();
   };
 
   const handleCreateNewVersion = (sourceVersionId: string) => {
-    // Reload the definition to reflect the new version
     loadDefinition();
     setShowVersionHistory(false);
   };
@@ -214,7 +217,7 @@ const TrainingDefinitionBuilderMinimal = () => {
 
   if (loading) {
     return (
-      <div className="h-full flex flex-col p-6">
+      <div className="h-full flex flex-col p-4 lg:p-6">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
@@ -224,38 +227,85 @@ const TrainingDefinitionBuilderMinimal = () => {
 
   const selectedBlock = selectedBlockId ? steps.find(step => step.id === selectedBlockId) : null;
 
+  // Mobile Panel Navigation
+  const MobilePanelNavigation = () => (
+    <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-2">
+      <div className="flex space-x-1">
+        <Button
+          variant={mobileActivePanel === 'palette' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setMobileActivePanel('palette')}
+          className="flex-1"
+        >
+          Blocks
+        </Button>
+        <Button
+          variant={mobileActivePanel === 'canvas' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setMobileActivePanel('canvas')}
+          className="flex-1"
+        >
+          Flow ({steps.length})
+        </Button>
+        <Button
+          variant={mobileActivePanel === 'config' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setMobileActivePanel('config')}
+          className="flex-1"
+          disabled={!selectedBlock}
+        >
+          Config
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="h-full flex flex-col p-6">
-      <div className="mb-6">
+    <div className="h-full flex flex-col">
+      {/* Enhanced Header with Mobile Menu */}
+      <div className="bg-white border-b border-gray-200 px-4 lg:px-6 py-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {isNewDefinition ? 'Create New Training Definition' : `Edit Training Definition`}
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Phase 5B: Version Management & Publishing
-            </p>
-            {version && (
-              <div className="flex items-center space-x-4 mt-2">
-                <p className="text-sm text-gray-500">
-                  Current version: {version.version_number} ({version.status})
-                </p>
-                {version.published_at && (
-                  <p className="text-sm text-green-600">
-                    Published: {new Date(version.published_at).toLocaleDateString()}
+          <div className="flex items-center space-x-3">
+            {/* Mobile Menu Toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="lg:hidden"
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+            >
+              {showMobileMenu ? <XIcon className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
+            </Button>
+            
+            <div>
+              <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
+                {isNewDefinition ? 'Create New Training Definition' : `Edit Training Definition`}
+              </h1>
+              <p className="text-sm lg:text-base text-gray-600 mt-1">
+                Phase 5C: UI Polish & Mobile Responsiveness
+              </p>
+              {version && (
+                <div className="flex flex-col lg:flex-row lg:items-center lg:space-x-4 mt-2">
+                  <p className="text-xs lg:text-sm text-gray-500">
+                    Current version: {version.version_number} ({version.status})
                   </p>
-                )}
-              </div>
-            )}
+                  {version.published_at && (
+                    <p className="text-xs lg:text-sm text-green-600">
+                      Published: {new Date(version.published_at).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Version Management Controls */}
-          <div className="flex items-center space-x-3">
+          {/* Enhanced Version Management Controls */}
+          <div className={`${showMobileMenu ? 'flex' : 'hidden'} lg:flex flex-col lg:flex-row items-start lg:items-center space-y-2 lg:space-y-0 lg:space-x-3 absolute lg:relative top-full lg:top-auto left-0 lg:left-auto right-0 lg:right-auto bg-white lg:bg-transparent border-b lg:border-b-0 border-gray-200 p-4 lg:p-0 z-10`}>
             {definition && (
               <Button
                 variant="outline"
+                size="sm"
                 onClick={() => setShowVersionHistory(true)}
-                className="flex items-center space-x-2"
+                className="w-full lg:w-auto flex items-center justify-center space-x-2"
               >
                 <ClockIcon className="w-4 h-4" />
                 <span>Version History</span>
@@ -264,8 +314,9 @@ const TrainingDefinitionBuilderMinimal = () => {
             
             <Button
               variant="outline"
+              size="sm"
               onClick={() => navigate('/desktop/training-definitions')}
-              className="flex items-center space-x-2"
+              className="w-full lg:w-auto flex items-center justify-center space-x-2"
             >
               <DocumentTextIcon className="w-4 h-4" />
               <span>Back to List</span>
@@ -274,7 +325,8 @@ const TrainingDefinitionBuilderMinimal = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+      {/* Enhanced Builder Header */}
+      <div className="bg-white border-b border-gray-200 p-4 lg:p-6">
         <BuilderHeader
           title={title}
           setTitle={setTitle}
@@ -293,33 +345,77 @@ const TrainingDefinitionBuilderMinimal = () => {
         />
       </div>
 
-      {/* Main Builder Layout */}
-      <div className="flex-1 grid grid-cols-12 gap-6">
-        {/* Left Panel - Block Palette */}
-        <div className="col-span-3">
-          <BlockPalette 
-            onAddBlock={addStep}
-            onApplyAIFlow={applyAIFlow}
-          />
+      {/* Mobile Panel Navigation */}
+      <MobilePanelNavigation />
+
+      {/* Enhanced Main Builder Layout - Responsive */}
+      <div className="flex-1 overflow-hidden">
+        {/* Desktop Layout */}
+        <div className="hidden lg:grid lg:grid-cols-12 lg:gap-6 h-full p-6">
+          {/* Left Panel - Block Palette */}
+          <div className="col-span-3">
+            <BlockPalette 
+              onAddBlock={addStep}
+              onApplyAIFlow={applyAIFlow}
+            />
+          </div>
+
+          {/* Center Panel - Flow Canvas */}
+          <div className="col-span-5">
+            <FlowCanvas
+              steps={steps}
+              selectedBlockId={selectedBlockId}
+              onSelectBlock={setSelectedBlockId}
+              onDeleteBlock={deleteStep}
+              onReorderBlocks={reorderSteps}
+            />
+          </div>
+
+          {/* Right Panel - Block Configuration */}
+          <div className="col-span-4">
+            <BlockConfiguration
+              block={selectedBlock || null}
+              onUpdateConfig={updateStep}
+            />
+          </div>
         </div>
 
-        {/* Center Panel - Flow Canvas */}
-        <div className="col-span-5">
-          <FlowCanvas
-            steps={steps}
-            selectedBlockId={selectedBlockId}
-            onSelectBlock={setSelectedBlockId}
-            onDeleteBlock={deleteStep}
-            onReorderBlocks={reorderSteps}
-          />
-        </div>
+        {/* Mobile Layout - Single Panel */}
+        <div className="lg:hidden h-full p-4">
+          {mobileActivePanel === 'palette' && (
+            <div className="h-full">
+              <BlockPalette 
+                onAddBlock={addStep}
+                onApplyAIFlow={applyAIFlow}
+              />
+            </div>
+          )}
 
-        {/* Right Panel - Block Configuration */}
-        <div className="col-span-4">
-          <BlockConfiguration
-            block={selectedBlock || null}
-            onUpdateConfig={updateStep}
-          />
+          {mobileActivePanel === 'canvas' && (
+            <div className="h-full">
+              <FlowCanvas
+                steps={steps}
+                selectedBlockId={selectedBlockId}
+                onSelectBlock={(blockId) => {
+                  setSelectedBlockId(blockId);
+                  if (blockId) {
+                    setMobileActivePanel('config');
+                  }
+                }}
+                onDeleteBlock={deleteStep}
+                onReorderBlocks={reorderSteps}
+              />
+            </div>
+          )}
+
+          {mobileActivePanel === 'config' && (
+            <div className="h-full">
+              <BlockConfiguration
+                block={selectedBlock || null}
+                onUpdateConfig={updateStep}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -334,19 +430,33 @@ const TrainingDefinitionBuilderMinimal = () => {
         />
       )}
 
-      <div className="mt-6 bg-gray-50 rounded-lg p-4">
-        <h3 className="font-medium text-gray-900 mb-2">Debug Info:</h3>
-        <p className="text-sm text-gray-600">Route ID: {id}</p>
-        <p className="text-sm text-gray-600">Pathname: {location.pathname}</p>
-        <p className="text-sm text-gray-600">Is New: {isNewDefinition ? 'Yes' : 'No'}</p>
-        <p className="text-sm text-gray-600">Loading: {loading ? 'Yes' : 'No'}</p>
-        <p className="text-sm text-gray-600">Title: {title || 'Not set'}</p>
-        <p className="text-sm text-gray-600">Description: {description || 'Not set'}</p>
-        <p className="text-sm text-gray-600">Definition ID: {definition?.id || 'None'}</p>
-        <p className="text-sm text-gray-600">Version: {version?.version_number || 'None'}</p>
-        <p className="text-sm text-gray-600">Steps Count: {steps.length}</p>
-        <p className="text-sm text-gray-600">Selected Block: {selectedBlockId || 'None'}</p>
-        <p className="text-sm text-gray-600">Status: Phase 5B complete - Version Management & Publishing</p>
+      {/* Enhanced Debug Info - Responsive */}
+      <div className="bg-gray-50 border-t border-gray-200 p-3 lg:p-4">
+        <details className="group">
+          <summary className="cursor-pointer font-medium text-gray-900 text-sm lg:text-base">
+            Debug Info & Status
+          </summary>
+          <div className="mt-2 grid grid-cols-1 lg:grid-cols-2 gap-2 text-xs lg:text-sm text-gray-600">
+            <div>
+              <p>Route ID: {id}</p>
+              <p>Pathname: {location.pathname}</p>
+              <p>Is New: {isNewDefinition ? 'Yes' : 'No'}</p>
+              <p>Loading: {loading ? 'Yes' : 'No'}</p>
+              <p>Mobile Panel: {mobileActivePanel}</p>
+            </div>
+            <div>
+              <p>Title: {title || 'Not set'}</p>
+              <p>Description: {description || 'Not set'}</p>
+              <p>Definition ID: {definition?.id || 'None'}</p>
+              <p>Version: {version?.version_number || 'None'}</p>
+              <p>Steps Count: {steps.length}</p>
+              <p>Selected Block: {selectedBlockId || 'None'}</p>
+            </div>
+          </div>
+          <p className="text-xs lg:text-sm text-green-600 font-medium mt-2">
+            Status: Phase 5C complete - UI Polish & Mobile Responsiveness
+          </p>
+        </details>
       </div>
     </div>
   );
