@@ -1,6 +1,6 @@
 
 import React from 'react';
-import SmartContentAnalyzer from './SmartContentAnalyzer';
+import SimpleContentSummary from './SimpleContentSummary';
 
 interface DocumentAnalysisDisplayProps {
   analysisResults: {
@@ -23,7 +23,7 @@ const DocumentAnalysisDisplay: React.FC<DocumentAnalysisDisplayProps> = ({
   if (!analysisResults || !documentContent) return null;
 
   return (
-    <SmartContentAnalyzer 
+    <SimpleContentSummary 
       content={documentContent}
       fileName={analysisResults.documentMetadata?.fileName || 'Document'}
     />

@@ -3,9 +3,11 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Eye, Code, Zap, ExternalLink } from 'lucide-react';
+import { Settings, Save, ExternalLink } from 'lucide-react';
 import { useAISettings } from '@/contexts/AISettingsContext';
 
 interface AISettingsModalProps {
@@ -15,56 +17,43 @@ interface AISettingsModalProps {
 const AISettingsModal: React.FC<AISettingsModalProps> = ({ className = '' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { config, connectionStatus } = useAISettings();
+  
+  // Prompt configuration state
+  const [analysisPrompt, setAnalysisPrompt] = useState(`Analyze this training document and provide a simple, helpful summary.
 
-  // Mock data for demonstration
-  const extractionPrompt = `You are an expert training content analyzer. Analyze the provided document and extract:
+Focus on:
+- Main topics and themes
+- Key learning points
+- Suggested training approach
+- Content difficulty level
 
-1. Key learning objectives and topics
-2. Content complexity level (basic, intermediate, advanced)
-3. Suggested question types and difficulty
-4. Important concepts that need reinforcement
-5. Practical applications mentioned
+Keep the response concise and actionable for training developers.`);
 
-Format your response as structured JSON with the following schema:
-{
-  "topics": ["topic1", "topic2"],
-  "complexity": "intermediate",
-  "suggestedQuestions": 8,
-  "keyConceptes": ["concept1", "concept2"],
-  "practicalApplications": ["app1", "app2"]
-}`;
+  const [generationPrompt, setGenerationPrompt] = useState(`Create a training flow based on the document analysis and user configuration.
 
-  const generationPrompt = `Based on the document analysis, generate a comprehensive training flow with the following requirements:
+Requirements:
+- Use the specified question count and content mix
+- Focus on the selected topics
+- Match the requested difficulty level
+- Create engaging, practical content
 
-- Create a mix of information blocks, goto blocks, and question blocks
-- Ensure logical progression from basic concepts to advanced applications
-- Include practical scenarios and real-world applications
-- Generate questions that test understanding at multiple levels
-- Maintain engagement through varied content types
+Generate a well-structured training sequence with clear learning progression.`);
 
-Structure each block according to the provided schema and ensure all content is relevant and educational.`;
+  const handleSavePrompts = () => {
+    // Save prompts to localStorage for now
+    localStorage.setItem('ai-analysis-prompt', analysisPrompt);
+    localStorage.setItem('ai-generation-prompt', generationPrompt);
+    console.log('Prompts saved successfully');
+  };
 
-  const mockRawOutput = `{
-  "steps": [
-    {
-      "type": "information",
-      "title": "Safety Introduction",
-      "content": "Understanding workplace safety protocols is crucial for maintaining a secure work environment..."
-    },
-    {
-      "type": "question",
-      "question": "What are the three primary safety protocols mentioned?",
-      "type": "multiple_choice",
-      "options": ["PPE, Training, Documentation", "Speed, Efficiency, Cost", "Planning, Execution, Review"],
-      "correct": 0
-    }
-  ],
-  "metadata": {
-    "totalSteps": 8,
-    "estimatedDuration": "15 minutes",
-    "difficultyLevel": "intermediate"
-  }
-}`;
+  // Load saved prompts on component mount
+  React.useEffect(() => {
+    const savedAnalysisPrompt = localStorage.getItem('ai-analysis-prompt');
+    const savedGenerationPrompt = localStorage.getItem('ai-generation-prompt');
+    
+    if (savedAnalysisPrompt) setAnalysisPrompt(savedAnalysisPrompt);
+    if (savedGenerationPrompt) setGenerationPrompt(savedGenerationPrompt);
+  }, []);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -79,7 +68,7 @@ Structure each block according to the provided schema and ensure all content is 
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center">
               <Settings className="w-5 h-5 mr-2" />
-              AI Configuration & Debug
+              AI Configuration
             </div>
             <Button variant="outline" size="sm" onClick={() => window.open('/desktop/settings', '_blank')}>
               <ExternalLink className="w-4 h-4 mr-2" />
@@ -90,11 +79,10 @@ Structure each block according to the provided schema and ensure all content is 
         
         <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
           <Tabs defaultValue="configuration" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="configuration">Configuration</TabsTrigger>
-              <TabsTrigger value="prompts">Prompts</TabsTrigger>
-              <TabsTrigger value="output">Raw Output</TabsTrigger>
-              <TabsTrigger value="processing">Processing</TabsTrigger>
+              <TabsTrigger value="prompts">Custom Prompts</TabsTrigger>
+              <TabsTrigger value="testing">Testing</TabsTrigger>
             </TabsList>
             
             <TabsContent value="configuration" className="space-y-4 mt-4">
@@ -142,104 +130,66 @@ Structure each block according to the provided schema and ensure all content is 
             </TabsContent>
             
             <TabsContent value="prompts" className="space-y-4 mt-4">
-              <div>
-                <h4 className="text-sm font-medium mb-2 flex items-center">
-                  <Eye className="w-3 h-3 mr-1" />
-                  Content Extraction Prompt
-                </h4>
-                <Textarea
-                  value={extractionPrompt}
-                  rows={8}
-                  className="text-xs font-mono"
-                  readOnly
-                />
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium mb-2 flex items-center">
-                  <Zap className="w-3 h-3 mr-1" />
-                  Flow Generation Prompt
-                </h4>
-                <Textarea
-                  value={generationPrompt}
-                  rows={6}
-                  className="text-xs font-mono"
-                  readOnly
-                />
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="output" className="space-y-4 mt-4">
-              <div>
-                <h4 className="text-sm font-medium mb-2">Last AI Response (Raw JSON)</h4>
-                <Textarea
-                  value={mockRawOutput}
-                  rows={12}
-                  className="text-xs font-mono"
-                  readOnly
-                />
-              </div>
-              
-              <div className="bg-green-50 p-3 rounded-lg">
-                <p className="text-xs text-green-700">
-                  <strong>Response Time:</strong> 2.3s<br/>
-                  <strong>Tokens Used:</strong> 1,247<br/>
-                  <strong>Status:</strong> Successfully parsed
-                </p>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="processing" className="space-y-4 mt-4">
-              <div>
-                <h4 className="text-sm font-medium mb-2">Processing Steps</h4>
-                <div className="space-y-2 text-xs">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span>Document uploaded and parsed</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span>Content analysis completed</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span>Training flow generated</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span>Converted to step blocks</span>
-                  </div>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="analysis-prompt" className="text-sm font-medium">
+                    Content Analysis Prompt
+                  </Label>
+                  <p className="text-xs text-gray-600 mb-2">
+                    This prompt is used to analyze uploaded documents and generate summaries
+                  </p>
+                  <Textarea
+                    id="analysis-prompt"
+                    value={analysisPrompt}
+                    onChange={(e) => setAnalysisPrompt(e.target.value)}
+                    rows={6}
+                    className="text-sm"
+                    placeholder="Enter your custom analysis prompt..."
+                  />
                 </div>
+                
+                <div>
+                  <Label htmlFor="generation-prompt" className="text-sm font-medium">
+                    Training Generation Prompt
+                  </Label>
+                  <p className="text-xs text-gray-600 mb-2">
+                    This prompt is used to generate training flows based on configuration
+                  </p>
+                  <Textarea
+                    id="generation-prompt"
+                    value={generationPrompt}
+                    onChange={(e) => setGenerationPrompt(e.target.value)}
+                    rows={6}
+                    className="text-sm"
+                    placeholder="Enter your custom generation prompt..."
+                  />
+                </div>
+                
+                <Button onClick={handleSavePrompts} className="w-full">
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Custom Prompts
+                </Button>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="testing" className="space-y-4 mt-4">
+              <div className="bg-gray-50 border rounded-lg p-4">
+                <h4 className="text-sm font-medium mb-2">Test AI Connection</h4>
+                <p className="text-xs text-gray-600 mb-3">
+                  Verify your AI configuration is working correctly
+                </p>
+                <Button variant="outline" size="sm" disabled={!config.apiKey}>
+                  {config.apiKey ? 'Test Connection' : 'API Key Required'}
+                </Button>
               </div>
               
-              <div>
-                <h4 className="text-sm font-medium mb-2">Converted Step Blocks</h4>
-                <Textarea
-                  value={JSON.stringify([
-                    {
-                      id: "step_1",
-                      type: "information",
-                      order: 0,
-                      config: {
-                        content: "Understanding workplace safety protocols is crucial..."
-                      }
-                    },
-                    {
-                      id: "step_2", 
-                      type: "question",
-                      order: 1,
-                      config: {
-                        question_text: "What are the three primary safety protocols mentioned?",
-                        question_type: "multiple_choice",
-                        options: ["PPE, Training, Documentation", "Speed, Efficiency, Cost"],
-                        correct_option: 0
-                      }
-                    }
-                  ], null, 2)}
-                  rows={10}
-                  className="text-xs font-mono"
-                  readOnly
-                />
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <h4 className="text-sm font-medium text-green-800 mb-2">Recent Activity</h4>
+                <div className="space-y-1 text-xs text-green-700">
+                  <div>• Prompts configured and saved</div>
+                  <div>• Simple analysis mode enabled</div>
+                  <div>• Ready for training generation</div>
+                </div>
               </div>
             </TabsContent>
           </Tabs>
