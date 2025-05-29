@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ImageIcon, UploadIcon } from '@heroicons/react/24/outline';
+import { PhotoIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 
 interface FloorPlan {
   id: string;
@@ -65,18 +65,18 @@ const FloorPlanSelector: React.FC<FloorPlanSelectorProps> = ({
       <div className="flex items-center justify-between">
         <h4 className="text-base font-medium text-gray-900">Select Floor Plan</h4>
         <Button variant="outline" size="sm">
-          <UploadIcon className="w-4 h-4 mr-2" />
+          <ArrowUpTrayIcon className="w-4 h-4 mr-2" />
           Upload New
         </Button>
       </div>
 
       {floorPlans.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-          <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <PhotoIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-sm font-medium text-gray-900 mb-2">No floor plans available</h3>
           <p className="text-sm text-gray-500 mb-4">Upload a floor plan to get started</p>
           <Button variant="outline">
-            <UploadIcon className="w-4 h-4 mr-2" />
+            <ArrowUpTrayIcon className="w-4 h-4 mr-2" />
             Upload Floor Plan
           </Button>
         </div>
@@ -93,7 +93,7 @@ const FloorPlanSelector: React.FC<FloorPlanSelectorProps> = ({
               onClick={() => onFloorPlanSelect(floorPlan.id)}
             >
               <div className="aspect-video bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
-                <ImageIcon className="w-8 h-8 text-gray-400" />
+                <PhotoIcon className="w-8 h-8 text-gray-400" />
               </div>
               <h5 className="font-medium text-gray-900 truncate">{floorPlan.name}</h5>
               {floorPlan.description && (
