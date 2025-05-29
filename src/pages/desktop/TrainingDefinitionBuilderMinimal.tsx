@@ -10,7 +10,10 @@ import BuilderControls from '@/components/desktop/training-definitions/BuilderCo
 import BlockPalette from '@/components/desktop/training-definitions/BlockPalette';
 import FlowCanvas from '@/components/desktop/training-definitions/FlowCanvas';
 import BlockConfiguration from '@/components/desktop/training-definitions/BlockConfiguration';
+import VersionHistoryModal from '@/components/desktop/training-definitions/VersionHistoryModal';
 import { createNewBlock } from '@/utils/blockUtils';
+import { Button } from '@/components/ui/button';
+import { ClockIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 
 const TrainingDefinitionBuilderMinimal = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +30,7 @@ const TrainingDefinitionBuilderMinimal = () => {
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
   
   console.log('TrainingDefinitionBuilderMinimal render - id:', id, 'pathname:', location.pathname);
   
@@ -196,6 +200,11 @@ const TrainingDefinitionBuilderMinimal = () => {
     }
   };
 
+  const handlePublishSuccess = () => {
+    // Reload the definition to get the updated version info
+    loadDefinition();
+  };
+
   console.log('Current loading state:', loading);
 
   if (loading) {
@@ -213,17 +222,51 @@ const TrainingDefinitionBuilderMinimal = () => {
   return (
     <div className="h-full flex flex-col p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
-          {isNewDefinition ? 'Create New Training Definition' : `Edit Training Definition`}
-        </h1>
-        <p className="text-gray-600 mt-2">
-          Phase 5A: Advanced step configuration with visual flow canvas
-        </p>
-        {version && (
-          <p className="text-sm text-gray-500 mt-1">
-            Current version: {version.version_number} ({version.status})
-          </p>
-        )}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {isNewDefinition ? 'Create New Training Definition' : `Edit Training Definition`}
+            </h1>
+            <p className="text-gray-600 mt-2">
+              Phase 5B: Version Management & Publishing
+            </p>
+            {version && (
+              <div className="flex items-center space-x-4 mt-2">
+                <p className="text-sm text-gray-500">
+                  Current version: {version.version_number} ({version.status})
+                </p>
+                {version.published_at && (
+                  <p className="text-sm text-green-600">
+                    Published: {new Date(version.published_at).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Version Management Controls */}
+          <div className="flex items-center space-x-3">
+            {definition && (
+              <Button
+                variant="outline"
+                onClick={() => setShowVersionHistory(true)}
+                className="flex items-center space-x-2"
+              >
+                <ClockIcon className="w-4 h-4" />
+                <span>Version History</span>
+              </Button>
+            )}
+            
+            <Button
+              variant="outline"
+              onClick={() => navigate('/desktop/training-definitions')}
+              className="flex items-center space-x-2"
+            >
+              <DocumentTextIcon className="w-4 h-4" />
+              <span>Back to List</span>
+            </Button>
+          </div>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
@@ -241,7 +284,7 @@ const TrainingDefinitionBuilderMinimal = () => {
           steps={steps}
           definitionId={definition?.id}
           currentVersion={version?.version_number}
-          onPublishSuccess={loadDefinition}
+          onPublishSuccess={handlePublishSuccess}
         />
       </div>
 
@@ -275,6 +318,16 @@ const TrainingDefinitionBuilderMinimal = () => {
         </div>
       </div>
 
+      {/* Version History Modal */}
+      {definition && (
+        <VersionHistoryModal
+          isOpen={showVersionHistory}
+          onClose={() => setShowVersionHistory(false)}
+          definitionId={definition.id}
+          currentVersionId={version?.id}
+        />
+      )}
+
       <div className="mt-6 bg-gray-50 rounded-lg p-4">
         <h3 className="font-medium text-gray-900 mb-2">Debug Info:</h3>
         <p className="text-sm text-gray-600">Route ID: {id}</p>
@@ -287,7 +340,7 @@ const TrainingDefinitionBuilderMinimal = () => {
         <p className="text-sm text-gray-600">Version: {version?.version_number || 'None'}</p>
         <p className="text-sm text-gray-600">Steps Count: {steps.length}</p>
         <p className="text-sm text-gray-600">Selected Block: {selectedBlockId || 'None'}</p>
-        <p className="text-sm text-gray-600">Status: Phase 5A complete - Advanced step configuration</p>
+        <p className="text-sm text-gray-600">Status: Phase 5B complete - Version Management & Publishing</p>
       </div>
     </div>
   );
