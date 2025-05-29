@@ -37,11 +37,26 @@ export const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
+      // Generate the path based on parent folder
+      let folderPath = `/${folderName.trim()}`;
+      if (parentFolderId) {
+        const { data: parentFolder } = await supabase
+          .from('document_folders')
+          .select('path')
+          .eq('id', parentFolderId)
+          .single();
+        
+        if (parentFolder) {
+          folderPath = `${parentFolder.path}/${folderName.trim()}`;
+        }
+      }
+
       const { error } = await supabase
         .from('document_folders')
         .insert({
           name: folderName.trim(),
           parent_folder_id: parentFolderId,
+          path: folderPath,
           created_by: user.id
         });
 

@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { supabase } from '@/integrations/supabase/client';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 interface Document {
