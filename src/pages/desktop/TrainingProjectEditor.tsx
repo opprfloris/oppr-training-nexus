@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, CheckBadgeIcon, PlayIcon } from "@heroicons/react/24/outline";
@@ -8,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { TrainingProject, mapDatabaseToTrainingProject } from '@/types/training-projects';
+import FloorPlanSelector from '@/components/desktop/training-projects/FloorPlanSelector';
+import MarkerManagement from '@/components/desktop/training-projects/MarkerManagement';
 
 const TrainingProjectEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -103,6 +104,39 @@ const TrainingProjectEditor = () => {
     );
   };
 
+  const handleFloorPlanSelect = async (floorPlanId: string) => {
+    if (!project) return;
+
+    try {
+      setSaving(true);
+      const { error } = await supabase
+        .from('training_projects')
+        .update({
+          floor_plan_image_id: floorPlanId,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', project.id);
+
+      if (error) throw error;
+
+      setProject({ ...project, floor_plan_image_id: floorPlanId });
+      
+      toast({
+        title: "Success",
+        description: "Floor plan selected successfully",
+      });
+    } catch (error) {
+      console.error('Error selecting floor plan:', error);
+      toast({
+        title: "Error",
+        description: "Failed to select floor plan",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -127,7 +161,7 @@ const TrainingProjectEditor = () => {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-8">
       {/* Breadcrumb */}
       <div className="flex items-center space-x-2 text-sm text-gray-600">
         <button 
@@ -146,14 +180,14 @@ const TrainingProjectEditor = () => {
       </div>
 
       {/* Project Header */}
-      <div className="oppr-card p-6">
+      <div className="oppr-card p-8">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <div className="flex items-center space-x-4 mb-2">
+            <div className="flex items-center space-x-4 mb-3">
               <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
               {getStatusBadge(project.status)}
             </div>
-            <p className="text-gray-600 mb-1">ID: {project.project_id}</p>
+            <p className="text-gray-600 mb-2">ID: {project.project_id}</p>
             {project.description && (
               <p className="text-gray-600">{project.description}</p>
             )}
@@ -181,35 +215,35 @@ const TrainingProjectEditor = () => {
       {/* Tabbed Content */}
       <div className="oppr-card">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="border-b px-6">
+          <div className="border-b px-8">
             <TabsList className="grid w-full grid-cols-6 bg-transparent h-auto p-0">
-              <TabsTrigger value="settings" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-3">
+              <TabsTrigger value="settings" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-4">
                 Settings & Shell
               </TabsTrigger>
-              <TabsTrigger value="floor-plan" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-3">
+              <TabsTrigger value="floor-plan" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-4">
                 Floor Plan & Markers
               </TabsTrigger>
-              <TabsTrigger value="content" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-3">
+              <TabsTrigger value="content" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-4">
                 Content Assembly
               </TabsTrigger>
-              <TabsTrigger value="users" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-3">
+              <TabsTrigger value="users" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-4">
                 User Access
               </TabsTrigger>
-              <TabsTrigger value="parameters" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-3">
+              <TabsTrigger value="parameters" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-4">
                 Parameters & Activation
               </TabsTrigger>
-              <TabsTrigger value="statistics" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-3">
+              <TabsTrigger value="statistics" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-oppr-blue rounded-none pb-4">
                 Statistics
               </TabsTrigger>
             </TabsList>
           </div>
 
-          <TabsContent value="settings" className="mt-0 p-6">
+          <TabsContent value="settings" className="mt-0 p-8">
             <div className="space-y-8">
               <h3 className="text-lg font-medium">Project Settings & Shell</h3>
               <div className="grid gap-6 max-w-2xl">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
                     Training Project ID
                   </label>
                   <input
@@ -220,7 +254,7 @@ const TrainingProjectEditor = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
                     Training Project Name *
                   </label>
                   <input
@@ -232,7 +266,7 @@ const TrainingProjectEditor = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
                     Description
                   </label>
                   <textarea
@@ -244,7 +278,7 @@ const TrainingProjectEditor = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
                       Color Code
                     </label>
                     <input
@@ -255,7 +289,7 @@ const TrainingProjectEditor = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
                       Icon
                     </label>
                     <input
@@ -270,19 +304,25 @@ const TrainingProjectEditor = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="floor-plan" className="mt-0 p-6">
+          <TabsContent value="floor-plan" className="mt-0 p-8">
             <div className="space-y-8">
               <h3 className="text-lg font-medium">Floor Plan & Markers</h3>
-              <div className="text-center py-16 bg-gray-50 rounded-lg">
-                <p className="text-gray-600 text-lg mb-2">Floor plan and marker management will be implemented here</p>
-                <p className="text-sm text-gray-500">
-                  This will include floor plan selection/upload and interactive marker placement
-                </p>
+              
+              <FloorPlanSelector
+                selectedFloorPlanId={project.floor_plan_image_id}
+                onFloorPlanSelect={handleFloorPlanSelect}
+              />
+
+              <div className="border-t pt-8">
+                <MarkerManagement
+                  projectId={project.id}
+                  floorPlanId={project.floor_plan_image_id}
+                />
               </div>
             </div>
           </TabsContent>
 
-          <TabsContent value="content" className="mt-0 p-6">
+          <TabsContent value="content" className="mt-0 p-8">
             <div className="space-y-8">
               <h3 className="text-lg font-medium">Content Assembly</h3>
               <div className="text-center py-16 bg-gray-50 rounded-lg">
@@ -294,7 +334,7 @@ const TrainingProjectEditor = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="users" className="mt-0 p-6">
+          <TabsContent value="users" className="mt-0 p-8">
             <div className="space-y-8">
               <h3 className="text-lg font-medium">User Access</h3>
               <div className="text-center py-16 bg-gray-50 rounded-lg">
@@ -306,7 +346,7 @@ const TrainingProjectEditor = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="parameters" className="mt-0 p-6">
+          <TabsContent value="parameters" className="mt-0 p-8">
             <div className="space-y-8">
               <h3 className="text-lg font-medium">Parameters & Activation</h3>
               <div className="text-center py-16 bg-gray-50 rounded-lg">
@@ -318,7 +358,7 @@ const TrainingProjectEditor = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="statistics" className="mt-0 p-6">
+          <TabsContent value="statistics" className="mt-0 p-8">
             <div className="space-y-8">
               <h3 className="text-lg font-medium">Project Statistics</h3>
               <div className="text-center py-16 bg-gray-50 rounded-lg">
