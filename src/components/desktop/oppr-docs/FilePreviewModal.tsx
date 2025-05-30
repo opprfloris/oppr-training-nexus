@@ -36,10 +36,10 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [publicUrl, setPublicUrl] = React.useState<string | null>(null);
 
-  const getPublicUrl = async (filePath: string) => {
+  const checkBucketExists = async () => {
     try {
-      // Check if bucket exists first
       const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
       
       if (bucketError) {
@@ -49,8 +49,20 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
 
       const documentsBucket = buckets?.find(bucket => bucket.id === 'documents');
       if (!documentsBucket) {
-        throw new Error('Documents storage bucket not found. Please contact your administrator.');
+        throw new Error('Documents storage bucket not found. Please contact your administrator to set up the storage bucket.');
       }
+
+      return true;
+    } catch (error) {
+      console.error('Error checking bucket existence:', error);
+      throw error;
+    }
+  };
+
+  const getPublicUrl = async (filePath: string) => {
+    try {
+      // Check if bucket exists first
+      await checkBucketExists();
 
       const { data } = supabase.storage
         .from('documents')
@@ -63,6 +75,21 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
     }
   };
 
+  const loadFileUrl = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const url = await getPublicUrl(file.file_path);
+      setPublicUrl(url);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load file';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const renderPreview = () => {
     if (error) {
       return (
@@ -70,16 +97,7 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
           <p className="text-red-600 mb-4 text-center px-4">{error}</p>
           <Button
             variant="outline"
-            onClick={() => {
-              setError(null);
-              setLoading(true);
-              getPublicUrl(file.file_path)
-                .then(() => setLoading(false))
-                .catch((err) => {
-                  setError(err.message || 'Failed to load file');
-                  setLoading(false);
-                });
-            }}
+            onClick={loadFileUrl}
           >
             Retry
           </Button>
@@ -95,16 +113,22 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
       );
     }
 
+    if (!publicUrl) {
+      return (
+        <div className="flex items-center justify-center h-48 bg-gray-50 rounded">
+          <p className="text-gray-500">No preview URL available</p>
+        </div>
+      );
+    }
+
     if (file.mime_type === 'application/pdf') {
       return (
         <iframe
-          src={`${getPublicUrl(file.file_path)}#toolbar=1`}
+          src={`${publicUrl}#toolbar=1`}
           className="w-full h-96 border rounded"
           title={file.display_name}
-          onLoad={() => setLoading(false)}
           onError={() => {
             setError('Failed to load PDF file');
-            setLoading(false);
           }}
         />
       );
@@ -113,13 +137,11 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
     if (file.mime_type.startsWith('image/')) {
       return (
         <img
-          src={getPublicUrl(file.file_path)}
+          src={publicUrl}
           alt={file.display_name}
           className="max-w-full h-auto rounded"
-          onLoad={() => setLoading(false)}
           onError={() => {
             setError('Failed to load image file');
-            setLoading(false);
           }}
         />
       );
@@ -129,13 +151,11 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
       return (
         <div className="border rounded p-4 bg-gray-50 h-96 overflow-auto">
           <iframe
-            src={getPublicUrl(file.file_path)}
+            src={publicUrl}
             className="w-full h-full border-0"
             title={file.display_name}
-            onLoad={() => setLoading(false)}
             onError={() => {
               setError('Failed to load text file');
-              setLoading(false);
             }}
           />
         </div>
@@ -147,14 +167,13 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
         <p className="text-gray-500 mb-2">Preview not available for this file type</p>
         <Button
           variant="outline"
-          onClick={async () => {
-            try {
-              const url = await getPublicUrl(file.file_path);
-              window.open(url, '_blank');
-            } catch (error) {
+          onClick={() => {
+            if (publicUrl) {
+              window.open(publicUrl, '_blank');
+            } else {
               toast({
                 title: "Error",
-                description: "Failed to open file. Please try again.",
+                description: "File URL not available. Please try again.",
                 variant: "destructive",
               });
             }
@@ -167,15 +186,7 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
   };
 
   React.useEffect(() => {
-    setLoading(true);
-    setError(null);
-    
-    getPublicUrl(file.file_path)
-      .then(() => setLoading(false))
-      .catch((err) => {
-        setError(err.message || 'Failed to load file');
-        setLoading(false);
-      });
+    loadFileUrl();
   }, [file.file_path]);
 
   return (
