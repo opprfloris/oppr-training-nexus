@@ -1,60 +1,115 @@
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import DesktopLayout from './components/desktop/DesktopLayout';
-import DesktopDashboard from './pages/desktop/DesktopDashboard';
-import DesktopLogin from './pages/desktop/DesktopLogin';
-import { Toaster } from '@/components/ui/toaster';
-import TrainingDefinitionBuilderMinimal from './pages/desktop/TrainingDefinitionBuilderMinimal';
-import TrainingDefinitions from './pages/desktop/TrainingDefinitions';
-import TrainingProjects from './pages/desktop/TrainingProjects';
-import TrainingProjectEditor from './pages/desktop/TrainingProjectEditor';
-import FloorPlans from './pages/desktop/FloorPlans';
-import MachineRegistry from './pages/desktop/MachineRegistry';
-import OpprDocs from './pages/desktop/OpprDocs';
-import UserManagement from './pages/desktop/UserManagement';
-import SkillsMatrix from './pages/desktop/SkillsMatrix';
-import DesktopSettings from './pages/desktop/DesktopSettings';
-import Documentation from './pages/desktop/Documentation';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AISettingsProvider } from '@/contexts/AISettingsContext';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { AISettingsProvider } from "@/contexts/AISettingsContext";
+import { useAuth } from "@/contexts/AuthContext";
+
+// Existing imports
+import Index from "./pages/Index";
+import GatewayPage from "./pages/GatewayPage";
+import NotFound from "./pages/NotFound";
+
+// Desktop pages
+import DesktopDashboard from "./pages/desktop/DesktopDashboard";
+import DesktopLogin from "./pages/desktop/DesktopLogin";
+import DesktopSettings from "./pages/desktop/DesktopSettings";
+import UserManagement from "./pages/desktop/UserManagement";
+import MinimalUserManagement from "./pages/desktop/MinimalUserManagement";
+import Documentation from "./pages/desktop/Documentation";
+import FloorPlans from "./pages/desktop/FloorPlans";
+import MachineRegistry from "./pages/desktop/MachineRegistry";
+import OpprDocs from "./pages/desktop/OpprDocs";
+import SkillsMatrix from "./pages/desktop/SkillsMatrix";
+import TrainingDefinitions from "./pages/desktop/TrainingDefinitions";
+import TrainingDefinitionBuilder from "./pages/desktop/TrainingDefinitionBuilder";
+import TrainingDefinitionBuilderMinimal from "./pages/desktop/TrainingDefinitionBuilderMinimal";
+import TrainingProjects from "./pages/desktop/TrainingProjects";
+import TrainingProjectEditor from "./pages/desktop/TrainingProjectEditor";
+
+// Mobile pages
+import MobileLogin from "./pages/mobile/MobileLogin";
+import MobileSettings from "./pages/mobile/MobileSettings";
+import MobileTrainings from "./pages/mobile/MobileTrainings";
+
+// Layouts
+import DesktopLayout from "./components/desktop/DesktopLayout";
+import MobileLayout from "./components/mobile/MobileLayout";
 
 const queryClient = new QueryClient();
 
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+  
+  if (!user) {
+    return <Navigate to="/desktop/login" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
 function App() {
   return (
-    <AISettingsProvider>
-      <QueryClientProvider client={queryClient}>
-        <div className="min-h-screen bg-gray-50">
-          <Router>
-            <AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <AISettingsProvider>
               <Routes>
-                <Route path="/login" element={<DesktopLogin />} />
+                <Route path="/" element={<Index />} />
+                <Route path="/gateway" element={<GatewayPage />} />
+                
+                {/* Desktop Routes */}
                 <Route path="/desktop/login" element={<DesktopLogin />} />
-                <Route path="/desktop" element={<DesktopLayout />}>
+                <Route path="/desktop" element={
+                  <ProtectedRoute>
+                    <DesktopLayout />
+                  </ProtectedRoute>
+                }>
                   <Route index element={<DesktopDashboard />} />
                   <Route path="dashboard" element={<DesktopDashboard />} />
-                  <Route path="training-definitions" element={<TrainingDefinitions />} />
-                  <Route path="training-definitions/new" element={<TrainingDefinitionBuilderMinimal />} />
-                  <Route path="training-definitions/:id" element={<TrainingDefinitionBuilderMinimal />} />
-                  <Route path="training-projects" element={<TrainingProjects />} />
-                  <Route path="training-projects/:id" element={<TrainingProjectEditor />} />
+                  <Route path="user-management" element={<UserManagement />} />
+                  <Route path="user-management-minimal" element={<MinimalUserManagement />} />
+                  <Route path="settings" element={<DesktopSettings />} />
+                  <Route path="documentation" element={<Documentation />} />
                   <Route path="floor-plans" element={<FloorPlans />} />
                   <Route path="machine-registry" element={<MachineRegistry />} />
                   <Route path="oppr-docs" element={<OpprDocs />} />
-                  <Route path="user-management" element={<UserManagement />} />
                   <Route path="skills-matrix" element={<SkillsMatrix />} />
-                  <Route path="documentation" element={<Documentation />} />
-                  <Route path="settings" element={<DesktopSettings />} />
+                  <Route path="training-definitions" element={<TrainingDefinitions />} />
+                  <Route path="training-definitions/builder/:id?" element={<TrainingDefinitionBuilder />} />
+                  <Route path="training-definitions/builder-minimal/:id?" element={<TrainingDefinitionBuilderMinimal />} />
+                  <Route path="training-projects" element={<TrainingProjects />} />
+                  <Route path="training-projects/:projectId" element={<TrainingProjectEditor />} />
                 </Route>
-                <Route path="/" element={<DesktopLogin />} />
+
+                {/* Mobile Routes */}
+                <Route path="/mobile/login" element={<MobileLogin />} />
+                <Route path="/mobile" element={
+                  <ProtectedRoute>
+                    <MobileLayout />
+                  </ProtectedRoute>
+                }>
+                  <Route index element={<MobileTrainings />} />
+                  <Route path="trainings" element={<MobileTrainings />} />
+                  <Route path="settings" element={<MobileSettings />} />
+                </Route>
+
+                <Route path="*" element={<NotFound />} />
               </Routes>
-              <Toaster />
-            </AuthProvider>
-          </Router>
-        </div>
-      </QueryClientProvider>
-    </AISettingsProvider>
+            </AISettingsProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 }
 
