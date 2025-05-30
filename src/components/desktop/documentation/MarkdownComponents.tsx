@@ -1,6 +1,28 @@
 
 import React from 'react';
 
+// Global counter for heading numbering
+let headingCounters = [0, 0, 0, 0, 0, 0];
+
+// Function to get heading number
+const getHeadingNumber = (level: number) => {
+  // Reset deeper level counters
+  for (let i = level; i < headingCounters.length; i++) {
+    if (i === level - 1) {
+      headingCounters[i]++;
+    } else {
+      headingCounters[i] = 0;
+    }
+  }
+  
+  return headingCounters.slice(0, level).filter(c => c > 0).join('.');
+};
+
+// Reset counters when document loads
+export const resetHeadingCounters = () => {
+  headingCounters = [0, 0, 0, 0, 0, 0];
+};
+
 export const markdownComponents = {
   code({ node, inline, className, children, ...props }: any) {
     const match = /language-(\w+)/.exec(className || '');
@@ -28,19 +50,43 @@ export const markdownComponents = {
   },
   h1: ({ children, ...props }: any) => {
     const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-    return <h1 id={id} className="text-4xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100" {...props}>{children}</h1>;
+    const number = getHeadingNumber(1);
+    return (
+      <h1 id={id} className="text-4xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100" {...props}>
+        <span className="text-blue-600 dark:text-blue-400 font-mono text-2xl mr-3">{number}.</span>
+        {children}
+      </h1>
+    );
   },
   h2: ({ children, ...props }: any) => {
     const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-    return <h2 id={id} className="text-3xl font-semibold mt-6 mb-3 text-gray-800 dark:text-gray-200" {...props}>{children}</h2>;
+    const number = getHeadingNumber(2);
+    return (
+      <h2 id={id} className="text-3xl font-semibold mt-6 mb-3 text-gray-800 dark:text-gray-200" {...props}>
+        <span className="text-blue-600 dark:text-blue-400 font-mono text-xl mr-3">{number}</span>
+        {children}
+      </h2>
+    );
   },
   h3: ({ children, ...props }: any) => {
     const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-    return <h3 id={id} className="text-2xl font-medium mt-5 mb-2 text-gray-700 dark:text-gray-300" {...props}>{children}</h3>;
+    const number = getHeadingNumber(3);
+    return (
+      <h3 id={id} className="text-2xl font-medium mt-5 mb-2 text-gray-700 dark:text-gray-300" {...props}>
+        <span className="text-blue-600 dark:text-blue-400 font-mono text-lg mr-2">{number}</span>
+        {children}
+      </h3>
+    );
   },
   h4: ({ children, ...props }: any) => {
     const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-    return <h4 id={id} className="text-xl font-medium mt-4 mb-2 text-gray-600 dark:text-gray-400" {...props}>{children}</h4>;
+    const number = getHeadingNumber(4);
+    return (
+      <h4 id={id} className="text-xl font-medium mt-4 mb-2 text-gray-600 dark:text-gray-400" {...props}>
+        <span className="text-blue-600 dark:text-blue-400 font-mono text-base mr-2">{number}</span>
+        {children}
+      </h4>
+    );
   },
   p: ({ children, ...props }: any) => (
     <p className="mb-4 text-gray-600 dark:text-gray-300 leading-relaxed" {...props}>{children}</p>

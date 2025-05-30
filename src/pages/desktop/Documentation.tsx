@@ -6,7 +6,7 @@ import mermaid from 'mermaid';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TableOfContentsSidebar } from '@/components/desktop/documentation/TableOfContentsSidebar';
 import { DocumentationHeader } from '@/components/desktop/documentation/DocumentationHeader';
-import { markdownComponents } from '@/components/desktop/documentation/MarkdownComponents';
+import { markdownComponents, resetHeadingCounters } from '@/components/desktop/documentation/MarkdownComponents';
 import { useTableOfContents } from '@/hooks/useTableOfContents';
 
 const Documentation = () => {
@@ -24,6 +24,8 @@ const Documentation = () => {
     fetch('/TECHNICAL_DOCUMENTATION.md')
       .then(response => response.text())
       .then(content => {
+        // Reset heading counters before setting new content
+        resetHeadingCounters();
         setMarkdownContent(content);
         setIsLoading(false);
       })
@@ -81,6 +83,11 @@ const Documentation = () => {
         )
         .join('\n')
     : markdownContent;
+
+  // Reset heading counters before rendering filtered content
+  useEffect(() => {
+    resetHeadingCounters();
+  }, [filteredContent]);
 
   if (isLoading) {
     return (

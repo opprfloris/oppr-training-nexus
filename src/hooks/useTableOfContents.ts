@@ -59,9 +59,9 @@ export const useTableOfContents = (markdownContent: string) => {
 
     setTableOfContents(toc);
     
-    // Initially collapse all main chapters
-    const mainChapters = toc.filter(item => item.level === 1 && item.hasChildren);
-    setCollapsedChapters(new Set(mainChapters.map(chapter => chapter.id)));
+    // Initially collapse ALL chapters with children (levels 1, 2, and 3)
+    const chaptersToCollapse = toc.filter(item => item.hasChildren && item.level <= 3);
+    setCollapsedChapters(new Set(chaptersToCollapse.map(chapter => chapter.id)));
   };
 
   const toggleChapter = (chapterId: string) => {
