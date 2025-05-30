@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface AIConfig {
   apiKey: string;
@@ -27,7 +27,11 @@ export const useAISettings = () => {
   return context;
 };
 
-export const AISettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+interface AISettingsProviderProps {
+  children: ReactNode;
+}
+
+export const AISettingsProvider: React.FC<AISettingsProviderProps> = ({ children }) => {
   const [config, setConfig] = useState<AIConfig>({
     apiKey: '',
     model: 'gpt-4o-mini',
