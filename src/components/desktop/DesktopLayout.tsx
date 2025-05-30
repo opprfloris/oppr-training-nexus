@@ -1,3 +1,4 @@
+
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { 
   HomeIcon, 
@@ -8,11 +9,10 @@ import {
   TableCellsIcon,
   CogIcon,
   MagnifyingGlassIcon,
-  UserCircleIcon,
-  ChevronDownIcon,
   DocumentIcon,
   AcademicCapIcon
 } from "@heroicons/react/24/outline";
+import UserDropdown from "./UserDropdown";
 
 const DesktopLayout = () => {
   const location = useLocation();
@@ -116,13 +116,7 @@ const DesktopLayout = () => {
               />
             </div>
             
-            <div className="relative">
-              <button className="flex items-center space-x-2 p-2 text-gray-700 hover:text-gray-900">
-                <UserCircleIcon className="w-6 h-6" />
-                <span className="text-sm font-medium">Manager</span>
-                <ChevronDownIcon className="w-4 h-4" />
-              </button>
-            </div>
+            <UserDropdown />
           </div>
         </header>
 
