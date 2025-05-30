@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
@@ -16,6 +15,7 @@ import OpprDocs from './pages/desktop/OpprDocs';
 import UserManagement from './pages/desktop/UserManagement';
 import SkillsMatrix from './pages/desktop/SkillsMatrix';
 import DesktopSettings from './pages/desktop/DesktopSettings';
+import Documentation from './pages/desktop/Documentation';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AISettingsProvider } from '@/contexts/AISettingsContext';
 
@@ -44,6 +44,7 @@ function App() {
                   <Route path="oppr-docs" element={<OpprDocs />} />
                   <Route path="user-management" element={<UserManagement />} />
                   <Route path="skills-matrix" element={<SkillsMatrix />} />
+                  <Route path="documentation" element={<Documentation />} />
                   <Route path="settings" element={<DesktopSettings />} />
                 </Route>
                 <Route path="/" element={<DesktopLogin />} />

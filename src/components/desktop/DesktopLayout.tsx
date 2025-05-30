@@ -1,4 +1,3 @@
-
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { 
   HomeIcon, 
@@ -11,7 +10,8 @@ import {
   MagnifyingGlassIcon,
   UserCircleIcon,
   ChevronDownIcon,
-  DocumentIcon
+  DocumentIcon,
+  AcademicCapIcon
 } from "@heroicons/react/24/outline";
 
 const DesktopLayout = () => {
@@ -34,6 +34,7 @@ const DesktopLayout = () => {
     { name: 'Oppr Docs', path: 'oppr-docs', icon: DocumentIcon },
     { name: 'User Management', path: 'user-management', icon: UsersIcon },
     { name: 'Skills Matrix', path: 'skills-matrix', icon: TableCellsIcon },
+    { name: 'Documentation', path: 'documentation', icon: AcademicCapIcon },
   ];
 
   const handleNavigation = (path: string) => {
