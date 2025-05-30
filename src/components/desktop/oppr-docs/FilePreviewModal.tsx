@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -59,9 +60,27 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
       );
     }
 
+    if (file.mime_type === 'text/plain') {
+      return (
+        <div className="border rounded p-4 bg-gray-50 h-96 overflow-auto">
+          <iframe
+            src={getPublicUrl(file.file_path)}
+            className="w-full h-full border-0"
+            title={file.display_name}
+          />
+        </div>
+      );
+    }
+
     return (
-      <div className="flex items-center justify-center h-48 bg-gray-100 rounded">
-        <p className="text-gray-500">Preview not available for this file type</p>
+      <div className="flex flex-col items-center justify-center h-48 bg-gray-100 rounded">
+        <p className="text-gray-500 mb-2">Preview not available for this file type</p>
+        <Button
+          variant="outline"
+          onClick={() => window.open(getPublicUrl(file.file_path), '_blank')}
+        >
+          Download File
+        </Button>
       </div>
     );
   };
@@ -71,6 +90,9 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
         <DialogHeader>
           <DialogTitle>{file.display_name}</DialogTitle>
+          <DialogDescription>
+            File preview and details
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4">

@@ -6,8 +6,11 @@ import { OpprDocsSidebar } from '@/components/desktop/oppr-docs/OpprDocsSidebar'
 import { OpprDocsMainContent } from '@/components/desktop/oppr-docs/OpprDocsMainContent';
 import { CreateFolderModal } from '@/components/desktop/oppr-docs/CreateFolderModal';
 import { FilePreviewModal } from '@/components/desktop/oppr-docs/FilePreviewModal';
+import { DocumentMoveModal } from '@/components/desktop/oppr-docs/DocumentMoveModal';
+import { RenameFolderModal } from '@/components/desktop/oppr-docs/RenameFolderModal';
 import { useOpprDocsData } from '@/hooks/useOpprDocsData';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Document {
   id: string;
@@ -22,6 +25,15 @@ interface Document {
   tags: string[];
 }
 
+interface Folder {
+  id: string;
+  name: string;
+  parent_folder_id: string | null;
+  path: string;
+  created_at: string;
+  children?: Folder[];
+}
+
 const OpprDocs = () => {
   const { folders, documents, loading, fetchFolders, fetchDocuments } = useOpprDocsData();
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -31,6 +43,10 @@ const OpprDocs = () => {
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [showFilePreview, setShowFilePreview] = useState(false);
   const [previewFile, setPreviewFile] = useState<Document | null>(null);
+  const [showMoveModal, setShowMoveModal] = useState(false);
+  const [documentsToMove, setDocumentsToMove] = useState<Document[]>([]);
+  const [showRenameFolderModal, setShowRenameFolderModal] = useState(false);
+  const [folderToRename, setFolderToRename] = useState<Folder | null>(null);
   const { toast } = useToast();
 
   const getCurrentFolderDocuments = () => {
@@ -75,9 +91,129 @@ const OpprDocs = () => {
     });
   };
 
-  const handleBulkDelete = () => {
-    // Handle bulk delete
+  const handleBulkDelete = async () => {
+    if (selectedFiles.length === 0) return;
+
+    if (!confirm(`Are you sure you want to delete ${selectedFiles.length} file(s)?`)) {
+      return;
+    }
+
+    try {
+      // Get the documents to delete
+      const docsToDelete = documents.filter(doc => selectedFiles.includes(doc.id));
+      
+      // Delete from storage
+      const filePaths = docsToDelete.map(doc => doc.file_path);
+      if (filePaths.length > 0) {
+        const { error: storageError } = await supabase.storage
+          .from('documents')
+          .remove(filePaths);
+
+        if (storageError) {
+          console.error('Storage delete error:', storageError);
+        }
+      }
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from('documents')
+        .delete()
+        .in('id', selectedFiles);
+
+      if (dbError) throw dbError;
+
+      setSelectedFiles([]);
+      fetchDocuments();
+      toast({
+        title: "Success",
+        description: `${selectedFiles.length} file(s) deleted successfully.`,
+      });
+    } catch (error) {
+      console.error('Error deleting files:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete files. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleMoveDocuments = (documents: Document[]) => {
+    setDocumentsToMove(documents);
+    setShowMoveModal(true);
+  };
+
+  const handleMoveComplete = () => {
+    fetchDocuments();
     setSelectedFiles([]);
+    setShowMoveModal(false);
+    setDocumentsToMove([]);
+  };
+
+  const handleRenameFolder = (folder: Folder) => {
+    setFolderToRename(folder);
+    setShowRenameFolderModal(true);
+  };
+
+  const handleRenameFolderComplete = () => {
+    fetchFolders();
+    setShowRenameFolderModal(false);
+    setFolderToRename(null);
+  };
+
+  const handleDeleteFolder = async (folder: Folder) => {
+    if (!confirm(`Are you sure you want to delete the folder "${folder.name}"? This will also delete all documents in this folder.`)) {
+      return;
+    }
+
+    try {
+      // First, delete all documents in the folder
+      const folderDocuments = documents.filter(doc => doc.folder_id === folder.id);
+      if (folderDocuments.length > 0) {
+        const filePaths = folderDocuments.map(doc => doc.file_path);
+        const { error: storageError } = await supabase.storage
+          .from('documents')
+          .remove(filePaths);
+
+        if (storageError) {
+          console.error('Storage delete error:', storageError);
+        }
+
+        const { error: docsError } = await supabase
+          .from('documents')
+          .delete()
+          .eq('folder_id', folder.id);
+
+        if (docsError) throw docsError;
+      }
+
+      // Then delete the folder
+      const { error: folderError } = await supabase
+        .from('document_folders')
+        .delete()
+        .eq('id', folder.id);
+
+      if (folderError) throw folderError;
+
+      // If we're currently viewing this folder, go to root
+      if (currentFolderId === folder.id) {
+        setCurrentFolderId(null);
+      }
+
+      fetchFolders();
+      fetchDocuments();
+      toast({
+        title: "Success",
+        description: "Folder and its contents deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting folder:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete folder. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const currentFolder = folders.find(f => f.id === currentFolderId);
@@ -100,6 +236,8 @@ const OpprDocs = () => {
           folders={folders}
           currentFolderId={currentFolderId}
           onFolderSelect={handleFolderSelect}
+          onRenameFolder={handleRenameFolder}
+          onDeleteFolder={handleDeleteFolder}
         />
 
         <div className="flex-1 flex flex-col min-h-0">
@@ -121,6 +259,7 @@ const OpprDocs = () => {
             onUploadComplete={handleUploadComplete}
             onClearSelection={() => setSelectedFiles([])}
             onBulkDelete={handleBulkDelete}
+            onMoveDocuments={handleMoveDocuments}
           />
         </div>
       </div>
@@ -138,6 +277,23 @@ const OpprDocs = () => {
         <FilePreviewModal
           file={previewFile}
           onClose={() => setShowFilePreview(false)}
+        />
+      )}
+
+      {showMoveModal && (
+        <DocumentMoveModal
+          documents={documentsToMove}
+          folders={folders}
+          onClose={() => setShowMoveModal(false)}
+          onSuccess={handleMoveComplete}
+        />
+      )}
+
+      {showRenameFolderModal && folderToRename && (
+        <RenameFolderModal
+          folder={folderToRename}
+          onClose={() => setShowRenameFolderModal(false)}
+          onSuccess={handleRenameFolderComplete}
         />
       )}
     </div>

@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { FolderContextMenu } from './FolderContextMenu';
 import { 
   FolderIcon, 
   FolderOpenIcon,
@@ -19,12 +20,18 @@ interface FolderTreeProps {
   folders: Folder[];
   currentFolderId: string | null;
   onFolderSelect: (folderId: string | null) => void;
+  onRenameFolder?: (folder: Folder) => void;
+  onDeleteFolder?: (folder: Folder) => void;
+  showContextMenu?: boolean;
 }
 
 export const FolderTree: React.FC<FolderTreeProps> = ({ 
   folders, 
   currentFolderId, 
-  onFolderSelect 
+  onFolderSelect,
+  onRenameFolder,
+  onDeleteFolder,
+  showContextMenu = false
 }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
@@ -46,7 +53,7 @@ export const FolderTree: React.FC<FolderTreeProps> = ({
     return (
       <div>
         <div 
-          className={`flex items-center py-1 px-2 rounded cursor-pointer hover:bg-gray-100 ${
+          className={`flex items-center py-1 px-2 rounded cursor-pointer hover:bg-gray-100 group ${
             isSelected ? 'bg-blue-50 text-blue-700' : ''
           }`}
           style={{ paddingLeft: `${level * 16 + 8}px` }}
@@ -80,8 +87,18 @@ export const FolderTree: React.FC<FolderTreeProps> = ({
             ) : (
               <FolderIcon className="w-4 h-4 mr-2" />
             )}
-            <span className="text-sm truncate">{folder.name}</span>
+            <span className="text-sm truncate flex-1">{folder.name}</span>
           </div>
+
+          {showContextMenu && onRenameFolder && onDeleteFolder && (
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+              <FolderContextMenu
+                folder={folder}
+                onRename={onRenameFolder}
+                onDelete={onDeleteFolder}
+              />
+            </div>
+          )}
         </div>
 
         {hasChildren && isExpanded && (

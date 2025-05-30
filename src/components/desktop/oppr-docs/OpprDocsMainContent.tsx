@@ -5,7 +5,7 @@ import { FileTableView } from './FileTableView';
 import { FileCardView } from './FileCardView';
 import { BulkActionsToolbar } from './BulkActionsToolbar';
 import { Button } from '@/components/ui/button';
-import { FolderIcon } from '@heroicons/react/24/outline';
+import { FolderIcon, Move } from 'lucide-react';
 
 interface Document {
   id: string;
@@ -40,6 +40,7 @@ interface OpprDocsMainContentProps {
   onUploadComplete: () => void;
   onClearSelection: () => void;
   onBulkDelete: () => void;
+  onMoveDocuments?: (documents: Document[]) => void;
 }
 
 export const OpprDocsMainContent: React.FC<OpprDocsMainContentProps> = ({
@@ -52,11 +53,14 @@ export const OpprDocsMainContent: React.FC<OpprDocsMainContentProps> = ({
   onFilePreview,
   onUploadComplete,
   onClearSelection,
-  onBulkDelete
+  onBulkDelete,
+  onMoveDocuments
 }) => {
   const handleFileUpdated = () => {
     onUploadComplete(); // Reuse the same callback to refresh the documents
   };
+
+  const selectedDocuments = documents.filter(doc => selectedFiles.includes(doc.id));
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -72,11 +76,39 @@ export const OpprDocsMainContent: React.FC<OpprDocsMainContentProps> = ({
 
       {/* Bulk actions toolbar */}
       {selectedFiles.length > 0 && (
-        <BulkActionsToolbar
-          selectedCount={selectedFiles.length}
-          onClearSelection={onClearSelection}
-          onBulkDelete={onBulkDelete}
-        />
+        <div className="p-4 border-b bg-blue-50">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-blue-700">
+              {selectedFiles.length} file(s) selected
+            </span>
+            <div className="flex items-center gap-2">
+              {onMoveDocuments && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onMoveDocuments(selectedDocuments)}
+                >
+                  <Move className="w-4 h-4 mr-2" />
+                  Move
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onClearSelection}
+              >
+                Clear Selection
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={onBulkDelete}
+              >
+                Delete Selected
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* File uploader */}
