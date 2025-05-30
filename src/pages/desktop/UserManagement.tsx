@@ -64,6 +64,14 @@ const UserManagement = () => {
     try {
       setLoading(true);
       console.log('Fetching users from profiles table...');
+      console.log('Current authenticated user:', user?.email);
+      
+      // First, let's check what's in the auth.users table (for debugging)
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      console.log('Auth users from admin API:', authUsers);
+      if (authError) {
+        console.error('Error fetching auth users:', authError);
+      }
       
       const { data, error } = await supabase
         .from('profiles')
@@ -72,10 +80,17 @@ const UserManagement = () => {
 
       if (error) {
         console.error('Error fetching users:', error);
+        console.error('Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
         throw error;
       }
 
       console.log('Fetched users data:', data);
+      console.log('Number of profiles found:', data?.length || 0);
 
       // Add status field (defaulting to Active for now)
       const usersWithStatus = (data || []).map(user => ({
@@ -103,14 +118,20 @@ const UserManagement = () => {
 
   const handleUserAdded = async () => {
     console.log('User added, refreshing user list...');
-    await fetchUsers();
-    setIsAddUserOpen(false);
+    // Add a small delay to ensure the profile is created
+    setTimeout(async () => {
+      await fetchUsers();
+      setIsAddUserOpen(false);
+    }, 1000);
   };
 
   const handleUsersCreated = async () => {
     console.log('Users created via bulk upload, refreshing user list...');
-    await fetchUsers();
-    setIsBulkUploadOpen(false);
+    // Add a small delay to ensure all profiles are created
+    setTimeout(async () => {
+      await fetchUsers();
+      setIsBulkUploadOpen(false);
+    }, 2000);
   };
 
   const handleUserUpdated = async () => {
@@ -188,6 +209,21 @@ const UserManagement = () => {
 
   return (
     <div>
+      {/* Debug information - remove this after fixing the issue */}
+      <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <h3 className="font-medium text-yellow-800 mb-2">Debug Information:</h3>
+        <p className="text-sm text-yellow-700">Total users found: {users.length}</p>
+        <p className="text-sm text-yellow-700">Current user: {user?.email}</p>
+        <Button 
+          onClick={fetchUsers} 
+          size="sm" 
+          variant="outline"
+          className="mt-2"
+        >
+          Refresh Users
+        </Button>
+      </div>
+
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">User Management</h1>
