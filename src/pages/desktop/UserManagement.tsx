@@ -60,26 +60,30 @@ const UserManagement = () => {
     'Training Department'
   ];
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      console.log('Fetching users from profiles table...');
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching users:', error);
+        throw error;
+      }
+
+      console.log('Fetched users data:', data);
 
       // Add status field (defaulting to Active for now)
-      const usersWithStatus = data.map(user => ({
+      const usersWithStatus = (data || []).map(user => ({
         ...user,
         status: 'Active' as const
       }));
 
+      console.log('Users with status:', usersWithStatus);
       setUsers(usersWithStatus);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -91,6 +95,28 @@ const UserManagement = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleUserAdded = async () => {
+    console.log('User added, refreshing user list...');
+    await fetchUsers();
+    setIsAddUserOpen(false);
+  };
+
+  const handleUsersCreated = async () => {
+    console.log('Users created via bulk upload, refreshing user list...');
+    await fetchUsers();
+    setIsBulkUploadOpen(false);
+  };
+
+  const handleUserUpdated = async () => {
+    console.log('User updated, refreshing user list...');
+    await fetchUsers();
+    setEditingUser(null);
   };
 
   const toggleUserStatus = async (userId: string, currentStatus: string) => {
@@ -382,14 +408,14 @@ const UserManagement = () => {
       <AddUserModal 
         isOpen={isAddUserOpen}
         onClose={() => setIsAddUserOpen(false)}
-        onUserAdded={fetchUsers}
+        onUserAdded={handleUserAdded}
       />
 
       {/* Bulk Upload Modal */}
       <BulkUploadUsersModal
         isOpen={isBulkUploadOpen}
         onClose={() => setIsBulkUploadOpen(false)}
-        onUsersCreated={fetchUsers}
+        onUsersCreated={handleUsersCreated}
       />
 
       {/* Edit User Modal */}
@@ -398,7 +424,7 @@ const UserManagement = () => {
           user={editingUser}
           isOpen={!!editingUser}
           onClose={() => setEditingUser(null)}
-          onUserUpdated={fetchUsers}
+          onUserUpdated={handleUserUpdated}
         />
       )}
     </div>
