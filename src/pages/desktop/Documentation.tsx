@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import mermaid from 'mermaid';
@@ -16,6 +15,7 @@ const Documentation = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('');
   const [isTocOpen, setIsTocOpen] = useState(true);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   // Table of contents extracted from markdown
   const [tableOfContents, setTableOfContents] = useState<Array<{
@@ -51,9 +51,18 @@ const Documentation = () => {
 
   useEffect(() => {
     // Re-render Mermaid diagrams when content changes
-    if (markdownContent) {
+    if (markdownContent && contentRef.current) {
       setTimeout(() => {
-        mermaid.run();
+        const mermaidElements = contentRef.current?.querySelectorAll('.mermaid');
+        if (mermaidElements && mermaidElements.length > 0) {
+          mermaidElements.forEach((element, index) => {
+            // Clear any existing SVG
+            element.innerHTML = element.textContent || '';
+            // Add unique ID for mermaid processing
+            element.id = `mermaid-${index}`;
+          });
+          mermaid.run();
+        }
       }, 100);
     }
   }, [markdownContent]);
@@ -102,7 +111,7 @@ const Documentation = () => {
 
       if (language === 'mermaid') {
         return (
-          <div className="mermaid my-4">
+          <div className="mermaid my-6 flex justify-center">
             {String(children).replace(/\n$/, '')}
           </div>
         );
@@ -265,7 +274,7 @@ const Documentation = () => {
 
         {/* Documentation Content */}
         <ScrollArea className="flex-1 p-6">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto" ref={contentRef}>
             <div className="prose prose-lg max-w-none dark:prose-invert">
               <ReactMarkdown
                 components={components}
