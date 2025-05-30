@@ -203,7 +203,7 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
               disabled={currentPage === 1}
             >
               Previous
@@ -211,7 +211,7 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
               disabled={currentPage === totalPages}
             >
               Next
