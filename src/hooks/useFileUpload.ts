@@ -16,37 +16,17 @@ export const useFileUpload = (currentFolderId: string | null, onUploadComplete: 
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const { toast } = useToast();
 
-  const checkBucketExists = async () => {
-    try {
-      const { data: buckets, error } = await supabase.storage.listBuckets();
-      
-      if (error) {
-        console.error('Error checking buckets:', error);
-        return false;
-      }
-
-      return buckets?.some(bucket => bucket.id === 'documents') || false;
-    } catch (error) {
-      console.error('Error checking bucket existence:', error);
-      return false;
-    }
-  };
-
   const uploadFile = async (uploadingFile: UploadingFile) => {
     const { file } = uploadingFile;
     
     try {
-      // Check if bucket exists
-      const bucketExists = await checkBucketExists();
-      if (!bucketExists) {
-        throw new Error('Documents storage bucket not found. Please contact your administrator to set up the storage bucket.');
-      }
-
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('User not authenticated');
       }
+
+      console.log('Starting upload for file:', file.name);
 
       // Sanitize the file name and create the storage path
       const sanitizedFileName = sanitizeFileName(file.name);
@@ -75,6 +55,8 @@ export const useFileUpload = (currentFolderId: string | null, onUploadComplete: 
         console.error('Storage upload error:', uploadError);
         throw new Error(`Upload failed: ${uploadError.message}`);
       }
+
+      console.log('File uploaded successfully:', uploadData);
 
       // Update progress
       setUploadingFiles(prev => 
@@ -105,6 +87,8 @@ export const useFileUpload = (currentFolderId: string | null, onUploadComplete: 
         await supabase.storage.from('documents').remove([uploadData.path]);
         throw new Error(`Database error: ${dbError.message}`);
       }
+
+      console.log('Document metadata saved successfully');
 
       // Mark as completed
       setUploadingFiles(prev => 
@@ -142,16 +126,7 @@ export const useFileUpload = (currentFolderId: string | null, onUploadComplete: 
   };
 
   const handleFileUpload = useCallback(async (acceptedFiles: File[]) => {
-    // Check bucket exists before starting any uploads
-    const bucketExists = await checkBucketExists();
-    if (!bucketExists) {
-      toast({
-        title: "Storage Not Available",
-        description: "The documents storage bucket is not set up. Please contact your administrator.",
-        variant: "destructive",
-      });
-      return;
-    }
+    console.log('Starting upload process for', acceptedFiles.length, 'files');
 
     const newUploadingFiles = acceptedFiles.map(file => ({
       file,

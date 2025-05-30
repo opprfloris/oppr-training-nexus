@@ -38,35 +38,19 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
   const [error, setError] = React.useState<string | null>(null);
   const [publicUrl, setPublicUrl] = React.useState<string | null>(null);
 
-  const checkBucketExists = async () => {
-    try {
-      const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-      
-      if (bucketError) {
-        console.error('Error checking buckets:', bucketError);
-        throw new Error('Failed to check storage buckets');
-      }
-
-      const documentsBucket = buckets?.find(bucket => bucket.id === 'documents');
-      if (!documentsBucket) {
-        throw new Error('Documents storage bucket not found. Please contact your administrator to set up the storage bucket.');
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Error checking bucket existence:', error);
-      throw error;
-    }
-  };
-
   const getPublicUrl = async (filePath: string) => {
     try {
-      // Check if bucket exists first
-      await checkBucketExists();
-
+      console.log('Getting public URL for file:', filePath);
+      
       const { data } = supabase.storage
         .from('documents')
         .getPublicUrl(filePath);
+      
+      console.log('Public URL data:', data);
+      
+      if (!data.publicUrl) {
+        throw new Error('Failed to generate public URL');
+      }
       
       return data.publicUrl;
     } catch (error) {
@@ -80,10 +64,13 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
     setError(null);
     
     try {
+      console.log('Loading file URL for:', file.file_path);
       const url = await getPublicUrl(file.file_path);
+      console.log('Got public URL:', url);
       setPublicUrl(url);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load file';
+      console.error('Failed to load file URL:', errorMessage);
       setError(errorMessage);
     } finally {
       setLoading(false);
