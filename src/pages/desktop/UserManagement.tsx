@@ -130,12 +130,12 @@ const UserManagement = () => {
         .select('id');
       
       const existingProfileIds = new Set(existingProfiles?.map(p => p.id) || []);
-      const missingProfiles = authData.users?.filter(authUser => !existingProfileIds.has(authUser.id)) || [];
+      const missingProfiles = authData.users?.filter((authUser: any) => !existingProfileIds.has(authUser.id)) || [];
       
       console.log('Users missing profiles:', missingProfiles.length);
       
       if (missingProfiles.length > 0) {
-        console.log('Missing profiles for users:', missingProfiles.map(u => u.email));
+        console.log('Missing profiles for users:', missingProfiles.map((u: any) => u.email));
         toast({
           title: "Profile Sync Issue",
           description: `Found ${missingProfiles.length} users without profiles. Contact support to fix this.`,
