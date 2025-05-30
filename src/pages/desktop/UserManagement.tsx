@@ -66,13 +66,6 @@ const UserManagement = () => {
       console.log('Fetching users from profiles table...');
       console.log('Current authenticated user:', user?.email);
       
-      // First, let's check what's in the auth.users table (for debugging)
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      console.log('Auth users from admin API:', authUsers);
-      if (authError) {
-        console.error('Error fetching auth users:', authError);
-      }
-      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -112,25 +105,75 @@ const UserManagement = () => {
     }
   };
 
+  const syncAuthUsersToProfiles = async () => {
+    try {
+      console.log('Attempting to sync auth users to profiles...');
+      
+      // This will likely fail due to permissions, but let's try
+      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) {
+        console.error('Cannot access auth users (expected for non-admin):', authError);
+        toast({
+          title: "Info",
+          description: "Manual sync not available - profiles should be created automatically",
+          variant: "default",
+        });
+        return;
+      }
+
+      console.log('Auth users found:', authData.users?.length || 0);
+      
+      // Check for auth users without profiles
+      const { data: existingProfiles } = await supabase
+        .from('profiles')
+        .select('id');
+      
+      const existingProfileIds = new Set(existingProfiles?.map(p => p.id) || []);
+      const missingProfiles = authData.users?.filter(authUser => !existingProfileIds.has(authUser.id)) || [];
+      
+      console.log('Users missing profiles:', missingProfiles.length);
+      
+      if (missingProfiles.length > 0) {
+        console.log('Missing profiles for users:', missingProfiles.map(u => u.email));
+        toast({
+          title: "Profile Sync Issue",
+          description: `Found ${missingProfiles.length} users without profiles. Contact support to fix this.`,
+          variant: "destructive",
+        });
+      }
+      
+    } catch (error) {
+      console.error('Sync error:', error);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
   }, []);
 
   const handleUserAdded = async () => {
     console.log('User added, refreshing user list...');
-    // Add a small delay to ensure the profile is created
+    // Add a longer delay and try multiple refreshes to ensure the profile is created
     setTimeout(async () => {
       await fetchUsers();
-      setIsAddUserOpen(false);
+      // Try again after another delay if still no change
+      setTimeout(async () => {
+        await fetchUsers();
+        setIsAddUserOpen(false);
+      }, 2000);
     }, 1000);
   };
 
   const handleUsersCreated = async () => {
     console.log('Users created via bulk upload, refreshing user list...');
-    // Add a small delay to ensure all profiles are created
+    // Add a longer delay to ensure all profiles are created
     setTimeout(async () => {
       await fetchUsers();
-      setIsBulkUploadOpen(false);
+      setTimeout(async () => {
+        await fetchUsers();
+        setIsBulkUploadOpen(false);
+      }, 3000);
     }, 2000);
   };
 
@@ -209,19 +252,30 @@ const UserManagement = () => {
 
   return (
     <div>
-      {/* Debug information - remove this after fixing the issue */}
+      {/* Enhanced Debug information */}
       <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
         <h3 className="font-medium text-yellow-800 mb-2">Debug Information:</h3>
-        <p className="text-sm text-yellow-700">Total users found: {users.length}</p>
-        <p className="text-sm text-yellow-700">Current user: {user?.email}</p>
-        <Button 
-          onClick={fetchUsers} 
-          size="sm" 
-          variant="outline"
-          className="mt-2"
-        >
-          Refresh Users
-        </Button>
+        <p className="text-sm text-yellow-700">Total users found in profiles table: {users.length}</p>
+        <p className="text-sm text-yellow-700">Current authenticated user: {user?.email}</p>
+        <div className="mt-2 space-x-2">
+          <Button 
+            onClick={fetchUsers} 
+            size="sm" 
+            variant="outline"
+          >
+            Refresh Users
+          </Button>
+          <Button 
+            onClick={syncAuthUsersToProfiles} 
+            size="sm" 
+            variant="outline"
+          >
+            Check Auth Sync
+          </Button>
+        </div>
+        <p className="text-xs text-yellow-600 mt-2">
+          If users appear in Supabase Auth but not here, there may be an issue with the profile creation trigger.
+        </p>
       </div>
 
       <div className="flex items-center justify-between mb-8">
