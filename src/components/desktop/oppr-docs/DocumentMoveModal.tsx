@@ -29,6 +29,8 @@ interface Folder {
   id: string;
   name: string;
   parent_folder_id: string | null;
+  path: string;
+  created_at: string;
   children?: Folder[];
 }
 
