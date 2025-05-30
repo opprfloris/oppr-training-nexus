@@ -1,8 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
 import mermaid from 'mermaid';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -111,15 +109,11 @@ const Documentation = () => {
       }
 
       return !inline && match ? (
-        <SyntaxHighlighter
-          style={oneDark}
-          language={language}
-          PreTag="div"
-          className="rounded-md my-4"
-          {...props}
-        >
-          {String(children).replace(/\n$/, '')}
-        </SyntaxHighlighter>
+        <pre className="bg-gray-900 text-gray-100 rounded-md my-4 p-4 overflow-x-auto">
+          <code className={`language-${language}`} {...props}>
+            {String(children).replace(/\n$/, '')}
+          </code>
+        </pre>
       ) : (
         <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm" {...props}>
           {children}
