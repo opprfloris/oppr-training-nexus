@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   PlusIcon, 
@@ -8,7 +7,8 @@ import {
   EyeSlashIcon,
   EyeIcon,
   ListBulletIcon,
-  UserPlusIcon
+  UserPlusIcon,
+  CloudArrowUpIcon
 } from "@heroicons/react/24/outline";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { AddUserModal } from '@/components/desktop/AddUserModal';
 import { EditUserModal } from '@/components/desktop/EditUserModal';
+import { BulkUploadUsersModal } from '@/components/desktop/BulkUploadUsersModal';
 
 interface User {
   id: string;
@@ -44,6 +45,7 @@ const UserManagement = () => {
   const [departmentFilter, setDepartmentFilter] = useState('All Departments');
   const [statusFilter, setStatusFilter] = useState('All Statuses');
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 15;
@@ -165,13 +167,23 @@ const UserManagement = () => {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">User Management</h1>
           <p className="text-gray-600">Manage operators, managers, and access permissions</p>
         </div>
-        <Button 
-          onClick={() => setIsAddUserOpen(true)}
-          className="bg-[#3a7ca5] hover:bg-[#2f6690] text-white flex items-center space-x-2"
-        >
-          <UserPlusIcon className="w-5 h-5" />
-          <span>Add User</span>
-        </Button>
+        <div className="flex items-center space-x-3">
+          <Button 
+            onClick={() => setIsBulkUploadOpen(true)}
+            variant="outline"
+            className="flex items-center space-x-2"
+          >
+            <CloudArrowUpIcon className="w-5 h-5" />
+            <span>Bulk Upload</span>
+          </Button>
+          <Button 
+            onClick={() => setIsAddUserOpen(true)}
+            className="bg-[#3a7ca5] hover:bg-[#2f6690] text-white flex items-center space-x-2"
+          >
+            <UserPlusIcon className="w-5 h-5" />
+            <span>Add User</span>
+          </Button>
+        </div>
       </div>
 
       {/* Controls Bar */}
@@ -371,6 +383,13 @@ const UserManagement = () => {
         isOpen={isAddUserOpen}
         onClose={() => setIsAddUserOpen(false)}
         onUserAdded={fetchUsers}
+      />
+
+      {/* Bulk Upload Modal */}
+      <BulkUploadUsersModal
+        isOpen={isBulkUploadOpen}
+        onClose={() => setIsBulkUploadOpen(false)}
+        onUsersCreated={fetchUsers}
       />
 
       {/* Edit User Modal */}
