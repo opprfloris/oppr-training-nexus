@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface User {
   id: string;
@@ -34,6 +35,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
   onUserUpdated
 }) => {
   const { toast } = useToast();
+  const { refreshProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
@@ -115,6 +117,39 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
     return null;
   };
 
+  const uploadAvatar = async (userId: string, file: File): Promise<string | null> => {
+    try {
+      // Delete old avatar if it exists
+      if (user.avatar_url) {
+        const oldFileName = user.avatar_url.split('/').pop();
+        if (oldFileName && oldFileName !== 'undefined') {
+          await supabase.storage
+            .from('avatars')
+            .remove([`${userId}/${oldFileName}`]);
+        }
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${userId}/${fileName}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) {
+        console.error('Avatar upload error:', uploadError);
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error in uploadAvatar:', error);
+      return null;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -135,21 +170,22 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
 
       // Upload new avatar if provided
       if (avatarFile) {
-        const fileExt = avatarFile.name.split('.').pop();
-        const fileName = `${user.id}.${fileExt}`;
-        
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(fileName, avatarFile, { upsert: true });
-
-        if (uploadError) {
-          console.error('Avatar upload error:', uploadError);
+        const uploadedUrl = await uploadAvatar(user.id, avatarFile);
+        if (uploadedUrl) {
+          avatarUrl = uploadedUrl;
         } else {
-          const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
-          avatarUrl = data.publicUrl;
+          throw new Error('Failed to upload avatar');
         }
       } else if (avatarPreview === null && user.avatar_url) {
         // Remove avatar if it was removed
+        if (user.avatar_url) {
+          const oldFileName = user.avatar_url.split('/').pop();
+          if (oldFileName && oldFileName !== 'undefined') {
+            await supabase.storage
+              .from('avatars')
+              .remove([`${user.id}/${oldFileName}`]);
+          }
+        }
         avatarUrl = null;
       }
 
@@ -168,20 +204,25 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
 
       if (profileError) throw profileError;
 
-      // Update password if requested
+      // Update password if requested (Note: This would require admin privileges)
       if (formData.changePassword && formData.newPassword) {
-        const { error: passwordError } = await supabase.auth.admin.updateUserById(
-          user.id,
-          { password: formData.newPassword }
-        );
-
-        if (passwordError) throw passwordError;
+        // Password change functionality would need to be implemented server-side
+        toast({
+          title: "Note",
+          description: "Password change functionality requires additional setup.",
+        });
       }
 
       toast({
         title: "Success",
         description: "User updated successfully",
       });
+
+      // Refresh current user's profile if they updated their own profile
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser?.id === user.id) {
+        await refreshProfile();
+      }
 
       onUserUpdated();
       onClose();

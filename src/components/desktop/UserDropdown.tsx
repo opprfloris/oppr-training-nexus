@@ -23,6 +23,23 @@ const UserDropdown: React.FC = () => {
     ? `${profile.first_name} ${profile.last_name}`
     : profile?.email || 'Manager';
 
+  // Generate initials for fallback
+  const getInitials = () => {
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name.charAt(0)}${profile.last_name.charAt(0)}`.toUpperCase();
+    }
+    if (profile?.first_name) {
+      return profile.first_name.charAt(0).toUpperCase();
+    }
+    if (profile?.last_name) {
+      return profile.last_name.charAt(0).toUpperCase();
+    }
+    if (profile?.email) {
+      return profile.email.charAt(0).toUpperCase();
+    }
+    return 'U';
+  };
+
   if (loading) {
     return (
       <div className="flex items-center space-x-2 p-2 text-gray-700">
@@ -43,10 +60,19 @@ const UserDropdown: React.FC = () => {
             src={profile.avatar_url} 
             alt="Profile" 
             className="w-6 h-6 rounded-full object-cover"
+            onError={(e) => {
+              console.error('Avatar failed to load in dropdown:', profile.avatar_url);
+              // Fallback to icon on error
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+            }}
           />
         ) : (
-          <UserCircleIcon className="w-6 h-6" />
+          <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-xs font-medium text-gray-700">
+            {getInitials()}
+          </div>
         )}
+        <UserCircleIcon className={`w-6 h-6 ${profile?.avatar_url ? 'hidden' : ''}`} />
         <span className="text-sm font-medium">{displayName}</span>
         <ChevronDownIcon className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
@@ -65,10 +91,21 @@ const UserDropdown: React.FC = () => {
                     src={profile.avatar_url} 
                     alt="Profile" 
                     className="w-10 h-10 rounded-full object-cover"
+                    onError={(e) => {
+                      console.error('Avatar failed to load in dropdown detail:', profile.avatar_url);
+                      // Fallback to initials on error
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                    }}
                   />
                 ) : (
-                  <UserCircleIcon className="w-10 h-10 text-gray-400" />
+                  <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-sm font-medium text-gray-700">
+                    {getInitials()}
+                  </div>
                 )}
+                <div className={`w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-sm font-medium text-gray-700 ${profile?.avatar_url ? 'hidden' : ''}`}>
+                  {getInitials()}
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {displayName}

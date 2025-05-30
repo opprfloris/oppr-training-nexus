@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   PlusIcon, 
@@ -265,7 +266,7 @@ const UserManagement = () => {
                         src={user.avatar_url || undefined} 
                         alt={`${user.first_name} ${user.last_name}`}
                         onError={(e) => {
-                          console.error('Avatar failed to load:', user.avatar_url);
+                          console.error('Avatar failed to load in table:', user.avatar_url);
                         }}
                       />
                       <AvatarFallback className="bg-gray-300 text-gray-700 text-sm">

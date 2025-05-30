@@ -9,13 +9,16 @@ import { Separator } from '@/components/ui/separator';
 import { UserCircleIcon, KeyIcon, CameraIcon } from '@heroicons/react/24/outline';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 
 const ProfileSettings: React.FC = () => {
-  const { user, profile, updateProfile, loading } = useAuth();
+  const { user, profile, updateProfile, refreshProfile, loading } = useAuth();
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   
   const [profileData, setProfileData] = useState({
     firstName: '',
@@ -47,8 +50,59 @@ const ProfileSettings: React.FC = () => {
         department: profile.department || '',
         email: profile.email || ''
       });
+      setAvatarPreview(profile.avatar_url);
     }
   }, [profile]);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeAvatar = () => {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+  };
+
+  const uploadAvatar = async (userId: string, file: File): Promise<string | null> => {
+    try {
+      // Delete old avatar if it exists
+      if (profile?.avatar_url) {
+        const oldFileName = profile.avatar_url.split('/').pop();
+        if (oldFileName && oldFileName !== 'undefined') {
+          await supabase.storage
+            .from('avatars')
+            .remove([`${userId}/${oldFileName}`]);
+        }
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${userId}/${fileName}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) {
+        console.error('Avatar upload error:', uploadError);
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error in uploadAvatar:', error);
+      return null;
+    }
+  };
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,15 +116,51 @@ const ProfileSettings: React.FC = () => {
       return;
     }
 
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "User not found.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsUpdating(true);
     try {
+      let avatarUrl = profile?.avatar_url;
+
+      // Handle avatar upload
+      if (avatarFile) {
+        const uploadedUrl = await uploadAvatar(user.id, avatarFile);
+        if (uploadedUrl) {
+          avatarUrl = uploadedUrl;
+        } else {
+          throw new Error('Failed to upload avatar');
+        }
+      } else if (avatarPreview === null && profile?.avatar_url) {
+        // Remove avatar if it was removed
+        if (profile.avatar_url) {
+          const oldFileName = profile.avatar_url.split('/').pop();
+          if (oldFileName && oldFileName !== 'undefined') {
+            await supabase.storage
+              .from('avatars')
+              .remove([`${user.id}/${oldFileName}`]);
+          }
+        }
+        avatarUrl = null;
+      }
+
       const { error } = await updateProfile({
         first_name: profileData.firstName,
         last_name: profileData.lastName,
         department: profileData.department,
+        avatar_url: avatarUrl,
       });
 
       if (error) throw error;
+
+      // Clear the file input since it's been uploaded
+      setAvatarFile(null);
 
       toast({
         title: "Success",
@@ -148,9 +238,9 @@ const ProfileSettings: React.FC = () => {
           {/* Profile Picture Section */}
           <div className="flex items-center space-x-4">
             <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
-              {profile?.avatar_url ? (
+              {avatarPreview ? (
                 <img 
-                  src={profile.avatar_url} 
+                  src={avatarPreview} 
                   alt="Profile" 
                   className="w-full h-full object-cover"
                 />
@@ -160,10 +250,29 @@ const ProfileSettings: React.FC = () => {
             </div>
             <div className="space-y-2">
               <h3 className="font-medium">Profile Picture</h3>
-              <Button variant="outline" size="sm" className="flex items-center space-x-2">
-                <CameraIcon className="w-4 h-4" />
-                <span>Change Photo</span>
-              </Button>
+              <div className="flex space-x-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                  id="avatar-upload"
+                />
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex items-center space-x-2"
+                  onClick={() => document.getElementById('avatar-upload')?.click()}
+                >
+                  <CameraIcon className="w-4 h-4" />
+                  <span>Change Photo</span>
+                </Button>
+                {avatarPreview && (
+                  <Button variant="outline" size="sm" onClick={removeAvatar}>
+                    Remove Photo
+                  </Button>
+                )}
+              </div>
               <p className="text-xs text-gray-500">JPG, PNG up to 2MB</p>
             </div>
           </div>
