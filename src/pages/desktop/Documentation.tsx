@@ -1,14 +1,13 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import mermaid from 'mermaid';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Search, Download, Menu, X, ChevronRight, ChevronDown } from 'lucide-react';
+import { TableOfContentsSidebar } from '@/components/desktop/documentation/TableOfContentsSidebar';
+import { DocumentationHeader } from '@/components/desktop/documentation/DocumentationHeader';
+import { markdownComponents } from '@/components/desktop/documentation/MarkdownComponents';
+import { useTableOfContents } from '@/hooks/useTableOfContents';
 
 const Documentation = () => {
   const [markdownContent, setMarkdownContent] = useState<string>('');
@@ -16,17 +15,9 @@ const Documentation = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('');
   const [isTocOpen, setIsTocOpen] = useState(true);
-  const [collapsedChapters, setCollapsedChapters] = useState<Set<string>>(new Set());
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // Table of contents extracted from markdown with numbering
-  const [tableOfContents, setTableOfContents] = useState<Array<{
-    id: string;
-    title: string;
-    level: number;
-    number: string;
-    hasChildren: boolean;
-  }>>([]);
+  const { tableOfContents, collapsedChapters, toggleChapter } = useTableOfContents(markdownContent);
 
   useEffect(() => {
     // Load the markdown documentation
@@ -34,7 +25,6 @@ const Documentation = () => {
       .then(response => response.text())
       .then(content => {
         setMarkdownContent(content);
-        extractTableOfContents(content);
         setIsLoading(false);
       })
       .catch(error => {
@@ -71,75 +61,12 @@ const Documentation = () => {
     }
   }, [markdownContent]);
 
-  const extractTableOfContents = (content: string) => {
-    const headingRegex = /^(#{1,6})\s+(.+)$/gm;
-    const toc: Array<{ id: string; title: string; level: number; number: string; hasChildren: boolean }> = [];
-    let match;
-    
-    // First pass: collect all headings
-    const headings: Array<{ title: string; level: number; id: string }> = [];
-    while ((match = headingRegex.exec(content)) !== null) {
-      const level = match[1].length;
-      const title = match[2].trim();
-      const id = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-      headings.push({ title, level, id });
-    }
-
-    // Second pass: add numbering and determine children
-    const counters = [0, 0, 0, 0, 0, 0]; // For levels 1-6
-    
-    headings.forEach((heading, index) => {
-      const level = heading.level;
-      
-      // Reset deeper level counters
-      for (let i = level; i < counters.length; i++) {
-        if (i === level - 1) {
-          counters[i]++;
-        } else {
-          counters[i] = 0;
-        }
-      }
-      
-      // Create number string
-      const number = counters.slice(0, level).filter(c => c > 0).join('.');
-      
-      // Check if this heading has children (next heading has higher level)
-      const hasChildren = index < headings.length - 1 && headings[index + 1].level > level;
-      
-      toc.push({
-        id: heading.id,
-        title: heading.title,
-        level,
-        number,
-        hasChildren
-      });
-    });
-
-    setTableOfContents(toc);
-    
-    // Initially collapse all main chapters
-    const mainChapters = toc.filter(item => item.level === 1 && item.hasChildren);
-    setCollapsedChapters(new Set(mainChapters.map(chapter => chapter.id)));
-  };
-
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
       setActiveSection(id);
     }
-  };
-
-  const toggleChapter = (chapterId: string) => {
-    setCollapsedChapters(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(chapterId)) {
-        newSet.delete(chapterId);
-      } else {
-        newSet.add(chapterId);
-      }
-      return newSet;
-    });
   };
 
   const handleExportPDF = () => {
@@ -155,138 +82,6 @@ const Documentation = () => {
         .join('\n')
     : markdownContent;
 
-  const renderTocItem = (item: any, index: number) => {
-    const isCollapsed = collapsedChapters.has(item.id);
-    const nextItem = tableOfContents[index + 1];
-    const isParent = item.hasChildren;
-    
-    // Check if this item should be hidden (it's a child of a collapsed parent)
-    if (item.level > 1) {
-      // Find parent chapter
-      for (let i = index - 1; i >= 0; i--) {
-        const potentialParent = tableOfContents[i];
-        if (potentialParent.level < item.level) {
-          if (collapsedChapters.has(potentialParent.id)) {
-            return null; // Hide this item
-          }
-          break;
-        }
-      }
-    }
-
-    return (
-      <div key={item.id}>
-        <div className="flex items-center">
-          {isParent && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => toggleChapter(item.id)}
-              className="p-0 h-6 w-6 mr-1"
-            >
-              {isCollapsed ? (
-                <ChevronRight className="w-3 h-3" />
-              ) : (
-                <ChevronDown className="w-3 h-3" />
-              )}
-            </Button>
-          )}
-          <button
-            onClick={() => scrollToSection(item.id)}
-            className={`flex-1 text-left px-2 py-1.5 text-sm rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-              item.level === 1 ? 'font-semibold text-gray-900 dark:text-gray-100' :
-              item.level === 2 ? `${isParent ? '' : 'ml-7'} font-medium text-gray-700 dark:text-gray-300` :
-              `${isParent ? 'ml-0' : 'ml-7'} text-gray-600 dark:text-gray-400`
-            } ${activeSection === item.id ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100' : ''}`}
-            style={{ 
-              marginLeft: isParent ? '0' : `${(item.level - 1) * 1.5 + 1.75}rem`
-            }}
-          >
-            <span className="font-mono text-xs mr-2 opacity-70">{item.number}</span>
-            {item.title}
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  const components = {
-    code({ node, inline, className, children, ...props }: any) => {
-      const match = /language-(\w+)/.exec(className || '');
-      const language = match ? match[1] : '';
-
-      if (language === 'mermaid') {
-        return (
-          <div className="mermaid my-6 flex justify-center">
-            {String(children).replace(/\n$/, '')}
-          </div>
-        );
-      }
-
-      return !inline && match ? (
-        <pre className="bg-gray-900 text-gray-100 rounded-md my-4 p-4 overflow-x-auto">
-          <code className={`language-${language}`} {...props}>
-            {String(children).replace(/\n$/, '')}
-          </code>
-        </pre>
-      ) : (
-        <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm" {...props}>
-          {children}
-        </code>
-      );
-    },
-    h1: ({ children, ...props }: any) => {
-      const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-      return <h1 id={id} className="text-4xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100" {...props}>{children}</h1>;
-    },
-    h2: ({ children, ...props }: any) => {
-      const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-      return <h2 id={id} className="text-3xl font-semibold mt-6 mb-3 text-gray-800 dark:text-gray-200" {...props}>{children}</h2>;
-    },
-    h3: ({ children, ...props }: any) => {
-      const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-      return <h3 id={id} className="text-2xl font-medium mt-5 mb-2 text-gray-700 dark:text-gray-300" {...props}>{children}</h3>;
-    },
-    h4: ({ children, ...props }: any) => {
-      const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-      return <h4 id={id} className="text-xl font-medium mt-4 mb-2 text-gray-600 dark:text-gray-400" {...props}>{children}</h4>;
-    },
-    p: ({ children, ...props }: any) => (
-      <p className="mb-4 text-gray-600 dark:text-gray-300 leading-relaxed" {...props}>{children}</p>
-    ),
-    ul: ({ children, ...props }: any) => (
-      <ul className="mb-4 ml-6 list-disc text-gray-600 dark:text-gray-300" {...props}>{children}</ul>
-    ),
-    ol: ({ children, ...props }: any) => (
-      <ol className="mb-4 ml-6 list-decimal text-gray-600 dark:text-gray-300" {...props}>{children}</ol>
-    ),
-    li: ({ children, ...props }: any) => (
-      <li className="mb-1" {...props}>{children}</li>
-    ),
-    blockquote: ({ children, ...props }: any) => (
-      <blockquote className="border-l-4 border-blue-500 pl-4 my-4 italic text-gray-600 dark:text-gray-300" {...props}>
-        {children}
-      </blockquote>
-    ),
-    table: ({ children, ...props }: any) => (
-      <div className="overflow-x-auto my-4">
-        <table className="min-w-full border border-gray-300 dark:border-gray-600" {...props}>
-          {children}
-        </table>
-      </div>
-    ),
-    th: ({ children, ...props }: any) => (
-      <th className="border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 px-4 py-2 text-left font-semibold" {...props}>
-        {children}
-      </th>
-    ),
-    td: ({ children, ...props }: any) => (
-      <td className="border border-gray-300 dark:border-gray-600 px-4 py-2" {...props}>
-        {children}
-      </td>
-    ),
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -298,80 +93,30 @@ const Documentation = () => {
 
   return (
     <div className="flex h-full max-h-screen">
-      {/* Table of Contents Sidebar */}
-      <div className={`${isTocOpen ? 'w-80' : 'w-0'} transition-all duration-300 overflow-hidden border-r border-gray-200 dark:border-gray-700`}>
-        <Card className="h-full rounded-none border-0">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Table of Contents</CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsTocOpen(false)}
-                className="lg:hidden"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[calc(100vh-12rem)]">
-              <nav className="space-y-1">
-                {tableOfContents.map((item, index) => renderTocItem(item, index))}
-              </nav>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      </div>
+      <TableOfContentsSidebar
+        isTocOpen={isTocOpen}
+        tableOfContents={tableOfContents}
+        collapsedChapters={collapsedChapters}
+        activeSection={activeSection}
+        onToggleChapter={toggleChapter}
+        onScrollToSection={scrollToSection}
+        onCloseToc={() => setIsTocOpen(false)}
+      />
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="border-b border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              {!isTocOpen && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsTocOpen(true)}
-                >
-                  <Menu className="w-4 h-4" />
-                </Button>
-              )}
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                Technical Documentation
-              </h1>
-            </div>
+        <DocumentationHeader
+          isTocOpen={isTocOpen}
+          searchTerm={searchTerm}
+          onOpenToc={() => setIsTocOpen(true)}
+          onSearchChange={setSearchTerm}
+          onExportPDF={handleExportPDF}
+        />
 
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <Input
-                  placeholder="Search documentation..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-64"
-                />
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportPDF}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Export PDF
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Documentation Content */}
         <ScrollArea className="flex-1 p-6">
           <div className="max-w-4xl mx-auto" ref={contentRef}>
             <div className="prose prose-lg max-w-none dark:prose-invert">
               <ReactMarkdown
-                components={components}
+                components={markdownComponents}
                 remarkPlugins={[remarkGfm]}
               >
                 {filteredContent}
