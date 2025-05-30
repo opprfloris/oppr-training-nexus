@@ -127,30 +127,61 @@ export const useUserManagement = () => {
 
   const handleUserAdded = async () => {
     console.log('User added, refreshing user list...');
+    
+    // Immediate refresh
+    await fetchUsers();
+    
+    // Additional refreshes with delays to catch any timing issues
     setTimeout(async () => {
+      console.log('First delayed refresh...');
       await fetchUsers();
-      setTimeout(async () => {
-        await fetchUsers();
-        setIsAddUserOpen(false);
-      }, 2000);
     }, 1000);
+    
+    setTimeout(async () => {
+      console.log('Second delayed refresh...');
+      await fetchUsers();
+      setIsAddUserOpen(false);
+    }, 3000);
+    
+    toast({
+      title: "Success",
+      description: "User created successfully",
+    });
   };
 
   const handleUsersCreated = async () => {
     console.log('Users created via bulk upload, refreshing user list...');
+    
+    // Immediate refresh
+    await fetchUsers();
+    
+    // Additional refreshes with delays
     setTimeout(async () => {
+      console.log('First delayed refresh after bulk upload...');
       await fetchUsers();
-      setTimeout(async () => {
-        await fetchUsers();
-        setIsBulkUploadOpen(false);
-      }, 3000);
     }, 2000);
+    
+    setTimeout(async () => {
+      console.log('Final delayed refresh after bulk upload...');
+      await fetchUsers();
+      setIsBulkUploadOpen(false);
+    }, 5000);
+    
+    toast({
+      title: "Success",
+      description: "Users created successfully",
+    });
   };
 
   const handleUserUpdated = async () => {
     console.log('User updated, refreshing user list...');
     await fetchUsers();
     setEditingUser(null);
+    
+    toast({
+      title: "Success",
+      description: "User updated successfully",
+    });
   };
 
   const toggleUserStatus = async (userId: string, currentStatus: string) => {
