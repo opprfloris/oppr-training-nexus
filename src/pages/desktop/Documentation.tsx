@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Search, Download, Menu, X } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Search, Download, Menu, X, ChevronRight, ChevronDown } from 'lucide-react';
 
 const Documentation = () => {
   const [markdownContent, setMarkdownContent] = useState<string>('');
@@ -15,13 +16,16 @@ const Documentation = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('');
   const [isTocOpen, setIsTocOpen] = useState(true);
+  const [collapsedChapters, setCollapsedChapters] = useState<Set<string>>(new Set());
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // Table of contents extracted from markdown
+  // Table of contents extracted from markdown with numbering
   const [tableOfContents, setTableOfContents] = useState<Array<{
     id: string;
     title: string;
     level: number;
+    number: string;
+    hasChildren: boolean;
   }>>([]);
 
   useEffect(() => {
@@ -69,18 +73,53 @@ const Documentation = () => {
 
   const extractTableOfContents = (content: string) => {
     const headingRegex = /^(#{1,6})\s+(.+)$/gm;
-    const toc: Array<{ id: string; title: string; level: number }> = [];
+    const toc: Array<{ id: string; title: string; level: number; number: string; hasChildren: boolean }> = [];
     let match;
-
+    
+    // First pass: collect all headings
+    const headings: Array<{ title: string; level: number; id: string }> = [];
     while ((match = headingRegex.exec(content)) !== null) {
       const level = match[1].length;
       const title = match[2].trim();
       const id = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-      
-      toc.push({ id, title, level });
+      headings.push({ title, level, id });
     }
 
+    // Second pass: add numbering and determine children
+    const counters = [0, 0, 0, 0, 0, 0]; // For levels 1-6
+    
+    headings.forEach((heading, index) => {
+      const level = heading.level;
+      
+      // Reset deeper level counters
+      for (let i = level; i < counters.length; i++) {
+        if (i === level - 1) {
+          counters[i]++;
+        } else {
+          counters[i] = 0;
+        }
+      }
+      
+      // Create number string
+      const number = counters.slice(0, level).filter(c => c > 0).join('.');
+      
+      // Check if this heading has children (next heading has higher level)
+      const hasChildren = index < headings.length - 1 && headings[index + 1].level > level;
+      
+      toc.push({
+        id: heading.id,
+        title: heading.title,
+        level,
+        number,
+        hasChildren
+      });
+    });
+
     setTableOfContents(toc);
+    
+    // Initially collapse all main chapters
+    const mainChapters = toc.filter(item => item.level === 1 && item.hasChildren);
+    setCollapsedChapters(new Set(mainChapters.map(chapter => chapter.id)));
   };
 
   const scrollToSection = (id: string) => {
@@ -89,6 +128,18 @@ const Documentation = () => {
       element.scrollIntoView({ behavior: 'smooth' });
       setActiveSection(id);
     }
+  };
+
+  const toggleChapter = (chapterId: string) => {
+    setCollapsedChapters(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(chapterId)) {
+        newSet.delete(chapterId);
+      } else {
+        newSet.add(chapterId);
+      }
+      return newSet;
+    });
   };
 
   const handleExportPDF = () => {
@@ -104,8 +155,63 @@ const Documentation = () => {
         .join('\n')
     : markdownContent;
 
+  const renderTocItem = (item: any, index: number) => {
+    const isCollapsed = collapsedChapters.has(item.id);
+    const nextItem = tableOfContents[index + 1];
+    const isParent = item.hasChildren;
+    
+    // Check if this item should be hidden (it's a child of a collapsed parent)
+    if (item.level > 1) {
+      // Find parent chapter
+      for (let i = index - 1; i >= 0; i--) {
+        const potentialParent = tableOfContents[i];
+        if (potentialParent.level < item.level) {
+          if (collapsedChapters.has(potentialParent.id)) {
+            return null; // Hide this item
+          }
+          break;
+        }
+      }
+    }
+
+    return (
+      <div key={item.id}>
+        <div className="flex items-center">
+          {isParent && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => toggleChapter(item.id)}
+              className="p-0 h-6 w-6 mr-1"
+            >
+              {isCollapsed ? (
+                <ChevronRight className="w-3 h-3" />
+              ) : (
+                <ChevronDown className="w-3 h-3" />
+              )}
+            </Button>
+          )}
+          <button
+            onClick={() => scrollToSection(item.id)}
+            className={`flex-1 text-left px-2 py-1.5 text-sm rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+              item.level === 1 ? 'font-semibold text-gray-900 dark:text-gray-100' :
+              item.level === 2 ? `${isParent ? '' : 'ml-7'} font-medium text-gray-700 dark:text-gray-300` :
+              `${isParent ? 'ml-0' : 'ml-7'} text-gray-600 dark:text-gray-400`
+            } ${activeSection === item.id ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100' : ''}`}
+            style={{ 
+              marginLeft: isParent ? '0' : `${(item.level - 1) * 1.5 + 1.75}rem`
+            }}
+          >
+            <span className="font-mono text-xs mr-2 opacity-70">{item.number}</span>
+            {item.title}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const components = {
-    code({ node, inline, className, children, ...props }: any) {
+    code({ node, inline, className, children, ...props }: any) => {
       const match = /language-(\w+)/.exec(className || '');
       const language = match ? match[1] : '';
 
@@ -211,19 +317,7 @@ const Documentation = () => {
           <CardContent>
             <ScrollArea className="h-[calc(100vh-12rem)]">
               <nav className="space-y-1">
-                {tableOfContents.map((item, index) => (
-                  <button
-                    key={index}
-                    onClick={() => scrollToSection(item.id)}
-                    className={`block w-full text-left px-2 py-1.5 text-sm rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                      item.level === 1 ? 'font-semibold text-gray-900 dark:text-gray-100' :
-                      item.level === 2 ? 'ml-4 font-medium text-gray-700 dark:text-gray-300' :
-                      'ml-8 text-gray-600 dark:text-gray-400'
-                    } ${activeSection === item.id ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100' : ''}`}
-                  >
-                    {item.title}
-                  </button>
-                ))}
+                {tableOfContents.map((item, index) => renderTocItem(item, index))}
               </nav>
             </ScrollArea>
           </CardContent>
