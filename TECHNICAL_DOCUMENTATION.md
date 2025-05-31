@@ -12,27 +12,32 @@
 7. [Authentication & Authorization](#authentication--authorization)
 8. [File Management](#file-management)
 9. [AI Integration](#ai-integration)
-10. [Development Setup](#development-setup)
-11. [Deployment Guide](#deployment-guide)
-12. [Security Considerations](#security-considerations)
-13. [API Reference](#api-reference)
-14. [Component Architecture](#component-architecture)
-15. [Performance Considerations](#performance-considerations)
+10. [User Interface & Navigation](#user-interface--navigation)
+11. [Development Setup](#development-setup)
+12. [Deployment Guide](#deployment-guide)
+13. [Security Considerations](#security-considerations)
+14. [API Reference](#api-reference)
+15. [Component Architecture](#component-architecture)
+16. [Performance Considerations](#performance-considerations)
+17. [Recent Updates & Improvements](#recent-updates--improvements)
 
 ---
 
 ## Executive Summary
 
-The OPPR Training Platform is a comprehensive training management system designed for industrial and operational training scenarios. The platform enables organizations to create, manage, and deploy interactive training content with AI-assisted generation capabilities.
+The OPPR Training Platform is a comprehensive, enterprise-grade training management system designed for industrial and operational training scenarios. The platform enables organizations to create, manage, and deploy interactive training content with AI-assisted generation capabilities, providing a complete solution for modern workforce training needs.
 
 ### Key Value Propositions
 
-- **AI-Powered Training Creation**: Automated generation of training flows from documents
-- **Visual Training Designer**: Drag-and-drop interface for creating training sequences
-- **Project-Based Management**: Organized approach to training deployment
-- **Integrated Document Management**: Centralized storage and processing of training materials
-- **QR Code Integration**: Physical-digital bridge for equipment-based training
-- **Comprehensive User Management**: Role-based access control and skills tracking
+- **AI-Powered Training Creation**: Automated generation of training flows from documents using advanced AI analysis
+- **Visual Training Designer**: Intuitive drag-and-drop interface for creating complex training sequences
+- **Project-Based Management**: Organized approach to training deployment with floor plan integration
+- **Integrated Document Management**: Centralized storage and intelligent processing of training materials
+- **QR Code Integration**: Seamless physical-digital bridge for equipment-based training scenarios
+- **Comprehensive User Management**: Advanced role-based access control and skills tracking
+- **Dynamic Navigation System**: Context-aware breadcrumb navigation and responsive layout design
+- **Skills Matrix Management**: Visual competency tracking across operators and training programs
+- **Real-time Collaboration**: Multi-user editing and progress tracking capabilities
 
 ---
 
@@ -42,49 +47,57 @@ The OPPR Training Platform is a comprehensive training management system designe
 graph TB
     subgraph "Frontend Layer"
         A[React Application]
-        B[Desktop Layout]
+        B[Desktop Layout with Sticky Navigation]
         C[Mobile Layout]
-        D[Shared Components]
+        D[Shared Components Library]
+        E[Dynamic Breadcrumb System]
     end
     
     subgraph "State Management"
-        E[React Query]
-        F[Context API]
-        G[Local Storage]
+        F[React Query for Server State]
+        G[Context API for Global State]
+        H[Local Storage for Preferences]
+        I[Breadcrumb Context Provider]
     end
     
     subgraph "Backend Services"
-        H[Supabase Database]
-        I[Supabase Auth]
-        J[Supabase Storage]
-        K[AI Services]
+        J[Supabase Database with RLS]
+        K[Supabase Authentication]
+        L[Supabase Storage with CDN]
+        M[AI Services Integration]
+        N[Real-time Subscriptions]
     end
     
     subgraph "External Integrations"
-        L[OpenAI API]
-        M[Document Processing]
-        N[QR Code Generation]
+        O[OpenAI API for Content Generation]
+        P[Document Processing Services]
+        Q[QR Code Generation & Management]
+        R[Floor Plan Integration]
     end
     
-    A --> E
     A --> F
+    A --> G
+    A --> I
     B --> D
     C --> D
-    E --> H
-    F --> I
-    E --> J
-    K --> L
-    K --> M
-    D --> N
+    E --> I
+    F --> J
+    G --> K
+    F --> L
+    M --> O
+    M --> P
+    D --> Q
+    D --> R
 ```
 
 ### Architecture Principles
 
-1. **Component-Based Design**: Modular, reusable React components
-2. **Separation of Concerns**: Clear distinction between UI, business logic, and data
-3. **Responsive Design**: Adaptive layouts for desktop and mobile
-4. **Progressive Enhancement**: Core functionality available without advanced features
-5. **Security-First**: Authentication and authorization at every layer
+1. **Component-Based Design**: Modular, reusable React components with clear separation of concerns
+2. **Responsive Design**: Adaptive layouts optimized for both desktop and mobile experiences
+3. **Progressive Enhancement**: Core functionality available with advanced features layered on top
+4. **Security-First**: Multi-layered security with authentication, authorization, and data protection
+5. **Real-time Capabilities**: Live updates and collaboration features across the platform
+6. **Scalable Navigation**: Dynamic breadcrumb system that adapts to user context and application flow
 
 ---
 
@@ -92,26 +105,28 @@ graph TB
 
 ### Frontend Technologies
 
-- **React 18.3.1**: Core UI framework with hooks and functional components
-- **TypeScript**: Type-safe development with comprehensive type definitions
-- **Tailwind CSS**: Utility-first CSS framework for responsive design
-- **Shadcn/UI**: High-quality component library built on Radix UI primitives
-- **Lucide React**: Icon library for consistent visual elements
-- **React Router DOM**: Client-side routing and navigation
-- **React Query (TanStack)**: Server state management and caching
+- **React 18.3.1**: Core UI framework with hooks, functional components, and concurrent features
+- **TypeScript**: Type-safe development with comprehensive type definitions and strict checking
+- **Tailwind CSS**: Utility-first CSS framework with custom design system integration
+- **Shadcn/UI**: High-quality component library built on Radix UI primitives with accessibility focus
+- **Lucide React**: Comprehensive icon library for consistent visual design language
+- **React Router DOM**: Client-side routing with dynamic navigation and breadcrumb integration
+- **React Query (TanStack)**: Powerful server state management with intelligent caching and synchronization
 
 ### Backend & Infrastructure
 
-- **Supabase**: Backend-as-a-Service providing database, auth, and storage
-- **PostgreSQL**: Relational database with advanced features
-- **Row Level Security (RLS)**: Database-level authorization
-- **Real-time Subscriptions**: Live data updates across clients
+- **Supabase**: Complete Backend-as-a-Service with real-time capabilities
+- **PostgreSQL**: Advanced relational database with JSON support and full-text search
+- **Row Level Security (RLS)**: Database-level authorization with fine-grained access control
+- **Real-time Subscriptions**: Live data synchronization across all connected clients
+- **Edge Functions**: Serverless compute for custom business logic and integrations
 
-### Development Tools
+### Development & Build Tools
 
-- **Vite**: Fast build tool and development server
-- **ESLint**: Code linting and quality enforcement
-- **Bun**: Package manager and runtime
+- **Vite**: Lightning-fast build tool with hot module replacement and optimized bundling
+- **ESLint**: Comprehensive code linting with custom rules for consistency and quality
+- **Bun**: Modern package manager and runtime with improved performance
+- **TypeScript Compiler**: Static type checking with strict configuration
 
 ---
 
@@ -123,37 +138,45 @@ graph LR
         A[components/] --> A1[desktop/]
         A --> A2[ui/]
         A --> A3[mobile/]
+        A1 --> A4[DynamicBreadcrumb.tsx]
+        A1 --> A5[DesktopLayout.tsx]
         
         B[pages/] --> B1[desktop/]
         B --> B2[mobile/]
+        B1 --> B3[TrainingProjects.tsx]
+        B1 --> B4[SkillsMatrix.tsx]
+        B1 --> B5[Documentation.tsx]
         
         C[hooks/] --> C1[useTrainingDefinition.ts]
         C --> C2[useAIFlowGeneration.ts]
-        C --> C3[useDocumentProcessor.ts]
+        C --> C3[useBreadcrumbSetter.ts]
+        C --> C4[useSkillsMatrix.ts]
         
         D[contexts/] --> D1[AuthContext.tsx]
         D --> D2[AISettingsContext.tsx]
+        D --> D3[BreadcrumbContext.tsx]
         
         E[services/] --> E1[aiFlowGenerationService.ts]
         E --> E2[trainingDefinitionService.ts]
+        E --> E3[skillsMatrixService.ts]
         
         F[types/] --> F1[training-definitions.ts]
         F --> F2[training-projects.ts]
-        
-        G[utils/] --> G1[blockUtils.ts]
-        G --> G2[flowValidation.ts]
+        F --> F3[machine-qr.ts]
     end
 ```
 
 ### Directory Structure Explanation
 
-- **components/**: Reusable UI components organized by platform (desktop/mobile)
-- **pages/**: Route-level components representing full pages
-- **hooks/**: Custom React hooks for business logic and state management
-- **contexts/**: React context providers for global state
-- **services/**: API services and external integrations
-- **types/**: TypeScript type definitions
-- **utils/**: Pure utility functions and helpers
+- **components/**: Organized component library with platform-specific implementations
+  - **desktop/**: Desktop-optimized components with sticky navigation and advanced layouts
+  - **ui/**: Reusable Shadcn/UI components with consistent theming
+  - **mobile/**: Mobile-optimized components for touch interfaces
+- **pages/**: Route-level components with integrated breadcrumb management
+- **hooks/**: Custom React hooks for business logic, state management, and UI interactions
+- **contexts/**: React context providers for global state and cross-component communication
+- **services/**: API services, external integrations, and business logic layer
+- **types/**: Comprehensive TypeScript definitions for type safety and developer experience
 
 ---
 
@@ -161,7 +184,7 @@ graph LR
 
 ### 1. Training Definition Builder
 
-The training definition builder is the core feature allowing users to create interactive training flows.
+The training definition builder is the flagship feature, providing a comprehensive visual editor for creating interactive training flows with AI assistance.
 
 ```mermaid
 flowchart TD
@@ -169,95 +192,153 @@ flowchart TD
     B --> C[Manual Creation]
     B --> D[AI-Assisted Creation]
     
-    C --> E[Add Steps]
-    D --> F[Upload Document]
-    F --> G[AI Analysis]
-    G --> H[Generate Flow]
+    C --> E[Visual Flow Builder]
+    D --> F[Document Upload & Analysis]
+    F --> G[AI Content Generation]
+    G --> H[Smart Flow Optimization]
     
-    E --> I[Configure Step]
+    E --> I[Configure Steps]
     H --> I
-    I --> J[Add Questions]
-    J --> K[Set Media]
-    K --> L[Define Navigation]
-    L --> M[Validate Flow]
-    M --> N[Publish Version]
+    I --> J[Add Interactive Elements]
+    J --> K[Set Media & Resources]
+    K --> L[Define Navigation Logic]
+    L --> M[Validate Flow Integrity]
+    M --> N[Version Management]
+    N --> O[Publish & Deploy]
 ```
 
 **Key Components:**
-- `TrainingDefinitionBuilderMinimal`: Main builder interface
-- `FlowCanvas`: Visual flow editor with drag-and-drop
-- `BlockPalette`: Available step types and components
-- `AIFlowGenerator`: AI-powered content generation
+- `TrainingDefinitionBuilderMinimal`: Streamlined builder interface with enhanced UX
+- `FlowCanvas`: Advanced visual flow editor with drag-and-drop functionality
+- `BlockPalette`: Comprehensive library of step types and interactive components
+- `AIFlowGenerator`: Intelligent content generation with context awareness
+- `VersionManagement`: Complete version control with rollback capabilities
 
-### 2. Training Projects
+### 2. Training Projects & Floor Plan Integration
 
-Projects represent deployments of training definitions to specific contexts.
+Projects represent real-world deployments of training definitions with spatial context and user assignment.
 
 ```mermaid
 graph TB
     A[Training Definition] --> B[Create Project]
     B --> C[Select Floor Plan]
-    C --> D[Place Markers]
-    D --> E[Assign Content]
+    C --> D[Place Interactive Markers]
+    D --> E[Assign Content to Locations]
     E --> F[Configure Parameters]
-    F --> G[Assign Users]
-    G --> H[Activate Project]
+    F --> G[Assign Users & Teams]
+    G --> H[Activate & Monitor]
+    H --> I[Track Progress & Analytics]
 ```
 
-**Features:**
-- Floor plan integration with interactive markers
-- User assignment and progress tracking
-- Real-time collaboration
-- Content versioning and updates
+**Advanced Features:**
+- Interactive floor plan editor with marker placement
+- QR code integration for physical-digital training bridges
+- Real-time progress tracking and analytics
+- Multi-user collaboration with role-based permissions
+- Automated content updates and synchronization
 
 ### 3. Document Management (Oppr Docs)
 
-Centralized document storage and processing system.
+Enterprise-grade document management system with intelligent processing and AI integration.
 
 ```mermaid
 graph LR
-    A[Upload Document] --> B[Process Content]
-    B --> C[Extract Text]
-    B --> D[Extract Images]
-    B --> E[Generate Metadata]
-    C --> F[Store in Database]
+    A[Upload Documents] --> B[Intelligent Processing]
+    B --> C[Content Extraction]
+    B --> D[Metadata Generation]
+    B --> E[AI Analysis]
+    
+    C --> F[Searchable Content]
     D --> F
     E --> F
-    F --> G[Available for Training]
+    
+    F --> G[Training Integration]
+    F --> H[Knowledge Base]
+    F --> I[Content Discovery]
 ```
 
 **Capabilities:**
-- Multi-format document support (PDF, DOC, images)
-- OCR text extraction
-- Folder organization
-- Bulk upload and management
-- Search and filtering
+- Multi-format support (PDF, DOC, images, presentations)
+- Advanced OCR and content extraction
+- Hierarchical folder organization with permissions
+- Bulk upload with progress tracking
+- AI-powered content analysis and tagging
+- Full-text search with intelligent filtering
 
-### 4. AI Integration
+### 4. Skills Matrix Management
 
-AI-powered features for training content generation and analysis.
+Comprehensive competency tracking system with visual analytics and progress monitoring.
 
 ```mermaid
 graph TB
-    A[Document Input] --> B[Content Analysis]
-    B --> C[Topic Extraction]
-    B --> D[Complexity Assessment]
-    B --> E[Question Generation]
+    A[Operator Skills] --> B[Training Programs]
+    B --> C[Competency Assessment]
+    C --> D[Progress Tracking]
+    D --> E[Skills Matrix Visualization]
     
-    C --> F[Training Flow Creation]
-    D --> F
-    E --> F
+    E --> F[Individual Progress]
+    E --> G[Team Analytics]
+    E --> H[Gap Analysis]
     
-    F --> G[Step Blocks]
-    F --> H[Question Banks]
-    F --> I[Assessment Items]
+    F --> I[Training Recommendations]
+    G --> I
+    H --> I
 ```
 
-**AI Services:**
-- Document analysis and summarization
-- Automatic question generation
-- Training flow optimization
-- Content difficulty assessment
+**Key Features:**
+- Interactive skills matrix with filtering and sorting
+- Real-time progress updates and status tracking
+- Comprehensive export capabilities for reporting
+- Department and role-based analytics
+- Automated competency gap identification
+
+### 5. AI Integration & Content Generation
+
+Advanced AI capabilities for automated content creation and intelligent training optimization.
+
+```mermaid
+graph TB
+    subgraph "AI Services"
+        A[Document Analysis Engine]
+        B[Content Generation System]
+        C[Question Bank Creation]
+        D[Flow Optimization Algorithm]
+        E[Learning Path Intelligence]
+    end
+    
+    subgraph "External APIs"
+        F[OpenAI GPT Integration]
+        G[Document Processing Services]
+        H[Image Analysis Capabilities]
+    end
+    
+    A --> F
+    B --> F
+    C --> F
+    A --> G
+    A --> H
+    
+    D --> B
+    E --> A
+```
+
+**AI Capabilities:**
+1. **Intelligent Document Analysis**
+   - Automated content summarization and topic extraction
+   - Complexity assessment and difficulty grading
+   - Key concept identification and relationship mapping
+
+2. **Smart Training Generation**
+   - Automatic step creation with logical flow
+   - Context-aware question generation
+   - Assessment design with multiple question types
+   - Progress tracking configuration
+
+3. **Content Optimization**
+   - Learning path optimization based on user data
+   - Difficulty progression with adaptive learning
+   - Engagement enhancement through interactive elements
+   - Personalization recommendations
 
 ---
 
@@ -267,10 +348,11 @@ graph TB
 erDiagram
     profiles {
         uuid id PK
-        text email
+        text email UK
         text role
         text first_name
         text last_name
+        text department
         timestamp created_at
         timestamp updated_at
     }
@@ -286,6 +368,17 @@ erDiagram
         timestamp updated_at
     }
     
+    training_definition_versions {
+        uuid id PK
+        uuid training_definition_id FK
+        integer version_number
+        text status
+        jsonb steps_json
+        text version_notes
+        timestamp created_at
+        timestamp published_at
+    }
+    
     training_projects {
         uuid id PK
         text project_id UK
@@ -294,6 +387,7 @@ erDiagram
         uuid training_definition_id FK
         uuid floor_plan_id FK
         text status
+        jsonb settings
         timestamp created_at
         timestamp updated_at
     }
@@ -303,6 +397,7 @@ erDiagram
         text name
         text path
         uuid parent_folder_id FK
+        jsonb permissions
         timestamp created_at
         timestamp updated_at
     }
@@ -317,6 +412,7 @@ erDiagram
         text file_type
         text mime_type
         text[] tags
+        jsonb metadata
         timestamp created_at
     }
     
@@ -324,7 +420,8 @@ erDiagram
         uuid id PK
         text qr_identifier UK
         text machine_name
-        text location
+        text machine_type
+        text location_description
         text department
         jsonb metadata
         timestamp created_at
@@ -337,151 +434,87 @@ erDiagram
         text description
         text image_url
         jsonb metadata
+        jsonb markers
         timestamp created_at
         timestamp updated_at
     }
     
+    training_progress {
+        uuid id PK
+        uuid user_id FK
+        uuid project_id FK
+        uuid training_definition_id FK
+        text status
+        integer progress_percentage
+        jsonb step_data
+        timestamp started_at
+        timestamp completed_at
+        timestamp updated_at
+    }
+    
     profiles ||--o{ training_definitions : creates
+    training_definitions ||--o{ training_definition_versions : has_versions
     training_definitions ||--o{ training_projects : spawns
     floor_plans ||--o{ training_projects : uses
     document_folders ||--o{ documents : contains
     document_folders ||--o{ document_folders : parent_of
+    profiles ||--o{ training_progress : tracks
+    training_projects ||--o{ training_progress : contains
 ```
 
-### Key Relationships
+### Key Schema Features
 
-1. **User Management**: Profiles serve as the central user entity
-2. **Content Hierarchy**: Training definitions spawn multiple projects
-3. **Document Organization**: Hierarchical folder structure with documents
-4. **Physical Integration**: Floor plans and QR entities for spatial training
-5. **Audit Trail**: Comprehensive timestamping and user tracking
+1. **User Management**: Comprehensive profile system with role-based access
+2. **Content Versioning**: Full version control for training definitions
+3. **Project Hierarchy**: Clear relationship between definitions, projects, and execution
+4. **Document Organization**: Hierarchical folder structure with metadata support
+5. **Physical Integration**: Floor plans and QR entities for spatial training
+6. **Progress Tracking**: Detailed analytics and completion monitoring
+7. **Audit Trail**: Complete timestamping and change tracking
 
 ---
 
-## Authentication & Authorization
+## User Interface & Navigation
 
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant C as Client App
-    participant S as Supabase Auth
-    participant D as Database
-    
-    U->>C: Login Request
-    C->>S: Authenticate Credentials
-    S->>S: Validate User
-    S->>C: Return JWT Token
-    C->>C: Store Session
-    C->>D: Request with Auth Header
-    D->>D: Validate RLS Policies
-    D->>C: Return Authorized Data
-    C->>U: Display Content
-```
+### Dynamic Breadcrumb System
 
-### Role-Based Access Control
-
-- **Admin**: Full system access and user management
-- **Manager**: Training creation and project management
-- **Operator**: Training consumption and progress tracking
-- **Viewer**: Read-only access to assigned content
-
-### Row Level Security Policies
-
-- Users can only access their own profile data
-- Training definitions visible based on creator and sharing settings
-- Project access controlled by assignment and role
-- Document access governed by folder permissions
-
----
-
-## File Management
+The platform features a sophisticated breadcrumb navigation system that provides context-aware navigation across all pages.
 
 ```mermaid
 graph TB
-    A[File Upload] --> B[Client Validation]
-    B --> C[Supabase Storage]
-    C --> D[Generate Public URL]
-    D --> E[Store Metadata]
-    E --> F[Process Content]
+    A[BreadcrumbContext] --> B[Global State Management]
+    B --> C[useBreadcrumbSetter Hook]
+    C --> D[Page-Level Breadcrumb Setting]
+    D --> E[DynamicBreadcrumb Component]
+    E --> F[Rendered Navigation UI]
     
-    F --> G[Text Extraction]
-    F --> H[Image Processing]
-    F --> I[Thumbnail Generation]
-    
-    G --> J[Database Storage]
-    H --> J
-    I --> J
+    G[Route Changes] --> C
+    H[User Navigation] --> G
 ```
 
-### Supported File Types
+**Breadcrumb Features:**
+- Automatic context detection based on current route
+- Support for nested navigation and dynamic parameters
+- Integration with training project tabs and editor states
+- Accessibility-compliant markup and keyboard navigation
+- Responsive design for mobile and desktop interfaces
 
-- **Documents**: PDF, DOC, DOCX, TXT
-- **Images**: JPG, PNG, GIF, SVG
-- **Presentations**: PPT, PPTX
-- **Spreadsheets**: XLS, XLSX
+### Sticky Navigation Layout
 
-### Storage Strategy
+The desktop layout employs a fixed sidebar and sticky header design for optimal user experience:
 
-- Files stored in Supabase Storage buckets
-- Metadata and extracted content in PostgreSQL
-- CDN distribution for optimal performance
-- Automatic backup and versioning
+**Layout Structure:**
+- **Fixed Sidebar**: Persistent navigation that remains visible during content scrolling
+- **Sticky Header**: Top navigation bar with breadcrumbs that stays in view
+- **Scrollable Content**: Main content area with proper overflow handling
+- **Z-Index Management**: Proper layering to ensure navigation elements stay accessible
 
----
+### Responsive Design Principles
 
-## AI Integration
-
-```mermaid
-graph TB
-    subgraph "AI Services"
-        A[Document Analysis]
-        B[Content Generation]
-        C[Question Creation]
-        D[Flow Optimization]
-    end
-    
-    subgraph "External APIs"
-        E[OpenAI GPT]
-        F[Document Processing]
-        G[Image Analysis]
-    end
-    
-    subgraph "Local Processing"
-        H[Text Extraction]
-        I[Metadata Generation]
-        J[Content Structuring]
-    end
-    
-    A --> E
-    B --> E
-    C --> E
-    A --> F
-    A --> G
-    
-    H --> A
-    I --> A
-    J --> B
-```
-
-### AI Capabilities
-
-1. **Document Analysis**
-   - Content summarization
-   - Topic extraction
-   - Complexity assessment
-   - Key concept identification
-
-2. **Training Generation**
-   - Automatic step creation
-   - Question generation
-   - Assessment design
-   - Progress tracking setup
-
-3. **Content Optimization**
-   - Learning path optimization
-   - Difficulty progression
-   - Engagement enhancement
-   - Personalization recommendations
+- **Desktop-First**: Optimized for desktop workflows with advanced features
+- **Mobile Adaptive**: Responsive breakpoints with touch-optimized interactions
+- **Consistent Theming**: Unified design system across all components
+- **Accessibility**: WCAG 2.1 AA compliance with keyboard navigation support
 
 ---
 
@@ -489,9 +522,10 @@ graph TB
 
 ### Prerequisites
 
-- Node.js 18+ or Bun runtime
-- Git for version control
-- Supabase account and project
+- **Node.js 18+** or **Bun runtime** for modern JavaScript execution
+- **Git** for version control and collaboration
+- **Supabase account** with project setup
+- **OpenAI API key** for AI integration features
 
 ### Installation Steps
 
@@ -500,285 +534,309 @@ graph TB
 git clone <repository-url>
 cd oppr-training-platform
 
-# Install dependencies
+# Install dependencies with Bun (recommended)
 bun install
+
+# Or with npm
+npm install
 
 # Set up environment variables
 cp .env.example .env.local
-# Edit .env.local with your Supabase credentials
+# Edit .env.local with your configuration
 
 # Start development server
 bun dev
+
+# Or with npm
+npm run dev
 ```
 
-### Environment Variables
+### Environment Configuration
 
 ```env
-VITE_SUPABASE_URL=your_supabase_url
+# Supabase Configuration
+VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# AI Integration
 VITE_OPENAI_API_KEY=your_openai_api_key
+
+# Optional: Custom API endpoints
+VITE_API_BASE_URL=your_custom_api_url
 ```
 
 ### Development Workflow
 
-1. **Feature Development**: Create feature branches from main
-2. **Code Quality**: ESLint and TypeScript checking
-3. **Component Testing**: Isolated component development
-4. **Integration Testing**: Full workflow validation
-5. **Performance Monitoring**: Bundle size and runtime optimization
-
----
-
-## Deployment Guide
-
-### Production Build
-
-```bash
-# Build for production
-bun run build
-
-# Preview production build
-bun run preview
-```
-
-### Supabase Configuration
-
-1. **Database Setup**: Run migration scripts
-2. **Storage Buckets**: Configure file storage
-3. **Auth Settings**: Set up authentication providers
-4. **RLS Policies**: Apply security policies
-5. **Functions**: Deploy edge functions if needed
-
-### Performance Optimization
-
-- Code splitting for reduced bundle size
-- Image optimization and lazy loading
-- Caching strategies for API responses
-- CDN configuration for static assets
+1. **Feature Development**: Create feature branches with descriptive names
+2. **Code Quality**: Automated ESLint checking and TypeScript validation
+3. **Component Testing**: Isolated component development with Storybook
+4. **Integration Testing**: Full workflow validation across features
+5. **Performance Monitoring**: Bundle analysis and runtime optimization
+6. **Documentation**: Comprehensive code documentation and API references
 
 ---
 
 ## Security Considerations
 
-### Data Protection
-
-- End-to-end encryption for sensitive data
-- Secure file upload and storage
-- Input sanitization and validation
-- XSS and CSRF protection
-
-### Access Control
-
-- JWT token-based authentication
-- Role-based authorization
-- Resource-level permissions
-- Session management and timeout
-
-### Compliance
-
-- GDPR compliance for user data
-- SOC 2 compliance through Supabase
-- Regular security audits
-- Incident response procedures
-
----
-
-## API Reference
-
-### Authentication Endpoints
-
-```typescript
-// Login
-POST /auth/login
-{
-  email: string,
-  password: string
-}
-
-// Register
-POST /auth/register
-{
-  email: string,
-  password: string,
-  first_name: string,
-  last_name: string,
-  role: string
-}
-```
-
-### Training Definitions API
-
-```typescript
-// Get all training definitions
-GET /api/training-definitions
-
-// Create training definition
-POST /api/training-definitions
-{
-  title: string,
-  description: string,
-  content: StepBlock[]
-}
-
-// Update training definition
-PUT /api/training-definitions/:id
-{
-  title?: string,
-  description?: string,
-  content?: StepBlock[]
-}
-```
-
-### Document Management API
-
-```typescript
-// Upload document
-POST /api/documents/upload
-FormData: file, folder_id?, tags?
-
-// Get documents
-GET /api/documents?folder_id=uuid&search=string
-
-// Process document
-POST /api/documents/:id/process
-```
-
----
-
-## Component Architecture
+### Multi-Layer Security Model
 
 ```mermaid
 graph TB
-    subgraph "Page Components"
-        A[DesktopLayout]
-        B[TrainingDefinitions]
-        C[TrainingProjects]
-        D[OpprDocs]
-    end
+    A[Frontend Security] --> B[Input Validation]
+    A --> C[XSS Prevention]
+    A --> D[CSRF Protection]
     
-    subgraph "Feature Components"
-        E[TrainingDefinitionBuilder]
-        F[FlowCanvas]
-        G[DocumentUploader]
-        H[ProjectEditor]
-    end
+    E[Authentication] --> F[JWT Tokens]
+    E --> G[Session Management]
+    E --> H[Multi-Factor Auth]
     
-    subgraph "UI Components"
-        I[Button]
-        J[Card]
-        K[Dialog]
-        L[Table]
-    end
+    I[Authorization] --> J[Role-Based Access]
+    I --> K[Resource Permissions]
+    I --> L[Row Level Security]
     
-    subgraph "Custom Hooks"
-        M[useTrainingDefinition]
-        N[useDocumentProcessor]
-        O[useAIFlowGeneration]
-    end
-    
-    A --> E
-    B --> F
-    C --> G
-    D --> H
-    
-    E --> I
-    F --> J
-    G --> K
-    H --> L
-    
-    E --> M
-    F --> N
-    G --> O
+    M[Data Protection] --> N[Encryption at Rest]
+    M --> O[Encryption in Transit]
+    M --> P[Secure File Storage]
 ```
 
-### Component Design Principles
+### Security Features
 
-1. **Single Responsibility**: Each component has one clear purpose
-2. **Composition over Inheritance**: Build complex UIs from simple components
-3. **Props Interface**: Clear, typed interfaces for component communication
-4. **State Locality**: Keep state as close to usage as possible
-5. **Performance Optimization**: Memoization and lazy loading where appropriate
+1. **Authentication & Authorization**
+   - JWT-based authentication with automatic refresh
+   - Role-based access control (Admin, Manager, Operator, Viewer)
+   - Resource-level permissions with granular control
+   - Session timeout and security monitoring
 
----
+2. **Data Protection**
+   - End-to-end encryption for sensitive data
+   - Secure file upload with virus scanning
+   - Database encryption with Supabase security
+   - GDPR compliance with data retention policies
 
-## Performance Considerations
-
-### Bundle Optimization
-
-- Tree shaking for unused code elimination
-- Dynamic imports for code splitting
-- Lazy loading of routes and components
-- Image optimization and format selection
-
-### Runtime Performance
-
-- React.memo for component memoization
-- useMemo and useCallback for expensive operations
-- Virtual scrolling for large lists
-- Debounced search and filtering
-
-### Network Optimization
-
-- React Query for intelligent caching
-- Batch API requests where possible
-- Compression for file uploads
-- CDN utilization for static assets
-
-### Database Performance
-
-- Efficient PostgreSQL queries
-- Proper indexing strategy
-- Connection pooling
-- Query result caching
+3. **Application Security**
+   - Input sanitization and validation
+   - XSS and CSRF protection
+   - Content Security Policy (CSP) implementation
+   - Regular security audits and dependency updates
 
 ---
 
-## Monitoring and Analytics
+## Recent Updates & Improvements
 
-### Performance Monitoring
+### Navigation & User Experience Enhancements
 
-- Bundle size tracking
-- Core Web Vitals monitoring
-- Error boundary implementation
-- User interaction analytics
+**Dynamic Breadcrumb System (Latest)**
+- Implemented context-aware breadcrumb navigation across all pages
+- Created reusable `BreadcrumbContext` for state management
+- Added `useBreadcrumbSetter` hook for easy breadcrumb configuration
+- Integrated Shadcn breadcrumb components with custom styling
 
-### Business Metrics
+**Sticky Layout Improvements**
+- Fixed sidebar positioning to remain visible during scrolling
+- Implemented sticky header with proper z-index management
+- Optimized content scrolling with overflow handling
+- Enhanced responsive behavior across different screen sizes
 
-- Training completion rates
-- User engagement metrics
-- Content effectiveness analysis
-- System usage patterns
+**Page-Level Breadcrumb Integration**
+- Training Projects: Dynamic breadcrumbs with project context
+- Training Definitions: Version-aware navigation paths
+- Skills Matrix: Department and filter-based breadcrumbs
+- Documentation: Section-aware navigation
+- Machine Registry: Equipment type and location context
+- Floor Plans: Project integration breadcrumbs
+- User Management: Role and department context
+
+### Skills Matrix Enhancements
+
+**Advanced Analytics & Visualization**
+- Interactive skills matrix with real-time filtering
+- Comprehensive progress tracking with status indicators
+- Export functionality for detailed reporting
+- Department-based analytics and gap analysis
+- Integration with training project assignments
+
+**Performance Optimizations**
+- Efficient data loading with pagination
+- Smart caching for frequently accessed data
+- Optimized rendering for large datasets
+- Real-time updates without full page refreshes
+
+### AI Integration Improvements
+
+**Enhanced Document Processing**
+- Improved content extraction accuracy
+- Advanced metadata generation
+- Better support for complex document formats
+- Intelligent tagging and categorization
+
+**Smarter Training Generation**
+- Context-aware content creation
+- Improved question generation algorithms
+- Better learning path optimization
+- Enhanced user experience flow
+
+### Technical Infrastructure Updates
+
+**Performance Enhancements**
+- Optimized bundle splitting for faster loading
+- Improved React Query caching strategies
+- Enhanced error boundaries and recovery
+- Better memory management for large applications
+
+**Developer Experience**
+- Comprehensive TypeScript coverage
+- Improved component organization
+- Better documentation and code comments
+- Enhanced debugging capabilities
 
 ---
 
 ## Future Roadmap
 
-### Planned Features
+### Planned Features (Next 6 Months)
 
-1. **Mobile App**: Native mobile application
-2. **Offline Support**: Progressive Web App capabilities
-3. **Advanced Analytics**: Learning analytics dashboard
-4. **Integration APIs**: Third-party system integration
-5. **White-label Solution**: Customizable branding options
+1. **Advanced Mobile Application**
+   - Native mobile app for iOS and Android
+   - Offline training capabilities
+   - Push notifications for training reminders
+   - Camera integration for QR scanning
 
-### Technical Improvements
+2. **Enhanced Analytics Dashboard**
+   - Real-time learning analytics
+   - Predictive performance modeling
+   - Custom report builder
+   - Integration with external BI tools
 
-1. **Microservices Architecture**: Service decomposition
-2. **Real-time Collaboration**: Multi-user editing
-3. **Advanced AI**: Machine learning recommendations
-4. **Scalability**: Horizontal scaling capabilities
-5. **Internationalization**: Multi-language support
+3. **Advanced AI Capabilities**
+   - Natural language training creation
+   - Automated content updates
+   - Personalized learning recommendations
+   - Intelligent tutoring system
+
+4. **Enterprise Integrations**
+   - Single Sign-On (SSO) support
+   - LDAP/Active Directory integration
+   - REST API for third-party systems
+   - Webhook support for external notifications
+
+### Long-term Vision (12+ Months)
+
+1. **Microservices Architecture**
+   - Service decomposition for better scalability
+   - Independent deployment capabilities
+   - Enhanced fault tolerance
+   - Better resource optimization
+
+2. **Advanced Collaboration Features**
+   - Real-time multi-user editing
+   - Video conferencing integration
+   - Collaborative training sessions
+   - Social learning features
+
+3. **Machine Learning Platform**
+   - Custom ML model training
+   - Automated content optimization
+   - Predictive analytics
+   - Behavioral pattern recognition
+
+4. **Global Deployment & Localization**
+   - Multi-region deployment
+   - Internationalization support
+   - Currency and timezone handling
+   - Compliance with regional regulations
+
+---
+
+## Performance Considerations
+
+### Frontend Optimization
+
+**Bundle Management**
+- Code splitting by route and feature
+- Dynamic imports for large components
+- Tree shaking for unused code elimination
+- Optimized asset loading with lazy loading
+
+**Runtime Performance**
+- React.memo for expensive component renders
+- useMemo and useCallback for computation optimization
+- Virtual scrolling for large data sets
+- Debounced search and filtering operations
+
+**Network Optimization**
+- React Query for intelligent API caching
+- Request batching and deduplication
+- Compression for file uploads
+- CDN utilization for static assets
+
+### Backend Performance
+
+**Database Optimization**
+- Efficient PostgreSQL queries with proper indexing
+- Connection pooling for better resource utilization
+- Query result caching with intelligent invalidation
+- Optimized row-level security policies
+
+**Storage & CDN**
+- Global content delivery network
+- Image optimization and compression
+- Efficient file storage strategies
+- Bandwidth optimization techniques
+
+---
+
+## Monitoring & Analytics
+
+### Application Monitoring
+
+**Performance Metrics**
+- Real-time performance monitoring
+- Core Web Vitals tracking
+- Bundle size analysis
+- User interaction analytics
+
+**Error Tracking**
+- Comprehensive error boundary implementation
+- Automatic error reporting and alerting
+- Performance regression detection
+- User experience monitoring
+
+### Business Intelligence
+
+**Training Analytics**
+- Completion rate tracking
+- Learning effectiveness analysis
+- User engagement metrics
+- Content performance insights
+
+**System Usage**
+- Feature adoption rates
+- User behavior patterns
+- Resource utilization analysis
+- Scalability planning data
 
 ---
 
 ## Conclusion
 
-The OPPR Training Platform represents a modern, scalable solution for industrial training management. Built with cutting-edge technologies and best practices, it provides a solid foundation for growth and adaptation to changing business needs.
+The OPPR Training Platform represents a cutting-edge solution for modern industrial training management. With its recent enhancements in navigation, user experience, and AI capabilities, the platform provides a comprehensive, scalable foundation for organizational training needs.
 
-The platform's modular architecture, comprehensive security model, and AI-powered features position it as a leader in the training technology space. With continued development and enhancement, it will continue to serve as an essential tool for organizations seeking to improve their training effectiveness and operational excellence.
+The implementation of dynamic breadcrumbs, sticky navigation, and enhanced skills matrix functionality demonstrates the platform's commitment to user experience excellence. Combined with robust AI integration, comprehensive document management, and advanced analytics capabilities, OPPR Training Platform stands as a leader in the training technology space.
+
+The platform's modular architecture, comprehensive security model, and continuous improvement approach ensure it will continue to evolve and adapt to changing business requirements, providing long-term value for organizations seeking to enhance their training effectiveness and operational excellence.
+
+**Key Success Factors:**
+- User-centric design with intuitive navigation
+- AI-powered content generation reducing manual effort
+- Comprehensive analytics for data-driven decisions
+- Scalable architecture supporting growth
+- Strong security foundation ensuring data protection
+- Continuous improvement based on user feedback
 
 ---
 
-*Document Version: 1.0*  
-*Last Updated: December 2024*  
+*Document Version: 2.0*  
+*Last Updated: January 2025*  
 *Maintained by: OPPR Development Team*
+
+*This documentation reflects the current state of the OPPR Training Platform including all recent updates, improvements, and planned enhancements. For the most current information, please refer to the development team or check the project repository.*
