@@ -18,7 +18,8 @@
 13. [API Reference](#api-reference)
 14. [Component Architecture](#component-architecture)
 15. [Performance Considerations](#performance-considerations)
-16. [Revision History](#revision-history)
+16. [Fresh Project Setup Guide](#fresh-project-setup-guide)
+17. [Revision History](#revision-history)
 
 ---
 
@@ -807,9 +808,329 @@ OPPR is optimized for performance across various network conditions and device c
 
 ---
 
+## Fresh Project Setup Guide
+
+**⚠️ CRITICAL: Read this section when setting up a fresh Supabase project copy**
+
+### Overview
+
+This guide provides step-by-step instructions for setting up a completely fresh OPPR project with a new Supabase account. The current codebase has a persistent user management display issue where users are created successfully but don't consistently appear in the frontend table. This fresh setup will rebuild the user management system from scratch.
+
+### Known Issues in Current Implementation
+
+1. **User Management Display Bug**: Users create successfully but don't reliably show in the UI table
+2. **Avatar Upload Issues**: Avatar uploads fail consistently  
+3. **No Granular Role Management**: Current system lacks proper role-based access control
+4. **Missing RLS Policies**: Database lacks comprehensive Row Level Security
+5. **State Management Issues**: UI doesn't refresh consistently after user operations
+
+### Phase 1: Supabase Project Setup
+
+#### 1.1 Create New Supabase Project
+1. Go to [supabase.com](https://supabase.com) and create a new account or sign in
+2. Create a new project with these settings:
+   - **Project Name**: `oppr-training-platform`
+   - **Database Password**: Use a strong password (save it securely)
+   - **Region**: Choose closest to your location
+   - **Pricing Plan**: Start with Free tier
+
+#### 1.2 Configure Authentication
+1. Navigate to **Authentication > Settings**
+2. Configure **Site URL**: `http://localhost:3000` (for development)
+3. Add **Redirect URLs**: 
+   - `http://localhost:3000`
+   - Your production domain (when ready)
+4. **Disable** email confirmation for development:
+   - Go to **Authentication > Settings**
+   - Turn OFF "Enable email confirmations"
+5. Configure **Authentication Providers**:
+   - Email/Password: ✅ Enabled (default)
+   - Optional: Google, GitHub, etc. (configure later)
+
+#### 1.3 Database Schema Setup
+Run these SQL migrations in **SQL Editor** in exact order:
+
+```sql
+-- 1. Create profiles table with proper structure
+CREATE TABLE public.profiles (
+  id UUID REFERENCES auth.users ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  first_name TEXT,
+  last_name TEXT,
+  role TEXT NOT NULL DEFAULT 'Operator',
+  department TEXT,
+  avatar_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  PRIMARY KEY (id)
+);
+
+-- 2. Enable RLS on profiles
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- 3. Create RLS policies for profiles
+CREATE POLICY "Users can view all profiles" ON public.profiles
+  FOR SELECT USING (true);
+
+CREATE POLICY "Users can insert own profile" ON public.profiles
+  FOR INSERT WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Users can update own profile" ON public.profiles
+  FOR UPDATE USING (auth.uid() = id);
+
+-- 4. Create function to handle new user registration
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, first_name, last_name, role)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'role', 'Operator')
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 5. Create trigger for automatic profile creation
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- 6. Create update trigger for profiles
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_profiles_updated_at 
+  BEFORE UPDATE ON public.profiles 
+  FOR EACH ROW EXECUTE PROCEDURE public.update_updated_at_column();
+```
+
+#### 1.4 Create Storage Bucket for Avatars
+1. Go to **Storage** in Supabase dashboard
+2. Create new bucket:
+   - **Name**: `avatars`
+   - **Public bucket**: ✅ Yes
+   - **File size limit**: 5MB
+   - **Allowed MIME types**: `image/*`
+
+### Phase 2: Code Setup
+
+#### 2.1 Update Environment Variables
+Create/update `.env.local` with your new Supabase credentials:
+
+```env
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+#### 2.2 Update Supabase Client Configuration
+Update `src/integrations/supabase/client.ts`:
+
+```typescript
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = "your-supabase-url";
+const SUPABASE_PUBLISHABLE_KEY = "your-anon-key";
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+```
+
+### Phase 3: Rebuild User Management System
+
+#### 3.1 Create New Simple User Management
+**Priority**: Build a completely new, simple user management system that works reliably.
+
+**Implementation Plan**:
+1. Create `SimpleUserManagement.tsx` component
+2. Implement basic CRUD operations (Create, Read, Update, Delete)
+3. Add real-time data fetching with proper error handling
+4. Test each operation individually before adding complexity
+
+#### 3.2 Key Requirements for New System
+- **Real-time Updates**: Use Supabase real-time subscriptions
+- **Proper Error Handling**: Clear error messages and fallback states
+- **Simple State Management**: Direct Supabase queries, minimal caching initially
+- **Immediate UI Feedback**: Optimistic updates with rollback on failure
+- **Comprehensive Logging**: Console logs for debugging
+
+#### 3.3 Testing Strategy
+1. **Individual Operations**: Test create, read, update, delete separately
+2. **UI Refresh**: Verify table updates immediately after operations
+3. **Error Scenarios**: Test with network issues, validation errors
+4. **Multiple Users**: Test concurrent operations
+
+### Phase 4: Role Management System
+
+#### 4.1 Database Schema for Roles
+```sql
+-- 1. Create roles enum
+CREATE TYPE public.app_role AS ENUM ('Admin', 'Manager', 'Operator', 'Viewer');
+
+-- 2. Create roles table
+CREATE TABLE public.roles (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name app_role NOT NULL UNIQUE,
+  description TEXT,
+  permissions JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 3. Create user_roles junction table
+CREATE TABLE public.user_roles (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  role_id UUID REFERENCES public.roles(id) ON DELETE CASCADE,
+  assigned_by UUID REFERENCES public.profiles(id),
+  assigned_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, role_id)
+);
+
+-- 4. Enable RLS
+ALTER TABLE public.roles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+
+-- 5. Create RLS policies
+CREATE POLICY "Everyone can view roles" ON public.roles
+  FOR SELECT USING (true);
+
+CREATE POLICY "Users can view their role assignments" ON public.user_roles
+  FOR SELECT USING (true);
+```
+
+#### 4.2 Default Roles Setup
+```sql
+-- Insert default roles
+INSERT INTO public.roles (name, description, permissions) VALUES
+('Admin', 'Full system access', '{"all": true}'),
+('Manager', 'Training management and user oversight', '{"training": true, "users": true, "projects": true}'),
+('Operator', 'Training consumption and progress tracking', '{"training_view": true, "progress": true}'),
+('Viewer', 'Read-only access to assigned content', '{"view_only": true}');
+```
+
+### Phase 5: Implementation Order
+
+#### 5.1 Immediate Tasks (Start Here)
+1. **Set up fresh Supabase project** (Steps 1.1-1.4)
+2. **Update environment variables** (Step 2.1)
+3. **Test basic connection** - Verify app loads and connects to new DB
+4. **Create first admin user** - Use Supabase Auth UI to create test user
+5. **Verify profile creation** - Check that profiles table populates automatically
+
+#### 5.2 Week 1: Core User Management
+1. Build `SimpleUserManagement.tsx` component
+2. Implement user creation with immediate UI feedback
+3. Add user listing with real-time updates
+4. Test avatar upload functionality
+5. Add basic edit/delete operations
+
+#### 5.3 Week 2: Role Management
+1. Implement role creation interface
+2. Add role assignment functionality
+3. Create permission management system
+4. Test access control throughout application
+
+#### 5.4 Week 3: Integration & Testing
+1. Replace old user management with new system
+2. Add comprehensive error handling
+3. Implement audit logging
+4. Performance optimization and caching
+
+### Phase 6: Troubleshooting Guide
+
+#### 6.1 Common Issues and Solutions
+
+**Issue**: Users created but not showing in table
+- **Check**: RLS policies on profiles table
+- **Fix**: Ensure SELECT policy allows viewing all profiles
+- **Verify**: Console logs show successful data fetch
+
+**Issue**: Avatar uploads failing
+- **Check**: Storage bucket permissions and CORS settings
+- **Fix**: Verify bucket is public and has correct file size limits
+- **Test**: Try uploading directly through Supabase dashboard
+
+**Issue**: Real-time updates not working
+- **Check**: Supabase real-time is enabled for the table
+- **Fix**: Enable real-time in Supabase dashboard under Database > Replication
+- **Verify**: Console shows subscription messages
+
+#### 6.2 Debugging Checklist
+- [ ] Environment variables loaded correctly
+- [ ] Supabase client connects successfully
+- [ ] Database tables exist and have correct structure
+- [ ] RLS policies allow required operations
+- [ ] Real-time subscriptions are active
+- [ ] Console shows detailed operation logs
+- [ ] Network tab shows successful API calls
+
+### Phase 7: Migration from Old System
+
+#### 7.1 Data Migration
+1. **Export existing user data** (if any)
+2. **Import to new profiles table**
+3. **Assign default roles** to existing users
+4. **Verify data integrity**
+
+#### 7.2 Code Migration
+1. **Update all auth imports** to use new Supabase client
+2. **Replace user management routes** with new components
+3. **Update role checks** throughout application
+4. **Test all user-dependent features**
+
+### Next Steps After Setup
+
+1. **Test the minimal user management page** (`/desktop/user-management-minimal`)
+2. **Create your first admin user** through the interface
+3. **Verify the user appears immediately** in the table
+4. **Test avatar upload functionality**
+5. **Begin implementing role-based access control**
+
+### Critical Success Factors
+
+1. **Start Simple**: Build basic functionality first, add complexity gradually
+2. **Test Each Step**: Verify each component works before moving to the next
+3. **Monitor Logs**: Use console logs extensively for debugging
+4. **Real-time Updates**: Ensure UI refreshes immediately after operations
+5. **Error Handling**: Implement comprehensive error catching and user feedback
+
+This fresh setup approach will resolve the persistent user management issues and provide a solid foundation for the complete OPPR training platform.
+
+---
+
 ## Revision History
 
 This section tracks all major changes, updates, and improvements to the OPPR Training Platform, providing transparency and accountability for system evolution.
+
+### Version 2.1.0 - Fresh Project Setup Guide
+**Release Date**: January 31, 2025  
+**Author**: OPPR Development Team
+
+**Major Changes:**
+- **Comprehensive Setup Guide**: Added detailed instructions for fresh Supabase project setup
+- **User Management Rebuild Plan**: Documented step-by-step approach to resolve persistent display issues
+- **Role Management System**: Detailed implementation plan for granular access control
+- **Troubleshooting Guide**: Common issues and solutions for fresh installations
+
+**Critical Fixes Addressed:**
+- User management display bug where created users don't appear in UI table
+- Avatar upload failures and file storage issues
+- Missing Row Level Security policies for proper data access
+- Inconsistent UI refresh after user operations
+
+**Implementation Strategy:**
+- Phase-based approach starting with clean database reset
+- Simple, tested components before adding complexity
+- Real-time updates with proper error handling
+- Comprehensive role-based access control system
 
 ### Version 2.0.0 - Documentation Enhancement Update
 **Release Date**: December 30, 2024  
@@ -881,19 +1202,19 @@ This section tracks all major changes, updates, and improvements to the OPPR Tra
 
 ### Upcoming Releases
 
-### Version 2.1.0 - Mobile Enhancement (Planned: Q1 2025)
+### Version 2.2.0 - Rebuilt User Management (Planned: Q1 2025)
+**Planned Features:**
+- **Reliable User Management**: Complete rebuild of user management system
+- **Role-Based Access Control**: Granular permissions and role assignment interface
+- **Real-time Updates**: Proper state management with immediate UI feedback
+- **Avatar Upload Fix**: Working file upload system with proper storage integration
+
+### Version 2.3.0 - Mobile Enhancement (Planned: Q2 2025)
 **Planned Features:**
 - **Native Mobile App**: iOS and Android applications for field training
 - **Offline Capability**: Training content accessible without internet connection
 - **Enhanced QR Scanner**: Improved equipment linking with AR overlay
 - **Voice Recording**: Audio feedback and instruction capabilities
-
-### Version 2.2.0 - Advanced Analytics (Planned: Q2 2025)
-**Planned Features:**
-- **Learning Analytics Dashboard**: Comprehensive reporting on training effectiveness
-- **Competency Mapping**: Skills gap analysis and development recommendations
-- **Predictive Analytics**: AI-powered insights for training optimization
-- **Integration APIs**: Enhanced connectivity with enterprise systems
 
 ### Version 3.0.0 - Enterprise Edition (Planned: Q3 2025)
 **Planned Features:**
@@ -907,8 +1228,7 @@ This section tracks all major changes, updates, and improvements to the OPPR Tra
 **Document Maintenance:**
 This documentation is updated with each major release and reviewed quarterly for accuracy and completeness. For technical support or documentation feedback, contact the OPPR Development Team.
 
-**Last Updated**: December 30, 2024  
-**Document Version**: 2.0.0  
-**Next Review Date**: March 30, 2025  
+**Last Updated**: January 31, 2025  
+**Document Version**: 2.1.0  
+**Next Review Date**: April 30, 2025  
 **Maintained by**: OPPR Development Team
-
