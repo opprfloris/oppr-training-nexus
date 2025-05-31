@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { CheckCircle, AlertCircle, Eye, Edit3, FileText, HelpCircle } from 'lucide-react';
-import { StepBlock } from '@/types/training-definitions';
+import { StepBlock, InformationBlockConfig, QuestionBlockConfig } from '@/types/training-definitions';
 
 interface PreviewStepProps {
   config: any;
@@ -71,6 +71,17 @@ const PreviewStep: React.FC<PreviewStepProps> = ({
 
   const infoBlocks = generatedFlow.filter(block => block.type === 'information').length;
   const questionBlocks = generatedFlow.filter(block => block.type === 'question').length;
+
+  const getBlockContent = (block: StepBlock): string => {
+    if (block.type === 'information') {
+      const config = block.config as InformationBlockConfig;
+      return config.content || 'Information content...';
+    } else if (block.type === 'question') {
+      const config = block.config as QuestionBlockConfig;
+      return config.question_text || 'Question content...';
+    }
+    return 'Block content...';
+  };
 
   return (
     <div className="space-y-6">
@@ -170,11 +181,7 @@ const PreviewStep: React.FC<PreviewStepProps> = ({
                 </div>
                 
                 <div className="text-sm text-gray-700">
-                  {block.type === 'information' ? (
-                    <p className="line-clamp-3">{block.config.content || 'Information content...'}</p>
-                  ) : (
-                    <p className="line-clamp-2">{block.config.question_text || 'Question content...'}</p>
-                  )}
+                  <p className="line-clamp-3">{getBlockContent(block)}</p>
                 </div>
               </div>
             ))}
