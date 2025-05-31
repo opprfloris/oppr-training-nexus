@@ -1,14 +1,11 @@
 
 import React from 'react';
-import { 
-  InformationCircleIcon, 
-  MapPinIcon, 
-  QuestionMarkCircleIcon 
-} from "@heroicons/react/24/outline";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Brain } from 'lucide-react';
-import AITrainingFlowModal from './AITrainingFlowModal';
+import { FileText, ArrowRight, HelpCircle, Brain } from 'lucide-react';
 import { StepBlock } from '@/types/training-definitions';
+import AITrainingFlowModal from './AITrainingFlowModal';
+import EnhancedAIFlowModal from './EnhancedAIFlowModal';
 
 interface BlockPaletteProps {
   onAddBlock: (blockType: 'information' | 'goto' | 'question') => void;
@@ -16,68 +13,78 @@ interface BlockPaletteProps {
 }
 
 const BlockPalette: React.FC<BlockPaletteProps> = ({ onAddBlock, onApplyAIFlow }) => {
-  const blocks = [
-    {
-      type: 'information' as const,
-      icon: InformationCircleIcon,
-      label: 'Information Block',
-      description: 'Display text and images'
-    },
-    {
-      type: 'goto' as const,
-      icon: MapPinIcon,
-      label: 'Go To Block',
-      description: 'Navigation instructions'
-    },
-    {
-      type: 'question' as const,
-      icon: QuestionMarkCircleIcon,
-      label: 'Question Block',
-      description: 'Interactive questions'
-    }
-  ];
+  const handleApplyFlow = (blocks: StepBlock[], title?: string, description?: string) => {
+    onApplyAIFlow(blocks);
+    // Note: Title and description would need to be handled by the parent component
+    // This would require updating the interface to support metadata updates
+  };
 
   return (
-    <div className="oppr-card p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Block Palette</h3>
-        <AITrainingFlowModal 
-          onApplyFlow={onApplyAIFlow}
-          trigger={
-            <Button
-              variant="outline"
-              size="sm"
-              className="p-2 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200 hover:from-purple-100 hover:to-blue-100"
-              title="AI Training Flow Generator"
-            >
-              <Brain className="w-4 h-4 text-purple-600" />
-            </Button>
-          }
-        />
-      </div>
-      
-      <div className="space-y-3">
-        {blocks.map((block) => {
-          const Icon = block.icon;
-          return (
-            <Button
-              key={block.type}
-              variant="outline"
-              onClick={() => onAddBlock(block.type)}
-              className="w-full justify-start h-auto p-4 text-left"
-            >
-              <div className="flex items-start space-x-3">
-                <Icon className="w-5 h-5 mt-0.5 text-oppr-blue" />
-                <div>
-                  <div className="font-medium text-gray-900">{block.label}</div>
-                  <div className="text-sm text-gray-600">{block.description}</div>
-                </div>
-              </div>
-            </Button>
-          );
-        })}
-      </div>
-    </div>
+    <Card className="h-full">
+      <CardHeader>
+        <CardTitle className="text-lg">Add Blocks</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Manual Block Creation */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-gray-700 mb-3">Manual Blocks</h3>
+          
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            onClick={() => onAddBlock('information')}
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Information Block
+          </Button>
+
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            onClick={() => onAddBlock('question')}
+          >
+            <HelpCircle className="w-4 h-4 mr-2" />
+            Question Block
+          </Button>
+
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            onClick={() => onAddBlock('goto')}
+          >
+            <ArrowRight className="w-4 h-4 mr-2" />
+            Navigation Block
+          </Button>
+        </div>
+
+        <hr className="border-gray-200" />
+
+        {/* AI Generation */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-gray-700 mb-3">AI Generation</h3>
+          
+          <EnhancedAIFlowModal
+            onApplyFlow={handleApplyFlow}
+            trigger={
+              <Button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+                <Brain className="w-4 h-4 mr-2" />
+                Enhanced AI Generator
+              </Button>
+            }
+          />
+
+          <AITrainingFlowModal
+            onApplyFlow={onApplyAIFlow}
+            trigger={
+              <Button variant="outline" className="w-full justify-start text-xs">
+                <Brain className="w-3 h-3 mr-2" />
+                Simple AI Generator
+              </Button>
+            }
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
