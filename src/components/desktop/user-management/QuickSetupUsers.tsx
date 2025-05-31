@@ -23,7 +23,7 @@ export const QuickSetupUsers: React.FC<QuickSetupUsersProps> = ({ onUsersCreated
     },
     {
       firstName: 'Bert',
-      lastName: 'Operations',
+      lastName: 'Operations', 
       email: 'bert@oppr.ai',
       department: 'Operations',
       role: 'Operator',
@@ -37,7 +37,7 @@ export const QuickSetupUsers: React.FC<QuickSetupUsersProps> = ({ onUsersCreated
 
     try {
       for (const user of testUsers) {
-        console.log(`Creating user: ${user.email}`);
+        console.log(`Creating user: ${user.email} with role: ${user.role}`);
         
         const { data, error } = await supabase.functions.invoke('create-user', {
           body: {
@@ -62,6 +62,21 @@ export const QuickSetupUsers: React.FC<QuickSetupUsersProps> = ({ onUsersCreated
         }
 
         console.log(`Successfully created user: ${user.email}`);
+        
+        // Add a small delay between user creations
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      // Verify the users were created in the profiles table
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('email', testUsers.map(u => u.email));
+
+      if (profilesError) {
+        console.error('Error checking created profiles:', profilesError);
+      } else {
+        console.log('Created profiles verification:', profiles);
       }
 
       toast({

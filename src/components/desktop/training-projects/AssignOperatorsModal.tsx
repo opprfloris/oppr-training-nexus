@@ -49,14 +49,32 @@ export const AssignOperatorsModal: React.FC<AssignOperatorsModalProps> = ({
   const loadProfiles = async () => {
     try {
       setLoading(true);
+      console.log('Loading profiles for operator assignment...');
+      
+      // First, get all profiles and log them for debugging
+      const { data: allProfiles, error: allProfilesError } = await supabase
+        .from('profiles')
+        .select('*');
+
+      if (allProfilesError) {
+        console.error('Error fetching all profiles:', allProfilesError);
+      } else {
+        console.log('All profiles in database:', allProfiles);
+        console.log('Profiles with Operator role:', allProfiles?.filter(p => p.role === 'Operator'));
+      }
       
       // Get all operators who aren't already assigned to this project
-      const { data: profiles, error: profilesError } = await supabase
+      const { data: operatorProfiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .eq('role', 'Operator');
 
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        console.error('Error fetching operator profiles:', profilesError);
+        throw profilesError;
+      }
+
+      console.log('Found operator profiles:', operatorProfiles);
 
       // Get existing assignments for this project
       const { data: assignments, error: assignmentsError } = await supabase
@@ -64,11 +82,17 @@ export const AssignOperatorsModal: React.FC<AssignOperatorsModalProps> = ({
         .select('operator_id')
         .eq('training_project_id', projectId);
 
-      if (assignmentsError) throw assignmentsError;
+      if (assignmentsError) {
+        console.error('Error fetching assignments:', assignmentsError);
+        throw assignmentsError;
+      }
 
-      const assignedOperatorIds = new Set(assignments.map(a => a.operator_id));
-      const availableProfiles = profiles.filter(p => !assignedOperatorIds.has(p.id));
+      console.log('Existing assignments for project:', assignments);
 
+      const assignedOperatorIds = new Set(assignments?.map(a => a.operator_id) || []);
+      const availableProfiles = (operatorProfiles || []).filter(p => !assignedOperatorIds.has(p.id));
+
+      console.log('Available profiles for assignment:', availableProfiles);
       setProfiles(availableProfiles);
     } catch (error) {
       console.error('Error loading profiles:', error);
@@ -102,6 +126,7 @@ export const AssignOperatorsModal: React.FC<AssignOperatorsModalProps> = ({
 
     try {
       setAssigning(true);
+      console.log('Assigning operators:', selectedOperators);
       
       const assignments = selectedOperators.map(operatorId => ({
         training_project_id: projectId,
@@ -113,8 +138,12 @@ export const AssignOperatorsModal: React.FC<AssignOperatorsModalProps> = ({
         .from('training_project_operator_assignments')
         .insert(assignments);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error inserting assignments:', error);
+        throw error;
+      }
 
+      console.log('Successfully assigned operators');
       toast({
         title: "Success",
         description: `${selectedOperators.length} operator(s) assigned successfully`
@@ -178,6 +207,9 @@ export const AssignOperatorsModal: React.FC<AssignOperatorsModalProps> = ({
               <div className="text-center py-8 text-gray-600">
                 <UserIcon className="w-8 h-8 mx-auto mb-2 text-gray-400" />
                 <p>No available operators found</p>
+                {profiles.length === 0 && (
+                  <p className="text-sm mt-1">Create operators in User Management first</p>
+                )}
               </div>
             ) : (
               filteredProfiles.map(profile => (
