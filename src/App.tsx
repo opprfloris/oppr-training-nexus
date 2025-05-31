@@ -109,6 +109,23 @@ function App() {
                   <Route path="settings" element={<MobileSettings />} />
                 </Route>
 
+                {/* Mobile Training Routes - Outside of MobileLayout for full-screen experience */}
+                <Route path="/mobile/training-execution/:trainingId" element={
+                  <ProtectedRoute>
+                    <MobileTrainingExecution />
+                  </ProtectedRoute>
+                } />
+                <Route path="/mobile/qr-scanner" element={
+                  <ProtectedRoute>
+                    <MobileQRScanner />
+                  </ProtectedRoute>
+                } />
+                <Route path="/mobile/training-completion" element={
+                  <ProtectedRoute>
+                    <MobileTrainingCompletion />
+                  </ProtectedRoute>
+                } />
+
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AISettingsProvider>
