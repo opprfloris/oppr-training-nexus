@@ -10,7 +10,8 @@ import {
   CogIcon,
   MagnifyingGlassIcon,
   DocumentIcon,
-  AcademicCapIcon
+  AcademicCapIcon,
+  PlayIcon
 } from "@heroicons/react/24/outline";
 import UserDropdown from "./UserDropdown";
 import DynamicBreadcrumb from "./DynamicBreadcrumb";
@@ -28,6 +29,7 @@ const DesktopLayout = () => {
 
   const navigationItems = [
     { name: 'Dashboard', path: 'dashboard', icon: HomeIcon },
+    { name: 'Getting Started', path: 'getting-started', icon: PlayIcon },
     { name: 'Training Definitions', path: 'training-definitions', icon: BookOpenIcon },
     { name: 'Training Projects', path: 'training-projects', icon: ClipboardDocumentListIcon },
     { name: 'Floor Plans', path: 'floor-plans', icon: ArchiveBoxIcon },

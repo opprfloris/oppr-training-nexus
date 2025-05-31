@@ -30,6 +30,7 @@ import TrainingDefinitionBuilder from "./pages/desktop/TrainingDefinitionBuilder
 import TrainingDefinitionBuilderMinimal from "./pages/desktop/TrainingDefinitionBuilderMinimal";
 import TrainingProjects from "./pages/desktop/TrainingProjects";
 import TrainingProjectEditor from "./pages/desktop/TrainingProjectEditor";
+import GettingStarted from "./pages/desktop/GettingStarted";
 
 // Mobile pages
 import MobileLogin from "./pages/mobile/MobileLogin";
@@ -82,6 +83,7 @@ function App() {
                   }>
                     <Route index element={<DesktopDashboard />} />
                     <Route path="dashboard" element={<DesktopDashboard />} />
+                    <Route path="getting-started" element={<GettingStarted />} />
                     <Route path="user-management" element={<UserManagement />} />
                     <Route path="user-management-minimal" element={<MinimalUserManagement />} />
                     <Route path="settings" element={<DesktopSettings />} />
