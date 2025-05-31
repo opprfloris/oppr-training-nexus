@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -14,6 +13,7 @@ import StatisticsTab from '@/components/desktop/training-projects/StatisticsTab'
 import { supabase } from '@/integrations/supabase/client';
 import type { TrainingProject, TrainingProjectMarker } from '@/types/training-projects';
 import type { FloorPlanMarker } from '@/types/floor-plan-marker';
+import { useBreadcrumbSetter } from '@/hooks/useBreadcrumbSetter';
 
 const TrainingProjectEditor = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -22,6 +22,16 @@ const TrainingProjectEditor = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Set breadcrumbs for training project editor
+  useBreadcrumbSetter([
+    { label: 'Training Projects', href: '/desktop/training-projects' },
+    { label: project?.name || 'Loading...', href: `/desktop/training-projects/${projectId}` },
+    { 
+      label: activeTab.charAt(0).toUpperCase() + activeTab.slice(1), 
+      isCurrentPage: true 
+    }
+  ]);
 
   useEffect(() => {
     console.log('TrainingProjectEditor: projectId from URL:', projectId);
@@ -173,11 +183,6 @@ const TrainingProjectEditor = () => {
 
   return (
     <div className="h-full flex flex-col">
-      <ProjectBreadcrumb 
-        projectId={project.id} 
-        activeTab={activeTab}
-      />
-      
       <div className="flex-1 overflow-hidden">
         <ProjectHeader 
           project={project}

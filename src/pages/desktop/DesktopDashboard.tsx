@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -16,11 +15,17 @@ import { StatCard } from '@/components/desktop/dashboard/StatCard';
 import { ResourceHubCard } from '@/components/desktop/dashboard/ResourceHubCard';
 import { RecentActivity } from '@/components/desktop/dashboard/RecentActivity';
 import { UploadDocumentModal } from '@/components/desktop/dashboard/UploadDocumentModal';
+import { useBreadcrumbSetter } from '@/hooks/useBreadcrumbSetter';
 
 const DesktopDashboard = () => {
   const navigate = useNavigate();
   const { stats, loading, refetch } = useDashboardStats();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
+  // Set breadcrumbs for dashboard
+  useBreadcrumbSetter([
+    { label: 'Dashboard', isCurrentPage: true }
+  ]);
 
   if (loading) {
     return (

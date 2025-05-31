@@ -13,6 +13,7 @@ import {
   AcademicCapIcon
 } from "@heroicons/react/24/outline";
 import UserDropdown from "./UserDropdown";
+import DynamicBreadcrumb from "./DynamicBreadcrumb";
 
 const DesktopLayout = () => {
   const location = useLocation();
@@ -47,8 +48,8 @@ const DesktopLayout = () => {
 
   return (
     <div className="min-h-screen flex w-full">
-      {/* Sidebar */}
-      <aside className="w-64 bg-oppr-gray-800 text-white flex flex-col">
+      {/* Sidebar - Fixed Position */}
+      <aside className="w-64 bg-oppr-gray-800 text-white flex flex-col fixed h-full z-30">
         {/* Logo */}
         <div className="p-6 border-b border-gray-700">
           <div className="flex items-center space-x-3">
@@ -60,7 +61,7 @@ const DesktopLayout = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navigationItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -96,13 +97,13 @@ const DesktopLayout = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Top Header */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          {/* Breadcrumbs placeholder */}
+      {/* Main Content - Offset by sidebar width */}
+      <div className="flex-1 flex flex-col ml-64">
+        {/* Top Header - Sticky */}
+        <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
+          {/* Dynamic Breadcrumbs */}
           <div className="text-sm text-gray-600">
-            Dashboard
+            <DynamicBreadcrumb />
           </div>
 
           {/* Search and User */}
@@ -120,7 +121,7 @@ const DesktopLayout = () => {
           </div>
         </header>
 
-        {/* Page Content */}
+        {/* Page Content - Scrollable */}
         <main className="flex-1 p-6 bg-oppr-gray-50 overflow-auto">
           <Outlet />
         </main>

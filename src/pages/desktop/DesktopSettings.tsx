@@ -4,8 +4,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Brain } from 'lucide-react';
 import AISettings from '@/components/desktop/settings/AISettings';
 import ProfileSettings from '@/components/desktop/settings/ProfileSettings';
+import { useBreadcrumbSetter } from '@/hooks/useBreadcrumbSetter';
 
 const DesktopSettings = () => {
+  // Set breadcrumbs for settings
+  useBreadcrumbSetter([
+    { label: 'Settings', isCurrentPage: true }
+  ]);
+
   return (
     <div className="space-y-6">
       <div>

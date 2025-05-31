@@ -5,8 +5,14 @@ import { UserManagementHeader } from '@/components/desktop/user-management/UserM
 import { UserManagementFilters } from '@/components/desktop/user-management/UserManagementFilters';
 import { UserManagementTable } from '@/components/desktop/user-management/UserManagementTable';
 import { UserManagementModals } from '@/components/desktop/user-management/UserManagementModals';
+import { useBreadcrumbSetter } from '@/hooks/useBreadcrumbSetter';
 
 const UserManagement = () => {
+  // Set breadcrumbs for user management
+  useBreadcrumbSetter([
+    { label: 'User Management', isCurrentPage: true }
+  ]);
+
   const {
     users,
     loading,

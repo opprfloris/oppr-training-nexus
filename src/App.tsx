@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AISettingsProvider } from "@/contexts/AISettingsContext";
+import { BreadcrumbProvider } from "@/contexts/BreadcrumbContext";
 import { useAuth } from "@/contexts/AuthContext";
 
 // Existing imports
@@ -67,67 +68,69 @@ function App() {
         <BrowserRouter>
           <AuthProvider>
             <AISettingsProvider>
-              <Routes>
-                <Route path="/" element={<Navigate to="/gateway" replace />} />
-                <Route path="/gateway" element={<GatewayPage />} />
-                
-                {/* Desktop Routes */}
-                <Route path="/desktop/login" element={<DesktopLogin />} />
-                <Route path="/desktop" element={
-                  <ProtectedRoute>
-                    <DesktopLayout />
-                  </ProtectedRoute>
-                }>
-                  <Route index element={<DesktopDashboard />} />
-                  <Route path="dashboard" element={<DesktopDashboard />} />
-                  <Route path="user-management" element={<UserManagement />} />
-                  <Route path="user-management-minimal" element={<MinimalUserManagement />} />
-                  <Route path="settings" element={<DesktopSettings />} />
-                  <Route path="documentation" element={<Documentation />} />
-                  <Route path="floor-plans" element={<FloorPlans />} />
-                  <Route path="machine-registry" element={<MachineRegistry />} />
-                  <Route path="oppr-docs" element={<OpprDocs />} />
-                  <Route path="skills-matrix" element={<SkillsMatrix />} />
-                  <Route path="training-definitions" element={<TrainingDefinitions />} />
-                  <Route path="training-definitions/new" element={<TrainingDefinitionBuilder />} />
-                  <Route path="training-definitions/builder/:id" element={<TrainingDefinitionBuilder />} />
-                  <Route path="training-definitions/builder-minimal/:id?" element={<TrainingDefinitionBuilderMinimal />} />
-                  <Route path="training-definitions/:id" element={<TrainingDefinitionBuilder />} />
-                  <Route path="training-projects" element={<TrainingProjects />} />
-                  <Route path="training-projects/:projectId" element={<TrainingProjectEditor />} />
-                </Route>
+              <BreadcrumbProvider>
+                <Routes>
+                  <Route path="/" element={<Navigate to="/gateway" replace />} />
+                  <Route path="/gateway" element={<GatewayPage />} />
+                  
+                  {/* Desktop Routes */}
+                  <Route path="/desktop/login" element={<DesktopLogin />} />
+                  <Route path="/desktop" element={
+                    <ProtectedRoute>
+                      <DesktopLayout />
+                    </ProtectedRoute>
+                  }>
+                    <Route index element={<DesktopDashboard />} />
+                    <Route path="dashboard" element={<DesktopDashboard />} />
+                    <Route path="user-management" element={<UserManagement />} />
+                    <Route path="user-management-minimal" element={<MinimalUserManagement />} />
+                    <Route path="settings" element={<DesktopSettings />} />
+                    <Route path="documentation" element={<Documentation />} />
+                    <Route path="floor-plans" element={<FloorPlans />} />
+                    <Route path="machine-registry" element={<MachineRegistry />} />
+                    <Route path="oppr-docs" element={<OpprDocs />} />
+                    <Route path="skills-matrix" element={<SkillsMatrix />} />
+                    <Route path="training-definitions" element={<TrainingDefinitions />} />
+                    <Route path="training-definitions/new" element={<TrainingDefinitionBuilder />} />
+                    <Route path="training-definitions/builder/:id" element={<TrainingDefinitionBuilder />} />
+                    <Route path="training-definitions/builder-minimal/:id?" element={<TrainingDefinitionBuilderMinimal />} />
+                    <Route path="training-definitions/:id" element={<TrainingDefinitionBuilder />} />
+                    <Route path="training-projects" element={<TrainingProjects />} />
+                    <Route path="training-projects/:projectId" element={<TrainingProjectEditor />} />
+                  </Route>
 
-                {/* Mobile Routes */}
-                <Route path="/mobile/login" element={<MobileLogin />} />
-                <Route path="/mobile" element={
-                  <ProtectedRoute>
-                    <MobileLayout />
-                  </ProtectedRoute>
-                }>
-                  <Route index element={<MobileTrainings />} />
-                  <Route path="trainings" element={<MobileTrainings />} />
-                  <Route path="settings" element={<MobileSettings />} />
-                </Route>
+                  {/* Mobile Routes */}
+                  <Route path="/mobile/login" element={<MobileLogin />} />
+                  <Route path="/mobile" element={
+                    <ProtectedRoute>
+                      <MobileLayout />
+                    </ProtectedRoute>
+                  }>
+                    <Route index element={<MobileTrainings />} />
+                    <Route path="trainings" element={<MobileTrainings />} />
+                    <Route path="settings" element={<MobileSettings />} />
+                  </Route>
 
-                {/* Mobile Training Routes - Outside of MobileLayout for full-screen experience */}
-                <Route path="/mobile/training-execution/:trainingId" element={
-                  <ProtectedRoute>
-                    <MobileTrainingExecution />
-                  </ProtectedRoute>
-                } />
-                <Route path="/mobile/qr-scanner" element={
-                  <ProtectedRoute>
-                    <MobileQRScanner />
-                  </ProtectedRoute>
-                } />
-                <Route path="/mobile/training-completion" element={
-                  <ProtectedRoute>
-                    <MobileTrainingCompletion />
-                  </ProtectedRoute>
-                } />
+                  {/* Mobile Training Routes - Outside of MobileLayout for full-screen experience */}
+                  <Route path="/mobile/training-execution/:trainingId" element={
+                    <ProtectedRoute>
+                      <MobileTrainingExecution />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/mobile/qr-scanner" element={
+                    <ProtectedRoute>
+                      <MobileQRScanner />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/mobile/training-completion" element={
+                    <ProtectedRoute>
+                      <MobileTrainingCompletion />
+                    </ProtectedRoute>
+                  } />
 
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BreadcrumbProvider>
             </AISettingsProvider>
           </AuthProvider>
         </BrowserRouter>
