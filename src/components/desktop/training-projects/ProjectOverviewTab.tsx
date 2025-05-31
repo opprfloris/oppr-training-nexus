@@ -63,7 +63,7 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
         `)
         .eq('training_project_id', project.id);
 
-      // Load learners
+      // Load learners (both operators and managers)
       const { data: learnersData } = await supabase
         .from('training_project_operator_assignments')
         .select(`
@@ -107,7 +107,7 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
           .single();
         
         if (floorPlan) {
-          const imageUrl = getImageUrl(floorPlan);
+          const imageUrl = getImageUrl(floorPlan.file_path);
           setFloorPlanUrl(imageUrl);
         }
       }
@@ -150,87 +150,74 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
   }
 
   return (
-    <div className="space-y-8">
-      <h3 className="text-lg font-medium">Project Overview</h3>
-      
-      {/* Project Header Section */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">{project.name}</h2>
-              <p className="mt-2 text-gray-600">{project.description || 'No description provided'}</p>
-              <div className="mt-4 flex gap-2">
-                <Badge className="bg-gray-200 text-gray-800 hover:bg-gray-300">
-                  ID: {project.project_id}
-                </Badge>
-                <Badge className={getBadgeColorByStatus(project.status)}>
-                  {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
-                </Badge>
-              </div>
-            </div>
-            <div 
-              className="h-12 w-12 rounded-md flex items-center justify-center"
-              style={{ backgroundColor: project.color_code }}
-            >
-              <span className="text-white text-xl">{project.icon.charAt(0).toUpperCase()}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Stats and Project Info */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="space-y-6">
+      {/* Project Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <StatCard
           title="Total Markers"
           value={totalMarkers}
           icon={<CheckCircleIcon className="h-5 w-5" />}
-          description="Machine QRs with training content"
+          description="Machine QRs placed"
         />
         <StatCard
-          title="Total Content"
+          title="Training Content"
           value={totalContent}
           icon={<BookOpenIcon className="h-5 w-5" />}
-          description="Training definitions assigned"
+          description="Definitions assigned"
         />
         <StatCard
-          title="Project Readiness"
+          title="Learners"
+          value={totalLearners}
+          icon={<UserGroupIcon className="h-5 w-5" />}
+          description="Assigned to project"
+        />
+        <StatCard
+          title="Readiness"
           value={`${readiness}%`}
           icon={<CheckCircleIcon className="h-5 w-5" />}
-          description="Overall project completion status"
+          description="Project completion"
         />
       </div>
       
-      {/* Floor Plan and Training Definitions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Floor Plan */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Floor Plan</CardTitle>
+            <CardTitle className="text-base">Floor Plan & Markers</CardTitle>
           </CardHeader>
           <CardContent>
             {project.floor_plan_image_id && floorPlanUrl ? (
               <div className="space-y-3">
-                <div className="aspect-[16/9] rounded-md overflow-hidden bg-gray-100 relative">
+                <div className="aspect-[16/9] rounded-lg overflow-hidden bg-gray-100 relative group">
                   <img 
                     src={floorPlanUrl} 
                     alt="Floor plan"
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center opacity-0 hover:opacity-100">
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
                     <Button variant="secondary" size="sm">
                       <EyeIcon className="w-4 h-4 mr-2" />
                       View Full Size
                     </Button>
                   </div>
+                  {/* Marker indicators */}
+                  {totalMarkers > 0 && (
+                    <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+                      {totalMarkers} marker{totalMarkers !== 1 ? 's' : ''}
+                    </div>
+                  )}
                 </div>
-                <p className="text-sm text-gray-600">
-                  {totalMarkers} marker{totalMarkers !== 1 ? 's' : ''} placed on floor plan
-                </p>
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>{totalMarkers} training markers placed</span>
+                  <span>{totalContent} definitions assigned</span>
+                </div>
               </div>
             ) : (
-              <div className="aspect-[16/9] rounded-md bg-gray-100 flex items-center justify-center">
+              <div className="aspect-[16/9] rounded-lg bg-gray-100 flex flex-col items-center justify-center">
+                <BookOpenIcon className="w-8 h-8 text-gray-400 mb-2" />
                 <p className="text-sm text-gray-500">No floor plan assigned</p>
+                <p className="text-xs text-gray-400">Add a floor plan to place training markers</p>
               </div>
             )}
           </CardContent>
@@ -243,29 +230,29 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
           </CardHeader>
           <CardContent>
             {contents.length > 0 ? (
-              <div className="space-y-3 max-h-64 overflow-y-auto">
+              <div className="space-y-2 max-h-64 overflow-y-auto">
                 {contents
                   .sort((a, b) => a.sequence_order - b.sequence_order)
-                  .map((content, index) => (
-                    <div key={content.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">
+                  .map((content) => (
+                    <div key={content.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center space-x-3 min-w-0 flex-1">
+                        <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0">
                           {content.sequence_order}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-gray-900 truncate">
+                          <p className="font-medium text-sm text-gray-900 truncate">
                             {content.training_definition_version?.training_definition?.title || 'Untitled'}
                           </p>
                           <p className="text-xs text-gray-500">
-                            v{content.training_definition_version?.version_number || 'N/A'}
+                            Version {content.training_definition_version?.version_number || 'N/A'}
                           </p>
                         </div>
                       </div>
                       <Badge 
                         variant={content.training_definition_version?.status === 'published' ? 'default' : 'secondary'}
-                        className="text-xs"
+                        className="text-xs ml-2 flex-shrink-0"
                       >
-                        {content.training_definition_version?.status || 'N/A'}
+                        {content.training_definition_version?.status || 'draft'}
                       </Badge>
                     </div>
                   ))}
@@ -274,48 +261,49 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
               <div className="text-center py-8 text-gray-500">
                 <BookOpenIcon className="w-8 h-8 mx-auto mb-2 text-gray-400" />
                 <p className="text-sm">No training definitions assigned</p>
+                <p className="text-xs text-gray-400 mt-1">Add content in the Content tab</p>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Project Timeline and Parameters */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Project Details */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Timeline Information */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Timeline</CardTitle>
+            <CardTitle className="text-base">Project Timeline</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
+            <div className="space-y-3">
+              <div className="flex justify-between items-center py-2">
                 <div className="flex items-center">
-                  <CalendarDaysIcon className="h-5 w-5 text-gray-500 mr-2" />
+                  <CalendarDaysIcon className="h-4 w-4 text-gray-500 mr-2" />
                   <span className="text-sm font-medium">Start Date</span>
                 </div>
-                <span className="text-sm">{formattedStartDate}</span>
+                <span className="text-sm text-gray-600">{formattedStartDate}</span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center py-2">
                 <div className="flex items-center">
-                  <CalendarDaysIcon className="h-5 w-5 text-gray-500 mr-2" />
+                  <CalendarDaysIcon className="h-4 w-4 text-gray-500 mr-2" />
                   <span className="text-sm font-medium">End Date</span>
                 </div>
-                <span className="text-sm">{formattedEndDate}</span>
+                <span className="text-sm text-gray-600">{formattedEndDate}</span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center py-2">
                 <div className="flex items-center">
-                  <ClockIcon className="h-5 w-5 text-gray-500 mr-2" />
-                  <span className="text-sm font-medium">Recommended Time</span>
+                  <ClockIcon className="h-4 w-4 text-gray-500 mr-2" />
+                  <span className="text-sm font-medium">Est. Duration</span>
                 </div>
-                <span className="text-sm">{project.recommended_completion_time || 'Not specified'}</span>
+                <span className="text-sm text-gray-600">{project.recommended_completion_time || 'Not specified'}</span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center py-2">
                 <div className="flex items-center">
-                  <CalendarDaysIcon className="h-5 w-5 text-gray-500 mr-2" />
-                  <span className="text-sm font-medium">Created On</span>
+                  <CalendarDaysIcon className="h-4 w-4 text-gray-500 mr-2" />
+                  <span className="text-sm font-medium">Created</span>
                 </div>
-                <span className="text-sm">{formattedCreatedDate}</span>
+                <span className="text-sm text-gray-600">{formattedCreatedDate}</span>
               </div>
             </div>
           </CardContent>
@@ -324,72 +312,78 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
         {/* Training Parameters */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Training Parameters</CardTitle>
+            <CardTitle className="text-base">Training Configuration</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Pass/Fail Threshold</span>
-                <span className="text-sm">{project.pass_fail_threshold}%</span>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm font-medium">Pass Threshold</span>
+                <Badge variant="outline">{project.pass_fail_threshold}%</Badge>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Max Retake Attempts</span>
-                <span className="text-sm">{project.max_retake_attempts}</span>
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm font-medium">Max Retakes</span>
+                <Badge variant="outline">{project.max_retake_attempts}</Badge>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Assigned Learners</span>
-                <span className="text-sm">{totalLearners}</span>
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm font-medium">Project Status</span>
+                <Badge className={getBadgeColorByStatus(project.status)}>
+                  {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+                </Badge>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Collaborators</span>
-                <span className="text-sm">{totalCollaborators}</span>
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm font-medium">Project ID</span>
+                <span className="text-sm text-gray-600 font-mono">{project.project_id}</span>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
       
-      {/* Team */}
+      {/* Team Overview */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Team</CardTitle>
+          <CardTitle className="text-base">Team Overview</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
-              <h4 className="text-sm font-medium text-gray-900 mb-2">Learners ({totalLearners})</h4>
-              <div className="flex flex-wrap gap-2">
-                {learners.length > 0 ? learners.map((learner, index) => (
-                  <div key={index} className="flex items-center space-x-1">
-                    <Badge variant="outline" className="flex items-center px-2 py-1">
-                      <UserGroupIcon className="h-3 w-3 mr-1" />
-                      {learner.operator?.first_name} {learner.operator?.last_name}
-                    </Badge>
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Learners ({totalLearners})</h4>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {learners.length > 0 ? learners.map((learner) => (
+                  <div key={learner.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+                    <div className="flex items-center space-x-2 min-w-0 flex-1">
+                      <UserGroupIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                      <span className="text-sm font-medium truncate">
+                        {learner.operator?.first_name} {learner.operator?.last_name}
+                      </span>
+                    </div>
                     <Badge className={`text-xs ${getRoleBadgeColor(learner.operator?.role || '')}`}>
                       {learner.operator?.role}
                     </Badge>
                   </div>
                 )) : (
-                  <p className="text-sm text-gray-500">No learners assigned</p>
+                  <p className="text-sm text-gray-500 italic">No learners assigned</p>
                 )}
               </div>
             </div>
             
             <div>
-              <h4 className="text-sm font-medium text-gray-900 mb-2">Collaborators ({totalCollaborators})</h4>
-              <div className="flex flex-wrap gap-2">
-                {collaborators.length > 0 ? collaborators.map((collab, index) => (
-                  <div key={index} className="flex items-center space-x-1">
-                    <Badge variant="outline" className="flex items-center px-2 py-1">
-                      <UserGroupIcon className="h-3 w-3 mr-1" />
-                      {collab.collaborator?.first_name} {collab.collaborator?.last_name}
-                    </Badge>
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Collaborators ({totalCollaborators})</h4>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {collaborators.length > 0 ? collaborators.map((collab) => (
+                  <div key={collab.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+                    <div className="flex items-center space-x-2 min-w-0 flex-1">
+                      <UserGroupIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                      <span className="text-sm font-medium truncate">
+                        {collab.collaborator?.first_name} {collab.collaborator?.last_name}
+                      </span>
+                    </div>
                     <Badge className={`text-xs ${getRoleBadgeColor(collab.collaborator?.role || '')}`}>
                       {collab.collaborator?.role}
                     </Badge>
                   </div>
                 )) : (
-                  <p className="text-sm text-gray-500">No collaborators assigned</p>
+                  <p className="text-sm text-gray-500 italic">No collaborators assigned</p>
                 )}
               </div>
             </div>
@@ -424,7 +418,7 @@ function getBadgeColorByStatus(status: string): string {
   switch (status) {
     case 'draft':
       return 'bg-gray-200 text-gray-800 hover:bg-gray-300';
-    case 'scheduled':
+    case 'published':
       return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
     case 'active':
       return 'bg-green-100 text-green-800 hover:bg-green-200';

@@ -51,7 +51,7 @@ const TrainingProjectEditor = () => {
       // Ensure status is properly typed
       const typedProject: TrainingProject = {
         ...data,
-        status: data.status as 'draft' | 'scheduled' | 'active' | 'stopped' | 'archived'
+        status: data.status as 'draft' | 'published' | 'active' | 'stopped' | 'archived'
       };
 
       setProject(typedProject);
@@ -90,26 +90,32 @@ const TrainingProjectEditor = () => {
     }
   };
 
-  const handleSave = async (updatedProject: TrainingProject) => {
+  const handleSave = async (updatedProject?: TrainingProject) => {
     setSaving(true);
     try {
+      const projectToUpdate = updatedProject || project;
+      if (!projectToUpdate) return;
+
       const { error } = await supabase
         .from('training_projects')
-        .update(updatedProject)
-        .eq('id', updatedProject.id);
+        .update(projectToUpdate)
+        .eq('id', projectToUpdate.id);
 
       if (error) {
         console.error('Error updating project:', error);
       } else {
-        setProject(updatedProject);
+        setProject(projectToUpdate);
       }
     } finally {
       setSaving(false);
     }
   };
 
-  const handleProjectUpdate = (updatedProject: TrainingProject) => {
-    setProject(updatedProject);
+  const handleProjectUpdate = (updates: Partial<TrainingProject>) => {
+    if (project) {
+      const updatedProject = { ...project, ...updates };
+      setProject(updatedProject);
+    }
   };
 
   const handleFloorPlanSelect = async (floorPlanId: string) => {
@@ -144,7 +150,7 @@ const TrainingProjectEditor = () => {
 
   const handleHeaderSave = async () => {
     if (!project) return;
-    await handleSave(project);
+    await handleSave();
   };
 
   if (loading) {
@@ -177,6 +183,7 @@ const TrainingProjectEditor = () => {
           project={project}
           saving={saving}
           onSave={handleHeaderSave}
+          onProjectUpdate={handleProjectUpdate}
         />
         
         <div className="p-6">
