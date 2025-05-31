@@ -16,7 +16,7 @@ import type { TrainingProject, TrainingProjectMarker } from '@/types/training-pr
 import type { FloorPlanMarker } from '@/types/floor-plan-marker';
 
 const TrainingProjectEditor = () => {
-  const { id } = useParams<{ id: string }>();
+  const { projectId } = useParams<{ projectId: string }>();
   const [project, setProject] = useState<TrainingProject | null>(null);
   const [markers, setMarkers] = useState<TrainingProjectMarker[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
@@ -24,25 +24,29 @@ const TrainingProjectEditor = () => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (id) {
-      fetchProject(id);
-      fetchMarkers(id);
+    console.log('TrainingProjectEditor: projectId from URL:', projectId);
+    if (projectId) {
+      fetchProject(projectId);
+      fetchMarkers(projectId);
     }
-  }, [id]);
+  }, [projectId]);
 
-  const fetchProject = async (projectId: string) => {
+  const fetchProject = async (id: string) => {
     setLoading(true);
     try {
+      console.log('Fetching project with ID:', id);
       const { data, error } = await supabase
         .from('training_projects')
         .select('*')
-        .eq('id', projectId)
+        .eq('id', id)
         .single();
 
       if (error) {
         console.error('Error fetching project:', error);
         return;
       }
+
+      console.log('Project data fetched:', data);
 
       // Ensure status is properly typed
       const typedProject: TrainingProject = {
@@ -51,6 +55,8 @@ const TrainingProjectEditor = () => {
       };
 
       setProject(typedProject);
+    } catch (error) {
+      console.error('Exception while fetching project:', error);
     } finally {
       setLoading(false);
     }
@@ -154,6 +160,7 @@ const TrainingProjectEditor = () => {
       <div className="text-center py-12">
         <h2 className="text-xl font-semibold text-gray-900 mb-2">Project not found</h2>
         <p className="text-gray-600">The training project you're looking for doesn't exist.</p>
+        <p className="text-sm text-gray-500 mt-2">Project ID: {projectId}</p>
       </div>
     );
   }
