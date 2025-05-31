@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { CloudArrowUpIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { Button } from '@/components/ui/button';
@@ -9,8 +8,14 @@ import { FloorPlanEditModal } from '@/components/desktop/floor-plans/FloorPlanEd
 import { FloorPlanPreviewModal } from '@/components/desktop/floor-plans/FloorPlanPreviewModal';
 import { useFloorPlans } from '@/hooks/useFloorPlans';
 import { FloorPlanImage } from '@/types/floor-plans';
+import { useBreadcrumbSetter } from '@/hooks/useBreadcrumbSetter';
 
 const FloorPlans = () => {
+  // Set breadcrumbs for floor plans
+  useBreadcrumbSetter([
+    { label: 'Floor Plans', isCurrentPage: true }
+  ]);
+
   const {
     floorPlans,
     loading,

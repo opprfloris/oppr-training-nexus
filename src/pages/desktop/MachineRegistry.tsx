@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { PlusIcon, MagnifyingGlassIcon, ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 import { Button } from '@/components/ui/button';
@@ -12,8 +11,14 @@ import { ViewMachineModal } from '@/components/desktop/machine-qr/ViewMachineMod
 import { BulkUploadModal } from '@/components/desktop/machine-qr/BulkUploadModal';
 import { ColumnVisibilitySettings, defaultVisibility, ColumnVisibility } from '@/components/desktop/machine-qr/ColumnVisibilitySettings';
 import { MachineQREntity } from '@/types/machine-qr';
+import { useBreadcrumbSetter } from '@/hooks/useBreadcrumbSetter';
 
 const MachineRegistry = () => {
+  // Set breadcrumbs for machine registry
+  useBreadcrumbSetter([
+    { label: 'Machine & QR Registry', isCurrentPage: true }
+  ]);
+
   const {
     entities,
     loading,

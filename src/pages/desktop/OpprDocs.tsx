@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { OpprDocsHeader } from '@/components/desktop/oppr-docs/OpprDocsHeader';
 import { OpprDocsToolbar } from '@/components/desktop/oppr-docs/OpprDocsToolbar';
@@ -11,6 +10,7 @@ import { RenameFolderModal } from '@/components/desktop/oppr-docs/RenameFolderMo
 import { useOpprDocsData } from '@/hooks/useOpprDocsData';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useBreadcrumbSetter } from '@/hooks/useBreadcrumbSetter';
 
 interface Document {
   id: string;
@@ -35,6 +35,11 @@ interface Folder {
 }
 
 const OpprDocs = () => {
+  // Set breadcrumbs for oppr docs
+  useBreadcrumbSetter([
+    { label: 'Oppr Docs', isCurrentPage: true }
+  ]);
+
   const { folders, documents, loading, fetchFolders, fetchDocuments } = useOpprDocsData();
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);

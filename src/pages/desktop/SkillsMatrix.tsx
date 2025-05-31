@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useSkillsMatrix } from '@/hooks/useSkillsMatrix';
@@ -8,8 +7,14 @@ import { SkillsMatrixTable } from '@/components/desktop/skills-matrix/SkillsMatr
 import { SkillsMatrixPagination } from '@/components/desktop/skills-matrix/SkillsMatrixPagination';
 import { CellDetailModal } from '@/components/desktop/skills-matrix/CellDetailModal';
 import { TableCellsIcon } from '@heroicons/react/24/outline';
+import { useBreadcrumbSetter } from '@/hooks/useBreadcrumbSetter';
 
 const SkillsMatrix = () => {
+  // Set breadcrumbs for skills matrix
+  useBreadcrumbSetter([
+    { label: 'Skills Matrix', isCurrentPage: true }
+  ]);
+
   const [filters, setFilters] = useState<SkillsMatrixFilters>({});
   const [selectedCell, setSelectedCell] = useState<{
     operator: SkillsMatrixOperator;

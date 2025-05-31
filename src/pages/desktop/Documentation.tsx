@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -8,8 +7,14 @@ import { TableOfContentsSidebar } from '@/components/desktop/documentation/Table
 import { DocumentationHeader } from '@/components/desktop/documentation/DocumentationHeader';
 import { markdownComponents, resetHeadingCounters } from '@/components/desktop/documentation/MarkdownComponents';
 import { useTableOfContents } from '@/hooks/useTableOfContents';
+import { useBreadcrumbSetter } from '@/hooks/useBreadcrumbSetter';
 
 const Documentation = () => {
+  // Set breadcrumbs for documentation
+  useBreadcrumbSetter([
+    { label: 'Documentation', isCurrentPage: true }
+  ]);
+
   const [markdownContent, setMarkdownContent] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);

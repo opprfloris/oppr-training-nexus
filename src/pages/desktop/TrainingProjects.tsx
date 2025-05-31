@@ -4,8 +4,14 @@ import { PlusIcon, MagnifyingGlassIcon, FunnelIcon } from "@heroicons/react/24/o
 import { CreateProjectModal } from '@/components/desktop/training-projects/CreateProjectModal';
 import TrainingProjectsTable from '@/components/desktop/training-projects/TrainingProjectsTable';
 import { useTrainingProjects } from '@/hooks/useTrainingProjects';
+import { useBreadcrumbSetter } from '@/hooks/useBreadcrumbSetter';
 
 const TrainingProjects = () => {
+  // Set breadcrumbs for training projects
+  useBreadcrumbSetter([
+    { label: 'Training Projects', isCurrentPage: true }
+  ]);
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const { projects, loading, createProject, deleteProject } = useTrainingProjects();

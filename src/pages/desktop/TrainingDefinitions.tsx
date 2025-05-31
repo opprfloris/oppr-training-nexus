@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { PlusCircleIcon } from "@heroicons/react/24/outline";
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { TrainingDefinitionWithLatestVersion, StepBlock } from '@/types/training-definitions';
 import TrainingDefinitionsTable from '@/components/desktop/training-definitions/TrainingDefinitionsTable';
 import { useNavigate } from 'react-router-dom';
+import { useBreadcrumbSetter } from '@/hooks/useBreadcrumbSetter';
 
 // Type guard to safely convert Json to StepBlock[]
 const isStepBlockArray = (value: any): value is StepBlock[] => {
@@ -30,6 +30,11 @@ const safeConvertToStepBlocks = (value: any): StepBlock[] => {
 };
 
 const TrainingDefinitions = () => {
+  // Set breadcrumbs for training definitions
+  useBreadcrumbSetter([
+    { label: 'Training Definitions', isCurrentPage: true }
+  ]);
+
   const [definitions, setDefinitions] = useState<TrainingDefinitionWithLatestVersion[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
