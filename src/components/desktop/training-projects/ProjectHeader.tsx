@@ -16,9 +16,12 @@ import { useTrainingProjects } from '@/hooks/useTrainingProjects';
 
 interface ProjectHeaderProps {
   project: TrainingProject;
+  saving?: boolean;
+  onSave?: () => Promise<void>;
+  onProjectUpdate?: (updates: Partial<TrainingProject>) => void;
 }
 
-const ProjectHeader = ({ project }: ProjectHeaderProps) => {
+const ProjectHeader = ({ project, saving, onSave, onProjectUpdate }: ProjectHeaderProps) => {
   const navigate = useNavigate();
   const { deleteProject, updateProject } = useTrainingProjects();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -27,6 +30,9 @@ const ProjectHeader = ({ project }: ProjectHeaderProps) => {
   const handleStatusChange = async (newStatus: ProjectStatus) => {
     try {
       await updateProject(project.id, { status: newStatus });
+      if (onProjectUpdate) {
+        onProjectUpdate({ status: newStatus });
+      }
     } catch (error) {
       console.error('Failed to update project status:', error);
     }
