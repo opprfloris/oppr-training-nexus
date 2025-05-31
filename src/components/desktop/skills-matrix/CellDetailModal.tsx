@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { StatusCell } from './StatusCell';
 import { SkillsMatrixOperator, SkillsMatrixTrainingProject, SkillsMatrixProgress } from '@/services/skillsMatrixService';
-import { ExternalLinkIcon } from '@heroicons/react/24/outline';
+import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 
 interface CellDetailModalProps {
   isOpen: boolean;
@@ -114,11 +114,11 @@ export const CellDetailModal = ({
           {/* Action Buttons */}
           <div className="flex space-x-3">
             <Button variant="outline" className="flex items-center space-x-2">
-              <ExternalLinkIcon className="w-4 h-4" />
+              <ArrowTopRightOnSquareIcon className="w-4 h-4" />
               <span>View Full Training Summary</span>
             </Button>
             <Button variant="outline" className="flex items-center space-x-2">
-              <ExternalLinkIcon className="w-4 h-4" />
+              <ArrowTopRightOnSquareIcon className="w-4 h-4" />
               <span>View Project Statistics</span>
             </Button>
           </div>
