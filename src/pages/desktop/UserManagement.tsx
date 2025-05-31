@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useUserManagement } from '@/hooks/useUserManagement';
 import { UserManagementDebugPanel } from '@/components/desktop/user-management/UserManagementDebugPanel';
@@ -57,6 +56,7 @@ const UserManagement = () => {
       <UserManagementHeader
         onAddUser={() => setIsAddUserOpen(true)}
         onBulkUpload={() => setIsBulkUploadOpen(true)}
+        onUsersCreated={handleUsersCreated}
       />
 
       <UserManagementFilters
