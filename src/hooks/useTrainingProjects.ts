@@ -146,7 +146,40 @@ export const useTrainingProjects = () => {
     }
   };
 
-  const deleteProject = async (id: string) => {
+  const updateProject = async (id: string, updates: Partial<TrainingProject>): Promise<void> => {
+    try {
+      console.log('🔍 DEBUG: Updating project:', id, updates);
+      
+      const { error } = await supabase
+        .from('training_projects')
+        .update(updates)
+        .eq('id', id);
+
+      if (error) {
+        console.error('🚨 DEBUG: Update error:', error);
+        throw error;
+      }
+
+      console.log('✅ DEBUG: Project updated successfully');
+
+      toast({
+        title: "Success",
+        description: "Training project updated successfully",
+      });
+
+      await fetchProjects();
+    } catch (error) {
+      console.error('🚨 DEBUG: Error updating training project:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update training project",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
+  const deleteProject = async (id: string): Promise<void> => {
     try {
       console.log('🔍 DEBUG: Deleting project:', id);
       
@@ -175,6 +208,7 @@ export const useTrainingProjects = () => {
         description: "Failed to delete training project",
         variant: "destructive"
       });
+      throw error;
     }
   };
 
@@ -187,6 +221,7 @@ export const useTrainingProjects = () => {
     loading,
     fetchProjects,
     createProject,
+    updateProject,
     deleteProject
   };
 };

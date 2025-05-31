@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -25,10 +26,7 @@ const ProjectHeader = ({ project }: ProjectHeaderProps) => {
 
   const handleStatusChange = async (newStatus: ProjectStatus) => {
     try {
-      await updateProject.mutateAsync({
-        id: project.id,
-        updates: { status: newStatus }
-      });
+      await updateProject(project.id, { status: newStatus });
     } catch (error) {
       console.error('Failed to update project status:', error);
     }
@@ -37,7 +35,7 @@ const ProjectHeader = ({ project }: ProjectHeaderProps) => {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      await deleteProject.mutateAsync(project.id);
+      await deleteProject(project.id);
     } catch (error) {
       console.error('Failed to delete project:', error);
     } finally {

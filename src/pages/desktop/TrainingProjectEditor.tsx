@@ -4,13 +4,13 @@ import { useParams } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { ProjectBreadcrumb } from '@/components/desktop/training-projects/ProjectBreadcrumb';
-import { ProjectHeader } from '@/components/desktop/training-projects/ProjectHeader';
+import ProjectHeader from '@/components/desktop/training-projects/ProjectHeader';
 import { ProjectOverviewTab } from '@/components/desktop/training-projects/ProjectOverviewTab';
 import { FloorPlanMarkerTab } from '@/components/desktop/training-projects/FloorPlanMarkerTab';
 import { ContentAssemblyTab } from '@/components/desktop/training-projects/ContentAssemblyTab';
 import { UserAccessTab } from '@/components/desktop/training-projects/UserAccessTab';
 import { SettingsTab } from '@/components/desktop/training-projects/SettingsTab';
-import { StatisticsTab } from '@/components/desktop/training-projects/StatisticsTab';
+import StatisticsTab from '@/components/desktop/training-projects/StatisticsTab';
 import { supabase } from '@/integrations/supabase/client';
 import type { TrainingProject, TrainingProjectMarker } from '@/types/training-projects';
 import type { FloorPlanMarker } from '@/types/floor-plan-marker';
