@@ -220,6 +220,72 @@ export type Database = {
           },
         ]
       }
+      operator_training_progress: {
+        Row: {
+          attempt_count: number
+          completed_at: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          last_attempt_at: string | null
+          max_attempts: number | null
+          operator_id: string
+          progress_percentage: number
+          score: number | null
+          started_at: string | null
+          status: string
+          training_project_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          completed_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          max_attempts?: number | null
+          operator_id: string
+          progress_percentage?: number
+          score?: number | null
+          started_at?: string | null
+          status?: string
+          training_project_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          completed_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          max_attempts?: number | null
+          operator_id?: string
+          progress_percentage?: number
+          score?: number | null
+          started_at?: string | null
+          status?: string
+          training_project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operator_training_progress_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operator_training_progress_training_project_id_fkey"
+            columns: ["training_project_id"]
+            isOneToOne: false
+            referencedRelation: "training_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
