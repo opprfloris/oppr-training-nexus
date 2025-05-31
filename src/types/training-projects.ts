@@ -121,6 +121,12 @@ export interface ActivityItem {
   timestamp: string;
 }
 
+// Valid project statuses as a union type
+export type ProjectStatus = 'draft' | 'published' | 'active' | 'stopped' | 'archived';
+
+// Valid progress statuses as a union type  
+export type ProgressStatus = 'not_started' | 'in_progress' | 'completed' | 'failed';
+
 // Helper function to convert database response to TrainingProject
 export const mapDatabaseToTrainingProject = (dbProject: any): TrainingProject => {
   return {
@@ -130,7 +136,7 @@ export const mapDatabaseToTrainingProject = (dbProject: any): TrainingProject =>
     description: dbProject.description,
     color_code: dbProject.color_code || '#3a7ca5',
     icon: dbProject.icon || 'folder',
-    status: dbProject.status as 'draft' | 'published' | 'active' | 'stopped' | 'archived',
+    status: dbProject.status as ProjectStatus,
     floor_plan_image_id: dbProject.floor_plan_image_id,
     start_date: dbProject.start_date,
     end_date: dbProject.end_date,
