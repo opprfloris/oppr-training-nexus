@@ -1,333 +1,112 @@
-
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { CheckBadgeIcon, PlayIcon, StopIcon, ArrowPathIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
-import { TrainingProject } from '@/types/training-projects';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  PencilSquareIcon,
+  TrashIcon,
+  ClockIcon,
+  EyeIcon,
+  PlayIcon,
+  PauseIcon,
+  ArchiveBoxIcon
+} from "@heroicons/react/24/outline";
+import { TrainingProject, ProjectStatus } from '@/types/training-projects';
+import ConfirmationDialog from '../ConfirmationDialog';
+import { useTrainingProjects } from '@/hooks/useTrainingProjects';
 
 interface ProjectHeaderProps {
   project: TrainingProject;
-  saving: boolean;
-  onSave: () => void;
-  onProjectUpdate: (updates: Partial<TrainingProject>) => void;
 }
 
-export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
-  project,
-  saving,
-  onSave,
-  onProjectUpdate
-}) => {
-  const [updating, setUpdating] = useState(false);
-  const [readinessChecks, setReadinessChecks] = useState<any[]>([]);
-  const [showReadinessModal, setShowReadinessModal] = useState(false);
-  const { toast } = useToast();
+const ProjectHeader = ({ project }: ProjectHeaderProps) => {
+  const navigate = useNavigate();
+  const { deleteProject, updateProject } = useTrainingProjects();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const getStatusBadge = (status: string) => {
-    const colors = {
-      draft: 'text-amber-600 border-amber-200 bg-amber-50',
-      published: 'text-blue-600 border-blue-200 bg-blue-50',
-      active: 'text-green-600 border-green-200 bg-green-50',
-      stopped: 'text-yellow-600 border-yellow-200 bg-yellow-50',
-      archived: 'text-gray-600 border-gray-200 bg-gray-50',
-    };
-
-    return (
-      <Badge variant="outline" className={colors[status as keyof typeof colors] || ''}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    );
-  };
-
-  const checkProjectReadiness = async () => {
+  const handleStatusChange = async (newStatus: ProjectStatus) => {
     try {
-      // Check floor plan and markers
-      const hasFloorPlan = !!project.floor_plan_image_id;
-      
-      const { data: markers } = await supabase
-        .from('training_project_markers')
-        .select('id')
-        .eq('training_project_id', project.id);
-
-      const hasMarkers = markers && markers.length > 0;
-
-      // Check training content
-      const { data: content } = await supabase
-        .from('training_project_content')
-        .select(`
-          id,
-          training_definition_version:training_definition_versions(
-            id,
-            status
-          )
-        `)
-        .eq('training_project_id', project.id);
-
-      const hasContent = content && content.length > 0;
-      const allContentPublished = content?.every(c => 
-        c.training_definition_version?.status === 'published'
-      ) ?? false;
-
-      // Check learner assignments (both operators and managers)
-      const { data: learners } = await supabase
-        .from('training_project_operator_assignments')
-        .select('id')
-        .eq('training_project_id', project.id);
-
-      const hasLearners = learners && learners.length > 0;
-
-      const checks = [
-        {
-          name: "Floor Plan & Markers",
-          completed: hasFloorPlan && hasMarkers,
-          description: "Floor plan selected with training markers placed"
-        },
-        {
-          name: "Training Content",
-          completed: hasContent && allContentPublished,
-          description: "All markers have published training definitions"
-        },
-        {
-          name: "Learner Assignment",
-          completed: hasLearners,
-          description: "At least one learner assigned to the project"
-        },
-        {
-          name: "Pass/Fail Threshold",
-          completed: project.pass_fail_threshold >= 50,
-          description: "Minimum pass threshold set (≥50%)"
-        }
-      ];
-
-      setReadinessChecks(checks);
-      return checks;
+      await updateProject.mutateAsync({
+        id: project.id,
+        updates: { status: newStatus }
+      });
     } catch (error) {
-      console.error('Error checking project readiness:', error);
-      return [];
+      console.error('Failed to update project status:', error);
     }
   };
 
-  const handlePublishProject = async () => {
-    const checks = await checkProjectReadiness();
-    const completedChecks = checks.filter(check => check.completed).length;
-    const isReady = completedChecks === checks.length;
-
-    if (!isReady) {
-      setShowReadinessModal(true);
-      return;
-    }
-
+  const handleDelete = async () => {
+    setIsDeleting(true);
     try {
-      setUpdating(true);
-      await updateProjectStatus('published');
-      
-      toast({
-        title: "Success",
-        description: "Training project published successfully"
-      });
+      await deleteProject.mutateAsync(project.id);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to publish project",
-        variant: "destructive"
-      });
+      console.error('Failed to delete project:', error);
     } finally {
-      setUpdating(false);
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
     }
   };
 
-  const handleActivateProject = async () => {
-    if (project.status === 'draft') {
-      await handlePublishProject();
-      return;
-    }
-
-    try {
-      setUpdating(true);
-      await updateProjectStatus('active');
-      
-      toast({
-        title: "Success",
-        description: "Training project activated successfully"
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to activate project",
-        variant: "destructive"
-      });
-    } finally {
-      setUpdating(false);
+  const getStatusColor = (status: ProjectStatus) => {
+    switch (status) {
+      case 'draft': return 'bg-gray-100 text-gray-800';
+      case 'published': return 'bg-blue-100 text-blue-800';
+      case 'active': return 'bg-green-100 text-green-800';
+      case 'stopped': return 'bg-yellow-100 text-yellow-800';
+      case 'archived': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const handleStopProject = async () => {
-    try {
-      setUpdating(true);
-      await updateProjectStatus('stopped');
-      
-      toast({
-        title: "Success",
-        description: "Training project has been stopped"
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to stop project",
-        variant: "destructive"
-      });
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const handleReactivateProject = async () => {
-    try {
-      setUpdating(true);
-      await updateProjectStatus('active');
-      
-      toast({
-        title: "Success",
-        description: "Training project reactivated successfully"
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to reactivate project",
-        variant: "destructive"
-      });
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const updateProjectStatus = async (status: string) => {
-    const { error } = await supabase
-      .from('training_projects')
-      .update({ status })
-      .eq('id', project.id);
-
-    if (error) throw error;
-
-    onProjectUpdate({ status });
-  };
-
-  const getActionButton = () => {
-    switch (project.status) {
-      case 'draft':
-        return (
-          <Button 
-            onClick={handleActivateProject}
-            disabled={updating}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <PlayIcon className="w-4 h-4 mr-2" />
-            {updating ? 'Publishing...' : 'Publish & Activate'}
-          </Button>
-        );
-      case 'published':
-        return (
-          <Button 
-            onClick={handleActivateProject}
-            disabled={updating}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <PlayIcon className="w-4 h-4 mr-2" />
-            {updating ? 'Activating...' : 'Activate Project'}
-          </Button>
-        );
-      case 'active':
-        return (
-          <Button 
-            variant="destructive"
-            onClick={handleStopProject}
-            disabled={updating}
-          >
-            <StopIcon className="w-4 h-4 mr-2" />
-            {updating ? 'Stopping...' : 'Stop Project'}
-          </Button>
-        );
-      case 'stopped':
-        return (
-          <Button 
-            onClick={handleReactivateProject}
-            disabled={updating}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <ArrowPathIcon className="w-4 h-4 mr-2" />
-            {updating ? 'Reactivating...' : 'Reactivate Project'}
-          </Button>
-        );
-      default:
-        return null;
+  const getStatusIcon = (status: ProjectStatus) => {
+    switch (status) {
+      case 'draft': return <ClockIcon className="w-4 h-4" />;
+      case 'published': return <EyeIcon className="w-4 h-4" />;
+      case 'active': return <PlayIcon className="w-4 h-4" />;
+      case 'stopped': return <PauseIcon className="w-4 h-4" />;
+      case 'archived': return <ArchiveBoxIcon className="w-4 h-4" />;
+      default: return <ClockIcon className="w-4 h-4" />;
     }
   };
 
   return (
-    <div className="oppr-card p-8">
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <div className="flex items-center space-x-4 mb-3">
-            <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
-            {getStatusBadge(project.status)}
-          </div>
-          <p className="text-gray-600 mb-2">ID: {project.project_id}</p>
-          {project.description && (
-            <p className="text-gray-600">{project.description}</p>
-          )}
+    <div className="bg-white px-4 py-5 border-b border-gray-200 sm:px-6">
+      <div className="-ml-4 -mt-2 flex flex-wrap items-center justify-between sm:flex-nowrap">
+        <div className="ml-4 mt-2">
+          <h3 className="text-lg font-medium leading-6 text-gray-900">{project.name}</h3>
         </div>
-        <div className="flex items-center space-x-3">
-          {project.status === 'draft' && (
-            <Button
-              variant="outline"
-              onClick={onSave}
-              disabled={saving}
-            >
-              {saving ? 'Saving...' : 'Save Draft'}
-            </Button>
-          )}
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => checkProjectReadiness().then(() => setShowReadinessModal(true))}
+        <div className="ml-4 mt-2 flex-shrink-0">
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
+            {getStatusIcon(project.status)}
+            <span className="ml-1">{project.status}</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => navigate(`/desktop/training-projects/${project.id}/edit`)}
+            className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ml-2"
           >
-            <CheckBadgeIcon className="w-4 h-4 mr-2" />
-            Check Readiness
-          </Button>
-          {getActionButton()}
+            <PencilSquareIcon className="-ml-1 mr-2 h-5 w-5 text-gray-500" aria-hidden="true" />
+            Edit
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowDeleteDialog(true)}
+            className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ml-2"
+          >
+            <TrashIcon className="-ml-1 mr-2 h-5 w-5 text-gray-500" aria-hidden="true" />
+            Delete
+          </button>
+          <ConfirmationDialog
+            isOpen={showDeleteDialog}
+            title="Delete Training Project"
+            message={`Are you sure you want to delete ${project.name}? This action cannot be undone.`}
+            onConfirm={handleDelete}
+            onCancel={() => setShowDeleteDialog(false)}
+            isLoading={isDeleting}
+          />
         </div>
       </div>
-
-      {/* Readiness Modal */}
-      {showReadinessModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Project Readiness Check</h3>
-            <div className="space-y-3 mb-6">
-              {readinessChecks.map((check, index) => (
-                <div key={index} className="flex items-center space-x-3">
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                    check.completed ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
-                  }`}>
-                    {check.completed ? '✓' : '○'}
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm">{check.name}</p>
-                    <p className="text-xs text-gray-600">{check.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowReadinessModal(false)}>
-                Close
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
+
+export default ProjectHeader;
