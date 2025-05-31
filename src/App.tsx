@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -85,6 +86,8 @@ function App() {
                   <Route path="oppr-docs" element={<OpprDocs />} />
                   <Route path="skills-matrix" element={<SkillsMatrix />} />
                   <Route path="training-definitions" element={<TrainingDefinitions />} />
+                  <Route path="training-definitions/new" element={<TrainingDefinitionBuilder />} />
+                  <Route path="training-definitions/:id" element={<TrainingDefinitionBuilder />} />
                   <Route path="training-definitions/builder/:id?" element={<TrainingDefinitionBuilder />} />
                   <Route path="training-definitions/builder-minimal/:id?" element={<TrainingDefinitionBuilderMinimal />} />
                   <Route path="training-projects" element={<TrainingProjects />} />
