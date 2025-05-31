@@ -19,10 +19,13 @@ export const useTrainingDefinition = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const isNewDefinition = id === 'new';
+  // Check if we're on the specific /new route or if id parameter is "new"
+  const isNewDefinition = window.location.pathname.includes('/training-definitions/new') || id === 'new';
 
   useEffect(() => {
     console.log('useTrainingDefinition useEffect triggered with id:', id);
+    console.log('Current pathname:', window.location.pathname);
+    console.log('isNewDefinition:', isNewDefinition);
     
     if (isNewDefinition) {
       console.log('This is a new definition, setting loading to false');
@@ -30,9 +33,11 @@ export const useTrainingDefinition = () => {
       return;
     }
 
-    if (id) {
+    if (id && id !== 'new') {
       console.log('Loading existing definition with id:', id);
       loadDefinitionAndVersion();
+    } else {
+      setLoading(false);
     }
   }, [id, isNewDefinition]);
 
