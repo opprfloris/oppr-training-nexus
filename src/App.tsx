@@ -65,7 +65,7 @@ function App() {
           <AuthProvider>
             <AISettingsProvider>
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<Navigate to="/gateway" replace />} />
                 <Route path="/gateway" element={<GatewayPage />} />
                 
                 {/* Desktop Routes */}
