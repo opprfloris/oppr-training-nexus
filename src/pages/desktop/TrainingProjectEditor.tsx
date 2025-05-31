@@ -9,7 +9,7 @@ import { ProjectOverviewTab } from '@/components/desktop/training-projects/Proje
 import { FloorPlanMarkerTab } from '@/components/desktop/training-projects/FloorPlanMarkerTab';
 import { ContentAssemblyTab } from '@/components/desktop/training-projects/ContentAssemblyTab';
 import { UserAccessTab } from '@/components/desktop/training-projects/UserAccessTab';
-import { ParametersActivationTab } from '@/components/desktop/training-projects/ParametersActivationTab';
+import { SettingsTab } from '@/components/desktop/training-projects/SettingsTab';
 import { StatisticsTab } from '@/components/desktop/training-projects/StatisticsTab';
 import { supabase } from '@/integrations/supabase/client';
 import type { TrainingProject, TrainingProjectMarker } from '@/types/training-projects';
@@ -135,7 +135,7 @@ const TrainingProjectEditor = () => {
     console.log('Access changed');
   };
 
-  const handleParametersUpdate = async (updates: Partial<TrainingProject>) => {
+  const handleSettingsUpdate = async (updates: Partial<TrainingProject>) => {
     if (!project) return;
     
     const updatedProject = { ...project, ...updates };
@@ -186,7 +186,7 @@ const TrainingProjectEditor = () => {
               <TabsTrigger value="floor-plan">Floor Plan</TabsTrigger>
               <TabsTrigger value="content">Content</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
-              <TabsTrigger value="parameters">Parameters</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
               <TabsTrigger value="statistics">Statistics</TabsTrigger>
             </TabsList>
 
@@ -219,11 +219,11 @@ const TrainingProjectEditor = () => {
               />
             </TabsContent>
 
-            <TabsContent value="parameters" className="mt-6">
-              <ParametersActivationTab 
+            <TabsContent value="settings" className="mt-6">
+              <SettingsTab 
                 project={project}
                 saving={saving}
-                onProjectUpdate={handleParametersUpdate}
+                onProjectUpdate={handleSettingsUpdate}
               />
             </TabsContent>
 
