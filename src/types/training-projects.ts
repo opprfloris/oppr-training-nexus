@@ -6,7 +6,7 @@ export interface TrainingProject {
   description: string | null;
   color_code: string;
   icon: string;
-  status: 'draft' | 'scheduled' | 'active' | 'stopped' | 'archived';
+  status: 'draft' | 'published' | 'active' | 'stopped' | 'archived';
   floor_plan_image_id: string | null;
   start_date: string | null;
   end_date: string | null;
@@ -65,6 +65,7 @@ export interface TrainingProjectOperatorAssignment {
     last_name: string | null;
     email: string;
     department: string | null;
+    role: string | null;
   };
 }
 
@@ -79,6 +80,7 @@ export interface TrainingProjectCollaborator {
     last_name: string | null;
     email: string;
     department: string | null;
+    role: string | null;
   };
 }
 
@@ -87,6 +89,15 @@ export interface ReadinessCheck {
   allTrainingDefinitionsPublished: boolean;
   learnerAssigned: boolean;
   passFailThresholdSet: boolean;
+}
+
+export interface ProgressData {
+  learnerId: string;
+  learnerName: string;
+  status: 'not_started' | 'in_progress' | 'completed' | 'failed';
+  progress: number;
+  score: number;
+  lastActivity: string;
 }
 
 // Stats-related interfaces
@@ -119,7 +130,7 @@ export const mapDatabaseToTrainingProject = (dbProject: any): TrainingProject =>
     description: dbProject.description,
     color_code: dbProject.color_code || '#3a7ca5',
     icon: dbProject.icon || 'folder',
-    status: dbProject.status as 'draft' | 'scheduled' | 'active' | 'stopped' | 'archived',
+    status: dbProject.status as 'draft' | 'published' | 'active' | 'stopped' | 'archived',
     floor_plan_image_id: dbProject.floor_plan_image_id,
     start_date: dbProject.start_date,
     end_date: dbProject.end_date,

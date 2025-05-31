@@ -150,7 +150,10 @@ const MobileTrainings = () => {
           </div>
 
           {/* Action Button */}
-          <button className="w-full bg-oppr-blue text-white font-semibold py-3 px-4 rounded-xl hover:bg-oppr-blue/90 active:scale-[0.98] transition-all">
+          <button 
+            onClick={() => window.location.href = `/mobile/training-execution/${training.id}`}
+            className="w-full bg-oppr-blue text-white font-semibold py-3 px-4 rounded-xl hover:bg-oppr-blue/90 active:scale-[0.98] transition-all"
+          >
             {training.status === 'Not Started' ? 'Start Training' : 'Resume Training'}
           </button>
         </>

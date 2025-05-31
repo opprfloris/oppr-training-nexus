@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -33,6 +34,9 @@ import TrainingProjectEditor from "./pages/desktop/TrainingProjectEditor";
 import MobileLogin from "./pages/mobile/MobileLogin";
 import MobileSettings from "./pages/mobile/MobileSettings";
 import MobileTrainings from "./pages/mobile/MobileTrainings";
+import MobileTrainingExecution from "./pages/mobile/MobileTrainingExecution";
+import MobileQRScanner from "./pages/mobile/MobileQRScanner";
+import MobileTrainingCompletion from "./pages/mobile/MobileTrainingCompletion";
 
 // Layouts
 import DesktopLayout from "./components/desktop/DesktopLayout";
